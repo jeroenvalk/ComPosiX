@@ -15,18 +15,45 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
+var path = require('path');
 var http = require('http');
-var request = require('request');
+
+var registry, path, http, _, request;
+var deps = {
+    cpx: null,
+    path: null,
+    http: null,
+    _: null,
+    request: null
+};
 
 module.exports = class Proxy {
 
-    constructor(registry, name) {
+    constructor(dependencies, name) {
+        var data;
         this.server = http.createServer(function (req, res) {
             try {
-                var trail = _.compact(registry.trail(['request'].concat(req.url.split('/').slice(1))));
+                var pathname = path.posix.resolve(req.url), chain = [];
+                for (; ;) {
+                    var node = pathname === '/' ? data : _.at(data, pathname.substr(1).replace(/\//g, '.'))[0];
+                    if (!node) {
+                        throw new Error('not found: ' + pathname);
+                    }
+                    if (!node['@']) {
+                        break;
+                    }
+                    chain.push(node['@']);
+                    if (!node['@']['^']) {
+                        break;
+                    }
+                    pathname = path.posix.resolve(pathname, node['@']['^']);
+                }
+                if (chain.length === 0) {
+                    throw new Error('no defaults chain found on: ' + req.url);
+                }
                 var wrapper = request;
-                for (var i = 0; i < trail.length; ++i) {
-                    wrapper = wrapper.defaults(trail[i]);
+                for (var i = chain.length - 1; i >= 0; --i) {
+                    wrapper = wrapper.defaults(chain[i]);
                 }
                 var method = req.method;
                 if (method === 'PUT' || method === 'POST') {
@@ -36,12 +63,24 @@ module.exports = class Proxy {
                 } else {
                     throw new Error('not yet implemented');
                 }
-            } catch(e) {
+            } catch (e) {
                 res.write(e.stack);
                 res.end();
                 console.log(e.stack);
             }
         });
+        if (!deps.cpx) {
+            dependencies.cpx.dependencies(dependencies, deps);
+            registry = deps.cpx;
+            path = deps.path;
+            http = deps.http;
+            _ = deps._;
+            request = deps.request;
+        }
+        data = registry.data.request;
+        if (!data) {
+            throw new Error('not registered: request');
+        }
     }
 
     listen(port) {
