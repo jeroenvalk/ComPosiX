@@ -73,7 +73,6 @@ var install = function cpx$install(deps) {
             return _.compact(path.split(/[.[\]]/));
         }
     }));
-    cpx.register(require(process.cwd() + '/registry'));
 };
 
 var logger = {
