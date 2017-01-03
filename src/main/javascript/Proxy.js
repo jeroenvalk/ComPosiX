@@ -15,22 +15,18 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-var path = require('path');
-var http = require('http');
-
 var registry, path, http, _, request;
-var deps = {
-    cpx: null,
-    path: null,
-    http: null,
-    _: null,
-    request: null
-};
 
 module.exports = class Proxy {
 
-    constructor(dependencies, name) {
+    constructor(cpx) {
         var data;
+        registry = cpx;
+        // TODO: check if these depencies are static indeed (exist on the prototype)
+        path = cpx.deps.path;
+        http = cpx.deps.http;
+        _ = cpx.deps._;
+        request = cpx.deps.request;
         this.server = http.createServer(function (req, res) {
             try {
                 var pathname = path.posix.resolve(req.url), chain = [];
@@ -69,14 +65,6 @@ module.exports = class Proxy {
                 console.log(e.stack);
             }
         });
-        if (!deps.cpx) {
-            dependencies.cpx.dependencies(dependencies, deps);
-            registry = deps.cpx;
-            path = deps.path;
-            http = deps.http;
-            _ = deps._;
-            request = deps.request;
-        }
         data = registry.data.request;
         if (!data) {
             throw new Error('not registered: request');

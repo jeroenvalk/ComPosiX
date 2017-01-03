@@ -1,6 +1,6 @@
 {
   "name": "composix",
-  "version": "0.0.1",
+  "version": "0.0.2-SNAPSHOT",
   "repository": "git@github.com:jeroenvalk/ComPosiX.git",
   "author": {
     "name": "dr. ir. Jeroen M. Valk",
@@ -10,7 +10,7 @@
   "license": "LGPL-3.0",
   "main": "src/main/webapp/index.js",
   "scripts": {
-    "start": "node -i -e \"require('.').start()\""
+    "start": "node -i -e \"require('.').boot()\""
   },
   "devDependencies": {
     "underscore": "~1.8.3",

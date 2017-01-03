@@ -17,48 +17,130 @@
 
 var Proxy = require('./Proxy');
 
+var dependencies = {
+    path: null,
+    fs: null,
+    http: null,
+    request: null
+};
+
 module.exports = class ComPosiX {
 
-    constructor(deps, basedir) {
-        this.deps = {
-            cpx: this,
-            logger: null,
-            path: null,
-            fs: null,
-            http: null,
-            _: null,
-            request: null
-        };
+    constructor() {
+        this.deps = Object.create(dependencies);
+        this.deps.cpx = this;
+        this.deps.logger = null;
+        this.deps._ = null;
         this._registry = {
             ComPosiX: this
         };
-        this.data = {
-            '@': {
-                basedir: basedir
-            }
-        };
-        this.dependencies(deps, this.deps);
+        this.data = {};
     }
 
-    dependencies(deps) {
-        for (var i = 1; i < arguments.length; ++i) {
-            for (var name in arguments[i]) {
-                if (arguments[i].hasOwnProperty(name)) {
-                    switch(arguments[i][name]) {
-                        case null:
-                            if (deps[name] === undefined || deps[name] === null) {
-                                throw new Error("unresolved dependency: " + name);
-                            }
-                            arguments[i][name] = deps[name];
-                            break;
-                        default:
-                            if (deps[name] !== undefined && arguments[i][name] !== deps[name]) {
-                                throw new Error("changed static dependency: " + name);
-                            }
-                            break;
+    boot(entity, deps) {
+        if (!deps) {
+            deps = {};
+        }
+        deps.logger = deps.logger || null;
+        deps.path = deps.path || require('path');
+        deps.fs = deps.fs || require('fs');
+        deps.http = deps.http || require('http');
+        deps._ = deps._ || require('lodash');
+        deps.request = deps.request || require('request');
+        var path = deps.path;
+        deps.pathname = path.resolve(deps.pathname || 'ComPosiX.js');
+        this.dependencies(null, deps);
+        this.execute(require(deps.pathname));
+    }
+
+    install(entity, _) {
+        var cpx = this;
+        var deep = function (a, b) {
+            return _.isObject(a) && _.isObject(b) ? _.extend(a, b, deep) : b;
+        };
+        var extend = _.extend;
+        _.mixin(_.extend({
+            register: function cpx$register() {
+                cpx.register.apply(cpx, arguments);
+            },
+            execute: function cpx$execute() {
+                cpx.execute.apply(cpx, arguments);
+            },
+            trail: function cpx$trail(object, path) {
+                if (!(path instanceof Array)) {
+                    path = _.toPath(path);
+                }
+                var result = new Array(path.length + 1);
+                result[0] = object;
+                for (var i = 0; i < path.length; ++i) {
+                    if (object) {
+                        object = object[path[i]];
+                        result[i + 1] = object;
+                    } else {
+                        break;
                     }
                 }
+            }
+        }, _.merge ? {} : {
+            extend: function cpx$extend() {
+                var argv = Array.prototype.slice.call(arguments);
+                var fn = _(argv).find(_.isFunction);
+                if (!fn) {
+                    return extend.apply(_, argv);
+                }
+                var target = argv.shift();
+                _(argv).each(function (source) {
+                    _(_(source).allKeys()).each(function (key) {
+                        target[key] = fn(target[key], source[key]);
+                    })
+                });
+                return target;
+            },
+            merge: function cpx$merge() {
+                var argv = Array.prototype.slice.call(arguments);
+                argv.push(deep);
+                return _.extend.apply(_, argv);
+            }
+        }, _.toPath ? {} : {
+            toPath: function cpx$toPath(path) {
+                return _.compact(path.split(/[.[\]]/));
+            }
+        }));
+        if (entity instanceof Object) {
+            entity._ = _;
+        }
+    }
 
+    throwError(entity, msg) {
+        var e = new Error(msg);
+        if (entity instanceof Object) {
+            entity.ERROR = e;
+        } else {
+            throw e;
+        }
+    }
+
+    dependencies(entity, deps) {
+        console.log('DEPENDENCIES');
+        var scope;
+        for (var name in this.deps) {
+            if (this.deps.hasOwnProperty(name)) {
+                scope = this.deps;
+            } else {
+                scope = dependencies;
+            }
+            switch (scope[name]) {
+                case null:
+                    if (deps[name] === undefined) {
+                        this.throwError(entity, "unresolved dependency: " + name);
+                    }
+                    scope[name] = deps[name];
+                    break;
+                default:
+                    if (deps[name] !== undefined && scope[name] !== deps[name]) {
+                        this.throwError(entity, "dependency change: " + name);
+                    }
+                    break;
             }
         }
     }
@@ -251,7 +333,7 @@ module.exports = class ComPosiX {
                         if (fs.statSync(path.resolve(basedir, file[j])).isFile()) {
                             file[j] = path.resolve(basedir, file[j]);
                         }
-                    } catch(e) {
+                    } catch (e) {
                         // not found
                     }
                 }
@@ -282,7 +364,7 @@ module.exports = class ComPosiX {
     }
 
     listen(object, arg) {
-        var proxy = new Proxy(this.deps, arg.name);
+        var proxy = new Proxy(this);
         proxy.listen(arg.port);
         return object;
     }
