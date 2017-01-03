@@ -19,11 +19,12 @@ var Proxy = require('./Proxy');
 
 module.exports = class ComPosiX {
 
-    constructor(deps) {
+    constructor(deps, basedir) {
         this.deps = {
             cpx: this,
             logger: null,
             path: null,
+            fs: null,
             http: null,
             _: null,
             request: null
@@ -31,7 +32,11 @@ module.exports = class ComPosiX {
         this._registry = {
             ComPosiX: this
         };
-        this.data = {};
+        this.data = {
+            '@': {
+                basedir: basedir
+            }
+        };
         this.dependencies(deps, this.deps);
     }
 
@@ -229,6 +234,29 @@ module.exports = class ComPosiX {
             }
         }
         trail.push(object);
+    }
+
+    resolve(object, param) {
+        var path = this.deps.path;
+        var fs = this.deps.fs;
+        var key = this.keys(object);
+        for (var i = 0; i < key.length; ++i) {
+            var file = object[key[i]];
+            for (var j = 0; j < file.length; ++j) {
+                var chain = param.chain[path.extname(file[j])];
+                var basedir = this.data['@'].basedir;
+                for (var k = chain.length - 1; k >= 0; --k) {
+                    basedir = path.resolve(basedir, chain[k]);
+                    try {
+                        if (fs.statSync(path.resolve(basedir, file[j])).isFile()) {
+                            file[j] = path.resolve(basedir, file[j]);
+                        }
+                    } catch(e) {
+                        // not found
+                    }
+                }
+            }
+        }
     }
 
     extend(object, arg, isAttr) {

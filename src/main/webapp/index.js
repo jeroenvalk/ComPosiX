@@ -17,11 +17,27 @@
 
 var ComPosiX = require('../javascript/ComPosiX.js');
 
-var install = function cpx$install(deps) {
+var dependencies = function cpx$dependencies(deps) {
+    deps.logger = deps.logger || logger;
+    deps.path = deps.path || require('path');
+    deps.fs = deps.fs || require('fs');
+    deps.http = deps.http || require('http');
+    deps._ = deps._ || require('lodash');
+    deps.request = deps.request || require('request');
+};
+
+var install = function cpx$install(deps, basedir) {
+    if (!deps) {
+        deps = {};
+    }
+    dependencies(deps);
+    if (!basedir) {
+        basedir = process.cwd();
+    }
     var _ = deps._;
     var logger = deps.logger;
     logger.info('INSTALL');
-    var cpx = new ComPosiX(deps);
+    var cpx = new ComPosiX(deps, basedir);
     var deep = function (a, b) {
         return _.isObject(a) && _.isObject(b) ? _.extend(a, b, deep) : b;
     };
@@ -85,16 +101,12 @@ var start = function cpx$start(deps, pathname) {
     if (!deps) {
         deps = {};
     }
-    deps.logger = deps.logger || logger;
-    deps.path = deps.path || require('path');
-    deps.http = deps.http || require('http');
-    deps._ = deps._ || require('lodash');
-    deps.request = deps.request || require('request');
-
+    dependencies(deps);
     var path = deps.path;
     var _ = deps._;
-    install(deps);
-    _.execute(require(path.resolve(pathname || 'ComPosiX.js')));
+    pathname = path.resolve(pathname || 'ComPosiX.js');
+    install(deps, path.dirname(pathname));
+    _.execute(require(pathname));
 };
 
 module.exports = {
