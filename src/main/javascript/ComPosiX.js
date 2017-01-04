@@ -163,7 +163,6 @@ module.exports = class ComPosiX {
     }
 
     execute(entity, trail) {
-        var _ = this.deps._;
         console.log('EXECUTE');
         var i, key;
         if (!trail) {
@@ -178,21 +177,26 @@ module.exports = class ComPosiX {
                 this.execute(entity[i], trail);
                 trail.pop();
             }
+            trail.pop();
         } else if (entity instanceof Object) {
             key = trail.pop();
             entity['@@'] = key;
             trail.push(entity);
             this.dispatch(trail);
-            entity = trail[trail.length - 1];
-            if (key !== null) {
-                trail[trail.length - 2][key] = entity;
+            key = this.deps._(entity).keys();
+            for (i = 0; i < key.length; ++i) {
+                switch(key[i].charAt(0)) {
+                    case '@':
+                    case '$':
+                        break;
+                    default:
+                        trail.push(key[i]);
+                        this.execute(entity[key[i]], trail);
+                        trail.pop();
+                        break;
+                }
             }
-            key = _(entity).keys();
-            for (var i = 0; i < key.length; ++i) {
-                trail.push(key[i]);
-                this.execute(entity[key[i]], trail);
-                trail.pop();
-            }
+            trail.pop();
         }
     }
 
@@ -300,7 +304,7 @@ module.exports = class ComPosiX {
         for (key in subtask) {
             if (subtask.hasOwnProperty(key)) {
                 if (this[key]) {
-                    object = this[key].call(this, object, subtask[key], true);
+                    this[key].call(this, object, subtask[key], true);
                 } else {
                     throw new Error('method not defined: ' + key);
                 }
