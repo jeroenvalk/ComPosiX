@@ -121,7 +121,7 @@ module.exports = class ComPosiX {
     }
 
     dependencies(entity, deps) {
-        console.log('DEPENDENCIES');
+        //console.log('DEPENDENCIES');
         var scope;
         for (var name in this.deps) {
             if (this.deps.hasOwnProperty(name)) {
@@ -155,7 +155,7 @@ module.exports = class ComPosiX {
 
     register(entity, path) {
         var _ = this.deps._;
-        console.log('REGISTER');
+        //console.log('REGISTER');
         if (path) {
             return this.registry(path).register(entity);
         }
@@ -163,13 +163,14 @@ module.exports = class ComPosiX {
     }
 
     execute(entity, trail) {
-        console.log('EXECUTE');
+        //console.log('EXECUTE');
         var i, key;
         if (!trail) {
-            console.log(entity);
             trail = [null];
         }
         if (entity instanceof Array) {
+            // TODO: introduce the '^' property
+            // TODO: fix propagation of @@ into attributes (how can this happen?)
             entity['@@'] = trail.pop();
             trail.push(entity);
             for (i = 0; i < entity.length; ++i) {
@@ -177,9 +178,10 @@ module.exports = class ComPosiX {
                 this.execute(entity[i], trail);
                 trail.pop();
             }
-            trail.pop();
+            //trail.pop();
         } else if (entity instanceof Object) {
             key = trail.pop();
+            // TODO: the '^' should occur in objects only and contain path from parent through nested arrays
             entity['@@'] = key;
             trail.push(entity);
             this.dispatch(trail);
@@ -196,7 +198,7 @@ module.exports = class ComPosiX {
                         break;
                 }
             }
-            trail.pop();
+            //trail.pop();
         }
     }
 
@@ -233,9 +235,56 @@ module.exports = class ComPosiX {
         return result.slice(0, j);
     }
 
+    attributes(attr, root) {
+        var _ = this.deps._, i;
+        if (attr instanceof Array) {
+            for (i = 0; i < attr.length; ++i) {
+                this.attributes(attr[i], root);
+            }
+        } else if (attr instanceof Object && attr.constructor === Object && typeof attr) {
+            for (var key in attr) {
+                if (attr.hasOwnProperty(key)) {
+                    if (attr[key] instanceof Array && typeof attr[key][0] === 'string' && attr[key][0].charAt(0) === '$') {
+                        i = attr[key][0].substr(1);
+                        switch(i) {
+                            case 'chain':
+                                // TODO: add substitution to custom function
+                                attr[key] = attr[key][1].reverse();
+                                for (i = attr[key].length - 2; i >= 0; --i) {
+                                    attr[key][i] = this.deps.path.join(attr[key][i + 1], attr[key][i]);
+                                }
+                                break;
+                            default:
+                                if (typeof _[i] === 'function') {
+                                    attr[key] = _[i].apply(_, _.map(attr[key].slice(1), function(val) {
+                                        // TODO: fix ordering issue in substitution
+                                        // TODO: nice error message on unresolved attribute while substituting
+                                        if (typeof val === 'string' && val.charAt(0) === '@') {
+                                            return root[val.substr(1)];
+                                        }
+                                        this.attributes(val, root);
+                                        return val;
+                                    }, this));
+                                } else {
+                                    throw new Error('cannot invoke _.' + i);
+                                }
+                                break;
+                        }
+                    } else {
+                        if (attr.constructor === Object) {
+                            this.attributes(attr[key], root);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     normalize(object) {
         var _ = this.deps._;
-        var key, attr = {}, task = {}, subtask = {};
+        var key, attr = {}, task = {};
+        // TODO: fix processing of direct $task directives and direct @attr attributes
+        this.attributes(object['@'], object['@']);
         for (key in object) {
             if (object.hasOwnProperty(key)) {
                 switch (key.length) {
@@ -245,6 +294,7 @@ module.exports = class ComPosiX {
                         switch (key) {
                             case '@':
                                 _.extend(attr, object['@']);
+                                _.extend(task, object['@'].$);
                                 delete object['@'];
                                 break;
                             case '$':
@@ -267,53 +317,23 @@ module.exports = class ComPosiX {
                 }
             }
         }
-        for (key in attr) {
-            if (attr.hasOwnProperty(key)) {
-                switch (key.length) {
-                    case 0:
-                        throw new Error('empty attribute');
-                    case 1:
-                        switch (key) {
-                            case '$':
-                                _.extend(subtask, attr.$);
-                                delete attr.$;
-                                break;
-                        }
-                        break;
-                    default:
-                        switch (key.charAt(0)) {
-                            case '$':
-                                subtask[key.substr(1)] = attr[key];
-                                delete attr[key];
-                                break;
-                        }
-                }
-            }
-        }
+        attr.$ = task;
         object['@'] = attr;
-        object.$ = task;
-        attr.$ = subtask;
     }
 
     dispatch(trail) {
-        console.log('DISPATCH');
+        //console.log('DISPATCH');
         var object = trail.pop();
         this.normalize(object);
-        console.log(object);
-        var key, task = object.$, subtask = object['@'].$;
-        for (key in subtask) {
-            if (subtask.hasOwnProperty(key)) {
-                if (this[key]) {
-                    this[key].call(this, object, subtask[key], true);
-                } else {
-                    throw new Error('method not defined: ' + key);
-                }
-            }
-        }
+        var key, task = object['@'].$;
         for (key in task) {
             if (task.hasOwnProperty(key)) {
                 if (this[key]) {
-                    object = this[key].call(this, object, task[key], false);
+                    if (task[key] instanceof Array) {
+                        this[key].apply(this, [object].concat(task[key]));
+                    } else {
+                        this[key].call(this, object, task[key]);
+                    }
                 } else {
                     throw new Error('method not defined: ' + key);
                 }
@@ -322,30 +342,35 @@ module.exports = class ComPosiX {
         trail.push(object);
     }
 
-    resolve(object, param) {
+    which(object, task) {
+        // TODO: implement flatten on remaining arguments
+        // TODO: make substition into singleton arrays possible
         var path = this.deps.path;
         var fs = this.deps.fs;
-        var key = this.keys(object);
-        for (var i = 0; i < key.length; ++i) {
-            var file = object[key[i]];
-            for (var j = 0; j < file.length; ++j) {
-                var chain = param.chain[path.extname(file[j])];
-                var basedir = this.data['@'].basedir;
-                for (var k = chain.length - 1; k >= 0; --k) {
-                    basedir = path.resolve(basedir, chain[k]);
-                    try {
-                        if (fs.statSync(path.resolve(basedir, file[j])).isFile()) {
-                            file[j] = path.resolve(basedir, file[j]);
+        var basedir = path.resolve(path.dirname(this.deps.pathname || '.'));
+        for (var key in task) {
+            if (task.hasOwnProperty(key)) {
+                var file = task[key];
+                for (var i = 0; i < file.length; ++i) {
+                    for (var j = 2; j < arguments.length; ++j) {
+                        console.log(path.resolve(basedir, arguments[j], file[i]));
+                        try {
+                            if (fs.statSync(path.resolve(basedir, arguments[j], file[i])).isFile()) {
+                                file[i] = path.resolve(basedir, arguments[j], file[i]);
+                                break;
+                            }
+                        } catch (e) {
+                            // not found
                         }
-                    } catch (e) {
-                        // not found
                     }
+                    if (j === arguments.length) throw new Error('file not found: ' + file[i]);
                 }
+                object[key] = file;
             }
         }
     }
 
-    extend(object, arg, isAttr) {
+    extend(object, arg) {
         var key = this.keys(object);
         for (var i = 0; i < key.length; ++i) {
             this.normalize(object[key]);
