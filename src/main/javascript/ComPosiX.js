@@ -1,5 +1,5 @@
 /**
- * Copyright © 2016 dr. ir. Jeroen M. Valk
+ * Copyright © 2016-2017 dr. ir. Jeroen M. Valk
  *
  * This file is part of ComPosiX. ComPosiX is free software: you can
  * redistribute it and/or modify it under the terms of the GNU Lesser General
@@ -41,7 +41,7 @@ module.exports = class ComPosiX {
         if (!deps) {
             deps = {};
         }
-        deps.logger = deps.logger || null;
+        deps.logger = entity || deps.logger || null;
         deps.path = deps.path || require('path');
         deps.fs = deps.fs || require('fs');
         deps.http = deps.http || require('http');
@@ -50,7 +50,9 @@ module.exports = class ComPosiX {
         var path = deps.path;
         deps.pathname = path.resolve(deps.pathname || 'ComPosiX.js');
         this.dependencies(null, deps);
-        this.execute(require(deps.pathname));
+        var bootstrap = require(deps.pathname);
+        this.execute(bootstrap);
+        this.deps.logger && this.deps.logger.info(JSON.stringify(bootstrap));
     }
 
     install(entity, _) {
@@ -162,43 +164,46 @@ module.exports = class ComPosiX {
         _.merge(this.data, entity);
     }
 
-    execute(entity, trail) {
+    execute(entity, trail, parent) {
         //console.log('EXECUTE');
         var i, key;
         if (!trail) {
-            trail = [null];
+            trail = [];
+            parent = [];
         }
         if (entity instanceof Array) {
-            // TODO: introduce the '^' property
-            // TODO: fix propagation of @@ into attributes (how can this happen?)
-            entity['@@'] = trail.pop();
-            trail.push(entity);
+            parent.push(entity);
             for (i = 0; i < entity.length; ++i) {
                 trail.push(i);
-                this.execute(entity[i], trail);
-                trail.pop();
+                this.execute(entity[i], trail, parent);
+                if (trail.pop() !== i) {
+                    throw new Error('internal error: ' + i );
+                }
             }
-            //trail.pop();
+            if (entity !== parent.pop()) {
+                throw new Error('internal error');
+            }
         } else if (entity instanceof Object) {
-            key = trail.pop();
-            // TODO: the '^' should occur in objects only and contain path from parent through nested arrays
-            entity['@@'] = key;
-            trail.push(entity);
-            this.dispatch(trail);
+            this.dispatch(entity, trail, parent);
             key = this.deps._(entity).keys();
+            parent.push(entity);
             for (i = 0; i < key.length; ++i) {
-                switch(key[i].charAt(0)) {
+                switch (key[i].charAt(0)) {
                     case '@':
                     case '$':
                         break;
                     default:
                         trail.push(key[i]);
-                        this.execute(entity[key[i]], trail);
-                        trail.pop();
+                        this.execute(entity[key[i]], trail, parent);
+                        if (trail.pop() !== key[i]) {
+                            throw new Error('internal error: ' + key[i]);
+                        }
                         break;
                 }
             }
-            //trail.pop();
+            if (entity !== parent.pop()) {
+                throw new Error('internal error');
+            }
         }
     }
 
@@ -245,8 +250,17 @@ module.exports = class ComPosiX {
             for (var key in attr) {
                 if (attr.hasOwnProperty(key)) {
                     if (attr[key] instanceof Array && typeof attr[key][0] === 'string' && attr[key][0].charAt(0) === '$') {
-                        i = attr[key][0].substr(1);
-                        switch(i) {
+                        i = attr[key][0].substr(1).split(':');
+                        switch (i.length) {
+                            case 1:
+                                i.unshift('_');
+                                break;
+                            case 2:
+                                break;
+                            default:
+                                throw new Error('invalid method: ' + i.join(':'));
+                        }
+                        switch (i[1]) {
                             case 'chain':
                                 // TODO: add substitution to custom function
                                 attr[key] = attr[key][1].reverse();
@@ -255,8 +269,8 @@ module.exports = class ComPosiX {
                                 }
                                 break;
                             default:
-                                if (typeof _[i] === 'function') {
-                                    attr[key] = _[i].apply(_, _.map(attr[key].slice(1), function(val) {
+                                if (typeof this.deps[i[0]][i[1]] === 'function') {
+                                    attr[key] = this.deps[i[0]][i[1]].apply(this.deps[i[0]], _.map(attr[key].slice(1), function (val) {
                                         // TODO: fix ordering issue in substitution
                                         // TODO: nice error message on unresolved attribute while substituting
                                         if (typeof val === 'string' && val.charAt(0) === '@') {
@@ -266,7 +280,7 @@ module.exports = class ComPosiX {
                                         return val;
                                     }, this));
                                 } else {
-                                    throw new Error('cannot invoke _.' + i);
+                                    throw new Error('cannot invoke ' + i[0] + '.' + i[1]);
                                 }
                                 break;
                         }
@@ -280,7 +294,7 @@ module.exports = class ComPosiX {
         }
     }
 
-    normalize(object) {
+    normalize(object, trail, parent) {
         var _ = this.deps._;
         var key, attr = {}, task = {};
         // TODO: fix processing of direct $task directives and direct @attr attributes
@@ -317,14 +331,37 @@ module.exports = class ComPosiX {
                 }
             }
         }
+        if (attr['^']) {
+            var path = this.deps.path.posix;
+            if (typeof attr['^'] === 'string') {
+                attr['^'] = path.normalize(attr['^']).split('/');
+                for (key = 0; key < attr['^'].length; ++key) {
+                    if (attr['^'][key] !== '..') {
+                        break;
+                    }
+                }
+                attr['^'] = {
+                    depth: key,
+                    path: attr['^'].slice(key)
+                };
+                key = parent.length - key;
+                if (parent[key]) {
+                    attr['^'].parent = parent[key];
+                    attr['^'].trail = trail.slice(key);
+                } else {
+                    throw new Error();
+                }
+            } else {
+                delete attr['^'];
+            }
+        }
         attr.$ = task;
         object['@'] = attr;
     }
 
-    dispatch(trail) {
+    dispatch(object, trail, parent) {
         //console.log('DISPATCH');
-        var object = trail.pop();
-        this.normalize(object);
+        this.normalize(object, trail, parent);
         var key, task = object['@'].$;
         for (key in task) {
             if (task.hasOwnProperty(key)) {
@@ -339,7 +376,6 @@ module.exports = class ComPosiX {
                 }
             }
         }
-        trail.push(object);
     }
 
     which(object, task) {
@@ -353,7 +389,6 @@ module.exports = class ComPosiX {
                 var file = task[key];
                 for (var i = 0; i < file.length; ++i) {
                     for (var j = 2; j < arguments.length; ++j) {
-                        console.log(path.resolve(basedir, arguments[j], file[i]));
                         try {
                             if (fs.statSync(path.resolve(basedir, arguments[j], file[i])).isFile()) {
                                 file[i] = path.resolve(basedir, arguments[j], file[i]);
