@@ -184,26 +184,27 @@ module.exports = class ComPosiX {
                 throw new Error('internal error');
             }
         } else if (entity instanceof Object) {
-            this.dispatch(entity, trail, parent);
-            key = this.deps._(entity).keys();
             parent.push(entity);
-            for (i = 0; i < key.length; ++i) {
-                switch (key[i].charAt(0)) {
-                    case '@':
-                    case '$':
-                        break;
-                    default:
-                        trail.push(key[i]);
-                        this.execute(entity[key[i]], trail, parent);
-                        if (trail.pop() !== key[i]) {
-                            throw new Error('internal error: ' + key[i]);
-                        }
-                        break;
+            for (key in entity) {
+                if (entity.hasOwnProperty(key)) {
+                    switch (key.charAt(0)) {
+                        case '@':
+                        case '$':
+                            break;
+                        default:
+                            trail.push(key);
+                            this.execute(entity[key], trail, parent);
+                            if (trail.pop() !== key) {
+                                throw new Error('internal error: ' + key);
+                            }
+                            break;
+                    }
                 }
             }
             if (entity !== parent.pop()) {
                 throw new Error('internal error');
             }
+            this.dispatch(entity, trail, parent);
         }
     }
 
