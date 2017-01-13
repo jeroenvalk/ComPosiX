@@ -177,7 +177,7 @@ module.exports = class ComPosiX {
                 trail.push(i);
                 this.execute(entity[i], trail, parent);
                 if (trail.pop() !== i) {
-                    throw new Error('internal error: ' + i );
+                    throw new Error('internal error: ' + i);
                 }
             }
             if (entity !== parent.pop()) {
@@ -241,65 +241,73 @@ module.exports = class ComPosiX {
         return result.slice(0, j);
     }
 
-    attributes(attr, root) {
-        var _ = this.deps._, i;
-        if (attr instanceof Array) {
-            for (i = 0; i < attr.length; ++i) {
-                this.attributes(attr[i], root);
+    evaluate(expression) {
+        var i = expression[0].substr(1).split(':');
+        switch (i.length) {
+            case 1:
+                i.unshift('_');
+                break;
+            case 2:
+                break;
+            default:
+                throw new Error('invalid method: ' + i.join(':'));
+        }
+        switch (i[1]) {
+            case 'chain':
+                expression = expression[1].reverse();
+                for (i = expression.length - 2; i >= 0; --i) {
+                    expression[i] = this.deps.path.join(expression[i + 1], expression[i]);
+                }
+                break;
+            default:
+                if (typeof this.deps[i[0]][i[1]] === 'function') {
+                    expression = this.deps[i[0]][i[1]].apply(this.deps[i[0]], expression.slice(1));
+                } else {
+                    throw new Error('cannot invoke ' + i[0] + '.' + i[1]);
+                }
+                break;
+        }
+        return expression;
+    }
+
+    recurse(expression, attr) {
+        var i;
+        if (expression instanceof Array) {
+            for (i = 0; i < expression.length; ++i) {
+                expression[i] = this.recurse(expression[i], attr);
             }
-        } else if (attr instanceof Object && attr.constructor === Object && typeof attr) {
-            for (var key in attr) {
-                if (attr.hasOwnProperty(key)) {
-                    if (attr[key] instanceof Array && typeof attr[key][0] === 'string' && attr[key][0].charAt(0) === '$') {
-                        i = attr[key][0].substr(1).split(':');
-                        switch (i.length) {
-                            case 1:
-                                i.unshift('_');
-                                break;
-                            case 2:
-                                break;
-                            default:
-                                throw new Error('invalid method: ' + i.join(':'));
-                        }
-                        switch (i[1]) {
-                            case 'chain':
-                                // TODO: add substitution to custom function
-                                attr[key] = attr[key][1].reverse();
-                                for (i = attr[key].length - 2; i >= 0; --i) {
-                                    attr[key][i] = this.deps.path.join(attr[key][i + 1], attr[key][i]);
-                                }
-                                break;
-                            default:
-                                if (typeof this.deps[i[0]][i[1]] === 'function') {
-                                    attr[key] = this.deps[i[0]][i[1]].apply(this.deps[i[0]], _.map(attr[key].slice(1), function (val) {
-                                        // TODO: fix ordering issue in substitution
-                                        // TODO: nice error message on unresolved attribute while substituting
-                                        if (typeof val === 'string' && val.charAt(0) === '@') {
-                                            return root[val.substr(1)];
-                                        }
-                                        this.attributes(val, root);
-                                        return val;
-                                    }, this));
-                                } else {
-                                    throw new Error('cannot invoke ' + i[0] + '.' + i[1]);
-                                }
-                                break;
-                        }
-                    } else {
-                        if (attr.constructor === Object) {
-                            this.attributes(attr[key], root);
-                        }
-                    }
+            if (typeof expression[0] === 'string' && expression[0].charAt(0) === '$') {
+                return this.evaluate(expression);
+            }
+            return expression;
+        }
+        if (expression instanceof Object) {
+            for (i in expression) {
+                if (expression.hasOwnProperty(i)) {
+                    expression[i] = this.recurse(expression[i], attr);
                 }
             }
+            return expression;
         }
+        if (typeof expression === 'string' && expression.charAt(0) === '@') {
+            // TODO: nice error message on unresolved attribute while substituting
+            return attr[expression.substr(1)];
+        }
+        return expression;
     }
 
     normalize(object, trail, parent) {
         var _ = this.deps._;
-        var key, attr = {}, task = {};
+        var key, attr = object['@'];
+        for (key in attr) {
+            if (attr.hasOwnProperty(key)) {
+                attr[key] = this.recurse(attr[key], attr);
+            }
+        }
         // TODO: fix processing of direct $task directives and direct @attr attributes
-        this.attributes(object['@'], object['@']);
+        //this.attributes(object['@'], object['@']);
+        var task = {};
+        attr = {};
         for (key in object) {
             if (object.hasOwnProperty(key)) {
                 switch (key.length) {
@@ -363,47 +371,74 @@ module.exports = class ComPosiX {
     dispatch(object, trail, parent) {
         //console.log('DISPATCH');
         this.normalize(object, trail, parent);
-        var key, task = object['@'].$;
+        var key, task = object['@'].$, dep, context, target;
         for (key in task) {
             if (task.hasOwnProperty(key)) {
-                if (this[key]) {
-                    if (task[key] instanceof Array) {
-                        this[key].apply(this, [object].concat(task[key]));
-                    } else {
-                        this[key].call(this, object, task[key]);
-                    }
-                } else {
-                    throw new Error('method not defined: ' + key);
+                context = task[key];
+                key = key.split(':');
+                switch (key.length) {
+                    case 1:
+                        key = key[0];
+                        if (!this[key]) {
+                            throw new Error('method not defined: ' + key);
+                        }
+                        if (context instanceof Array) {
+                            this[key].apply(this, [object].concat(context));
+                        } else if (context instanceof Object) {
+                            for (target in context) {
+                                if (context.hasOwnProperty(target)) {
+                                    object[target] = this[key].apply(this, [object].concat(this.recurse(context[target], object['@'])));
+                                }
+                            }
+                        } else {
+                            this[key].call(this, object, context);
+                        }
+                        break;
+                    case 2:
+                        dep = this.deps[key[0]];
+                        if (!dep) {
+                            throw new Error('unknown dependency: ' + key[0]);
+                        }
+                        if (!dep[key[1]]) {
+                            console.log(dep);
+                            throw new Error('unknown method: ' + key.join(':'));
+                        }
+                        if (context instanceof Array) {
+                            dep[key[1]].apply(dep, [object].concat(context));
+                        } else if (context instanceof Object) {
+                            for (target in context) {
+                                if (context.hasOwnProperty(target)) {
+                                    object[target] = dep[key[1]].apply(dep, [object].concat(context[target]));
+                                }
+                            }
+                        } else {
+                            throw new Error('invalid method invocation: ' + key.join(':'));
+                        }
+                        break;
                 }
+                break;
             }
         }
     }
 
-    which(object, task) {
-        // TODO: implement flatten on remaining arguments
-        // TODO: make substition into singleton arrays possible
+    which(object, file, search) {
         var path = this.deps.path;
         var fs = this.deps.fs;
         var basedir = path.resolve(path.dirname(this.deps.pathname || '.'));
-        for (var key in task) {
-            if (task.hasOwnProperty(key)) {
-                var file = task[key];
-                for (var i = 0; i < file.length; ++i) {
-                    for (var j = 2; j < arguments.length; ++j) {
-                        try {
-                            if (fs.statSync(path.resolve(basedir, arguments[j], file[i])).isFile()) {
-                                file[i] = path.resolve(basedir, arguments[j], file[i]);
-                                break;
-                            }
-                        } catch (e) {
-                            // not found
-                        }
+        for (var i = 0; i < file.length; ++i) {
+            for (var j = 0; j < search.length; ++j) {
+                try {
+                    if (fs.statSync(path.resolve(basedir, search[j], file[i])).isFile()) {
+                        file[i] = path.resolve(basedir, search[j], file[i]);
+                        break;
                     }
-                    if (j === arguments.length) throw new Error('file not found: ' + file[i]);
+                } catch (e) {
+                    // not found
                 }
-                object[key] = file;
             }
+            if (j === search.length) throw new Error('file not found: ' + file[i]);
         }
+        return file;
     }
 
     extend(object, arg) {
