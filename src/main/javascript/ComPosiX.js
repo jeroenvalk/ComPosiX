@@ -298,12 +298,7 @@ module.exports = class ComPosiX {
 
     normalize(object, trail, parent) {
         var _ = this.deps._;
-        var key, attr = object['@'];
-        for (key in attr) {
-            if (attr.hasOwnProperty(key)) {
-                attr[key] = this.recurse(attr[key], attr);
-            }
-        }
+        var key, attr;
         // TODO: fix processing of direct $task directives and direct @attr attributes
         //this.attributes(object['@'], object['@']);
         var task = {};
@@ -369,11 +364,21 @@ module.exports = class ComPosiX {
     }
 
     dispatch(object, trail, parent) {
-        //console.log('DISPATCH');
+        // console.log('DISPATCH');
+        var _ = this.deps._;
+        var key, name, attr;
         this.normalize(object, trail, parent);
-        var key, task = object['@'].$, dep, context, target;
+        var task = object['@'].$, dep, context, target;
         for (key in task) {
             if (task.hasOwnProperty(key)) {
+                if (!attr) {
+                    attr = false ? _.extend.apply(_, _.map([{'@': {}}, object].concat(parent.slice(0).reverse()), '@')) : object['@'];
+                    for (name in attr) {
+                        if (name !== '^' && name !== '$' && attr.hasOwnProperty(name)) {
+                            attr[name] = this.recurse(attr[name], attr);
+                        }
+                    }
+                }
                 context = task[key];
                 key = key.split(':');
                 switch (key.length) {
