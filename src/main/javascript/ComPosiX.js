@@ -383,20 +383,10 @@ module.exports = class ComPosiX {
                 key = key.split(':');
                 switch (key.length) {
                     case 1:
+                        dep = this;
                         key = key[0];
                         if (!this[key]) {
                             throw new Error('method not defined: ' + key);
-                        }
-                        if (context instanceof Array) {
-                            this[key].apply(this, [object].concat(context));
-                        } else if (context instanceof Object) {
-                            for (target in context) {
-                                if (context.hasOwnProperty(target)) {
-                                    object[target] = this[key].apply(this, [object].concat(this.recurse(context[target], object['@'])));
-                                }
-                            }
-                        } else {
-                            this[key].call(this, object, context);
                         }
                         break;
                     case 2:
@@ -408,20 +398,20 @@ module.exports = class ComPosiX {
                             console.log(dep);
                             throw new Error('unknown method: ' + key.join(':'));
                         }
-                        if (context instanceof Array) {
-                            dep[key[1]].apply(dep, [object].concat(context));
-                        } else if (context instanceof Object) {
-                            for (target in context) {
-                                if (context.hasOwnProperty(target)) {
-                                    object[target] = dep[key[1]].apply(dep, [object].concat(context[target]));
-                                }
-                            }
-                        } else {
-                            throw new Error('invalid method invocation: ' + key.join(':'));
-                        }
+                        key = key[1];
                         break;
                 }
-                break;
+                if (context instanceof Array) {
+                    dep[key].apply(dep, [object].concat(context));
+                } else if (context instanceof Object) {
+                    for (target in context) {
+                        if (context.hasOwnProperty(target)) {
+                            object[target] = dep[key].apply(dep, [object].concat(this.recurse(context[target], object['@'])));
+                        }
+                    }
+                } else {
+                    this[key].call(this, object, context);
+                }
             }
         }
     }
