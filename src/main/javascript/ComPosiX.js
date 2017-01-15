@@ -271,27 +271,29 @@ module.exports = class ComPosiX {
     }
 
     recurse(expression, attr) {
-        var i;
+        var i, result;
         if (expression instanceof Array) {
+            result = new Array(expression.length);
             for (i = 0; i < expression.length; ++i) {
-                expression[i] = this.recurse(expression[i], attr);
+                result[i] = this.recurse(expression[i], attr);
             }
-            if (typeof expression[0] === 'string' && expression[0].charAt(0) === '$') {
-                return this.evaluate(expression);
+            if (typeof result[0] === 'string' && result[0].charAt(0) === '$') {
+                return this.evaluate(result);
             }
-            return expression;
+            return result;
         }
         if (expression instanceof Object) {
+            result = {};
             for (i in expression) {
                 if (expression.hasOwnProperty(i)) {
-                    expression[i] = this.recurse(expression[i], attr);
+                    result[i] = this.recurse(expression[i], attr);
                 }
             }
-            return expression;
+            return result;
         }
         if (typeof expression === 'string' && expression.charAt(0) === '@') {
             // TODO: nice error message on unresolved attribute while substituting
-            return attr[expression.substr(1)];
+            return this.recurse(attr[expression.substr(1)]);
         }
         return expression;
     }
@@ -372,14 +374,27 @@ module.exports = class ComPosiX {
         for (key in task) {
             if (task.hasOwnProperty(key)) {
                 if (!attr) {
-                    attr = false ? _.extend.apply(_, _.map([{'@': {}}, object].concat(parent.slice(0).reverse()), '@')) : object['@'];
-                    for (name in attr) {
+                    attr = (key === 'dependencies' ? null : _.extend.apply(_, _.map([{'@': {}}, object].concat(parent.slice(0).reverse()), '@')));
+                     for (name in attr) {
                         if (name !== '^' && name !== '$' && attr.hasOwnProperty(name)) {
                             attr[name] = this.recurse(attr[name], attr);
                         }
                     }
                 }
                 context = task[key];
+                switch(key) {
+                    case 'dependencies':
+                        if (!(context instanceof Array)) {
+                            context = [context];
+                        }
+                        break;
+                    default:
+                        context = this.recurse(context, attr);
+                        break;
+                }
+                if (!(context instanceof Object)) {
+                    throw new Error('invalid task context: ' + key + ' ' + JSON.stringify(context));
+                }
                 key = key.split(':');
                 switch (key.length) {
                     case 1:
@@ -392,25 +407,23 @@ module.exports = class ComPosiX {
                     case 2:
                         dep = this.deps[key[0]];
                         if (!dep) {
-                            throw new Error('unknown dependency: ' + key[0]);
+                            throw new Error('unresolved dependency: ' + key[0]);
                         }
                         if (!dep[key[1]]) {
                             console.log(dep);
-                            throw new Error('unknown method: ' + key.join(':'));
+                            throw new Error('method not defined: ' + key.join(':'));
                         }
                         key = key[1];
                         break;
                 }
                 if (context instanceof Array) {
                     dep[key].apply(dep, [object].concat(context));
-                } else if (context instanceof Object) {
+                } else {
                     for (target in context) {
                         if (context.hasOwnProperty(target)) {
-                            object[target] = dep[key].apply(dep, [object].concat(this.recurse(context[target], object['@'])));
+                            object[target] = dep[key].apply(dep, [object].concat(context[target]));
                         }
                     }
-                } else {
-                    this[key].call(this, object, context);
                 }
             }
         }
