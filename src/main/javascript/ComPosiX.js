@@ -52,7 +52,8 @@ module.exports = class ComPosiX {
         this.dependencies(null, deps);
         var bootstrap = require(deps.pathname);
         this.execute(bootstrap);
-        this.deps.logger && this.deps.logger.info(JSON.stringify(bootstrap));
+        // TODO: add $logger:info task to get logging output
+        this.deps.logger && this.deps.logger.info(bootstrap);
     }
 
     install(entity, _) {
@@ -111,6 +112,14 @@ module.exports = class ComPosiX {
         if (entity instanceof Object) {
             entity._ = _;
         }
+    }
+
+    _() {
+        var result = this.deps._;
+        if (!result) {
+            throw new Error('implementation for _ is required, e.g., Lodash or UnderscoreJS');
+        }
+        return result;
     }
 
     throwError(entity, msg) {
@@ -299,8 +308,7 @@ module.exports = class ComPosiX {
     }
 
     normalize(object, trail, parent) {
-        var _ = this.deps._;
-        var key, attr;
+        var _, key, attr;
         // TODO: fix processing of direct $task directives and direct @attr attributes
         //this.attributes(object['@'], object['@']);
         var task = {};
@@ -311,6 +319,7 @@ module.exports = class ComPosiX {
                     case 0:
                         throw new Error('empty property');
                     case 1:
+                        if (!_) _ = this._();
                         switch (key) {
                             case '@':
                                 _.extend(attr, object['@']);
@@ -337,7 +346,7 @@ module.exports = class ComPosiX {
                 }
             }
         }
-        if (attr['^']) {
+        if (false && attr['^']) {
             var path = this.deps.path.posix;
             if (typeof attr['^'] === 'string') {
                 attr['^'] = path.normalize(attr['^']).split('/');
@@ -374,7 +383,7 @@ module.exports = class ComPosiX {
         for (key in task) {
             if (task.hasOwnProperty(key)) {
                 if (!attr) {
-                    attr = (key === 'dependencies' ? null : _.extend.apply(_, _.map([{'@': {}}, object].concat(parent.slice(0).reverse()), '@')));
+                    attr = (key === 'dependencies' ? null : _.extend.apply(_, _.map([{'@': {}}].concat(parent.slice(0)).concat([object]), '@')));
                      for (name in attr) {
                         if (name !== '^' && name !== '$' && attr.hasOwnProperty(name)) {
                             attr[name] = this.recurse(attr[name], attr);
@@ -384,16 +393,24 @@ module.exports = class ComPosiX {
                 context = task[key];
                 switch(key) {
                     case 'dependencies':
-                        if (!(context instanceof Array)) {
-                            context = [context];
-                        }
+                        // do not recurse because dependencies can be cyclic
                         break;
                     default:
                         context = this.recurse(context, attr);
                         break;
                 }
-                if (!(context instanceof Object)) {
-                    throw new Error('invalid task context: ' + key + ' ' + JSON.stringify(context));
+                if (context instanceof Object) {
+                    if (!(context instanceof Array)) {
+                        for (target in context) {
+                            if (context.hasOwnProperty(target)) {
+                                if (!(context[target] instanceof Array)) {
+                                    throw new Error("multitask '" + key + "' ambiguity in context: " + JSON.stringify(context));
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    throw new Error("task '" + key + "' ambiguity in context: " + JSON.stringify(context));
                 }
                 key = key.split(':');
                 switch (key.length) {
