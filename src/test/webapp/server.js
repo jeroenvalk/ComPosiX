@@ -10,5 +10,5 @@ http.createServer(function (req, res) {
         req.connection.remoteAddress+' '+
         req.method+' '+req.url);
     res.writeHead(200);
-    res.end("hello world\n");
-}).listen(8080);
+    res.end(fs.readFileSync('swagger.json'));
+}).listen(80);
