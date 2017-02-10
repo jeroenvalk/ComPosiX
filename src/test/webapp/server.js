@@ -5,6 +5,7 @@ var options = {
     // cert: fs.readFileSync('server-crt.pem'),
     // ca: fs.readFileSync('ca-crt.pem'),
 };
+// TODO: create vagrant image to run this stuff and allow port 80
 http.createServer(function (req, res) {
     console.log(new Date()+' '+
         req.connection.remoteAddress+' '+

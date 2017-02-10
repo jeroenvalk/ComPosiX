@@ -21,7 +21,8 @@ var dependencies = {
     path: null,
     fs: null,
     http: null,
-    request: null
+    request: null,
+    local: null
 };
 
 module.exports = class ComPosiX {
@@ -261,6 +262,10 @@ module.exports = class ComPosiX {
             default:
                 throw new Error('invalid method: ' + i.join(':'));
         }
+        var dep = this.deps[i[0]];
+        if (!dep) {
+            throw new Error('missing dependency: ' + i[0]);
+        }
         switch (i[1]) {
             case 'chain':
                 expression = expression[1].reverse();
@@ -375,6 +380,10 @@ module.exports = class ComPosiX {
     }
 
     dispatch(object, trail, parent) {
+        // TODO: refactor to split processing from the ComPosiX object
+        // TODO: add logging using Bunyan to get a full trace
+        // TODO: create a tool that splits the log accross files to allow diff compares
+        // TODO: http://json-diff.com/
         // console.log('DISPATCH');
         var _ = this.deps._;
         var key, name, attr;
