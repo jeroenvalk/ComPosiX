@@ -456,7 +456,7 @@ module.exports = class ComPosiX {
     }
 
     which(object, file, search) {
-        var i, j = 1;
+        var i, j;
         var path = this.deps.path;
         var fs = this.deps.fs;
         var basedir = path.resolve(path.dirname(this.deps.pathname || '.'));
