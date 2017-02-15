@@ -393,14 +393,14 @@ module.exports = class ComPosiX {
             if (task.hasOwnProperty(key)) {
                 if (!attr) {
                     attr = (key === 'dependencies' ? null : _.extend.apply(_, _.map([{'@': {}}].concat(parent.slice(0)).concat([object]), '@')));
-                     for (name in attr) {
+                    for (name in attr) {
                         if (name !== '^' && name !== '$' && attr.hasOwnProperty(name)) {
                             attr[name] = this.recurse(attr[name], attr);
                         }
                     }
                 }
                 context = task[key];
-                switch(key) {
+                switch (key) {
                     case 'dependencies':
                         // do not recurse because dependencies can be cyclic
                         break;
@@ -456,18 +456,24 @@ module.exports = class ComPosiX {
     }
 
     which(object, file, search) {
+        var i, j = 1;
         var path = this.deps.path;
         var fs = this.deps.fs;
         var basedir = path.resolve(path.dirname(this.deps.pathname || '.'));
-        for (var i = 0; i < file.length; ++i) {
-            for (var j = 0; j < search.length; ++j) {
-                try {
-                    if (fs.statSync(path.resolve(basedir, search[j], file[i])).isFile()) {
-                        file[i] = path.resolve(basedir, search[j], file[i]);
-                        break;
+        for (i = 0; i < file.length; ++i) {
+            if (search.length === 1) {
+                // existence check not needed if only one choice possible
+                file[i] = path.resolve(basedir, search[0], file[i]);
+            } else {
+                for (j = 0; j < search.length; ++j) {
+                    try {
+                        if (fs.statSync(path.resolve(basedir, search[j], file[i])).isFile()) {
+                            file[i] = path.resolve(basedir, search[j], file[i]);
+                            break;
+                        }
+                    } catch (e) {
+                        // not found
                     }
-                } catch (e) {
-                    // not found
                 }
             }
             if (j === search.length) throw new Error('file not found: ' + file[i]);
