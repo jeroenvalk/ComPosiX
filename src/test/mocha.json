@@ -1,0 +1,21 @@
+{
+  "describe": {
+    "it": {
+      "HelloWorld": {
+        "$request": {
+          "actual": [
+            "http://localhost/cpx/sayhi",
+            {
+              "method": "GET"
+            }
+          ]
+        },
+        "expected": {
+          "statusCode": 200,
+          "statusMessage": "OK",
+          "body": "Hello world!"
+        }
+      }
+    }
+  }
+}

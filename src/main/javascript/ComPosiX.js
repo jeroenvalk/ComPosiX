@@ -15,6 +15,8 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
+var url = require('url');
+var stream = require('stream');
 var Proxy = require('./Proxy');
 
 var dependencies = {
@@ -50,6 +52,7 @@ module.exports = class ComPosiX {
         deps.request = deps.request || require('request');
         var path = deps.path;
         deps.pathname = path.resolve(deps.pathname || 'ComPosiX.js');
+        deps.local = null;
         this.dependencies(null, deps);
         var bootstrap = require(deps.pathname);
         this.execute(bootstrap);
@@ -306,8 +309,12 @@ module.exports = class ComPosiX {
             return result;
         }
         if (typeof expression === 'string' && expression.charAt(0) === '@') {
-            // TODO: nice error message on unresolved attribute while substituting
-            return this.recurse(attr[expression.substr(1)]);
+            i = expression.substr(1);
+            if (attr && attr.hasOwnProperty(i)) {
+                return this.recurse(attr[i]);
+            } else if (attr) {
+                throw new Error('missing attribute: ' + expression);
+            }
         }
         return expression;
     }
@@ -433,6 +440,8 @@ module.exports = class ComPosiX {
                     case 2:
                         dep = this.deps[key[0]];
                         if (!dep) {
+                            // TODO: skip unresolved dependencies and remove actions only when actually executed.
+                            continue;
                             throw new Error('unresolved dependency: ' + key[0]);
                         }
                         if (!dep[key[1]]) {
@@ -507,6 +516,113 @@ module.exports = class ComPosiX {
         var proxy = new Proxy(this);
         proxy.listen(arg.port);
         return object;
+    }
+
+    pipe(self, path) {
+        var _ = this.deps._;
+        var result = _.get(self, path, null);
+        if (result) {
+            return result;
+        }
+        result = new stream.PassThrough({objectMode: true});
+        _.set(self, path, result);
+        return result;
+    }
+
+    serialize(self, data) {
+        switch (typeof data) {
+            case 'string':
+                return Buffer.from(data);
+            case 'object':
+                if (data instanceof String) {
+                    return Buffer.from(data.valueOf());
+                }
+                if (data instanceof Buffer) {
+                    return data;
+                }
+                if (data instanceof Array) {
+                    var result = new stream.PassThrough({objectMode: true});
+                    for (let i = 0; i < data.length; ++i) {
+                        result.write(this.serialize(data[i]));
+                    }
+                    return result;
+                }
+                return Buffer.from(JSON.stringify(data));
+            default:
+                return null;
+        }
+    }
+
+    write(self, stream, data) {
+        self = this;
+        if (data instanceof Buffer) {
+            stream.write(data);
+        } else {
+            throw new Error('not implemented');
+            // TODO: implement proper stream concatenation
+            data.on('data', function (data) {
+                self.write(null, stream, data);
+            });
+        }
+    }
+
+    server(self, options) {
+        var _ = this.deps._;
+        var msg, result = this.pipe(self, 'cpx.result');
+        self = this;
+        http.createServer(function (req, res) {
+            var www = self.data.www;
+            switch (req.method) {
+                case 'GET':
+                    msg = self.serialize(null, _.get(www, url.parse(req.url).pathname.split('/').slice(1)));
+                    if (msg) {
+                        res.writeHead(200, msg.headers);
+                        self.write(null, res, msg);
+                    } else {
+                        res.statusCode = 404;
+                        res.statusMessage = 'Not found';
+                    }
+                    res.end();
+                    break;
+                case 'POST':
+                    msg = [];
+                    req.on('data', function (chunk) {
+                        msg.push(chunk);
+                    });
+                    req.on('end', function () {
+                        msg = JSON.parse(msg.join(''));
+                        self.execute(msg);
+                        res.write(JSON.stringify(msg));
+                        res.end();
+                    });
+                    break;
+            }
+            result.write({
+                url: req.url,
+                headers: req.headers
+            });
+        }).listen(options.port);
+        return result;
+    }
+
+    request(self, uri, options) {
+        var _ = this.deps._;
+        var http = this.deps.http;
+        var data = this.serialize(null, options.body);
+        return new Promise(function (resolve, reject) {
+            var req = http.request(_.extend(url.parse(uri), options), function (res) {
+                // TODO: integrate JSONStreams to read the response
+                resolve({
+                    headers: res.headers,
+                    statusCode: res.statusCode,
+                    statusMessage: res.statusMessage,
+                })
+            });
+            if (data) {
+                req.write(data);
+            }
+            req.end();
+        });
     }
 
 };
