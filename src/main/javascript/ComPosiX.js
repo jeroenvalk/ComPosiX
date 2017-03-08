@@ -570,6 +570,7 @@ module.exports = class ComPosiX {
 
     server(self, options) {
         var _ = this.deps._;
+        var http = this.deps.http;
         var msg, result = this.pipe(self, 'cpx.result');
         self = this;
         http.createServer(function (req, res) {
