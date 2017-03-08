@@ -15,6 +15,8 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
+'use strict';
+
 var url = require('url');
 var stream = require('stream');
 var Proxy = require('./Proxy');
