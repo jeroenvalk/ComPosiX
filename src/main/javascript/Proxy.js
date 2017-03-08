@@ -15,6 +15,8 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
+'use strict';
+
 var registry, path, http, _, request;
 
 module.exports = class Proxy {
