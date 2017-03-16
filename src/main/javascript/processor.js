@@ -18,8 +18,34 @@
 module.exports = function processor(self) {
     'use strict';
 
-    var cpx = this;
+    var cpx = this, object = self, trail = [], parent = [];
 
+    var getAttribute = function processor$getAttribute(path) {
+        var i, part = path.split("."), result = object['@'];
+        result = result[part[0]];
+        if (result) {
+            for (i = 1; i < part.length; ++i) {
+                result = result[part[i]];
+            }
+            return result;
+        }
+        for (i = parent.length - 1; i >= 0; --i) {
+            result = parent['@'];
+            result = result[part[0]];
+            if (result) {
+                for (i = 1; i < part.length; ++i) {
+                    result = result[part[i]];
+                }
+                return result;
+            }
+        }
+        throw new Error(trail.join(".") + ": missing attribute: " + path);
+    };
+
+    var cpxRequire = function processor$cpxRequire(dep) {
+        return cpx.require(object, dep, parent);
+    };
+    
     var isEmpty = function processor$isEmpty(object) {
         if (object instanceof Object) {
             for (var key in object) {
@@ -42,20 +68,17 @@ module.exports = function processor(self) {
             default:
                 throw new Error('invalid method: ' + i.join(':'));
         }
-        var dep = cpx.deps[i[0]];
-        if (!dep) {
-            throw new Error('missing dependency: ' + i[0]);
-        }
+        var dep = cpxRequire(i[0]);
         switch (i[1]) {
             case 'chain':
                 expression = expression[1].reverse();
                 for (i = expression.length - 2; i >= 0; --i) {
-                    expression[i] = cpx.deps.path.join(expression[i + 1], expression[i]);
+                    expression[i] = cpxRequire("path").join(expression[i + 1], expression[i]);
                 }
                 break;
             default:
-                if (typeof cpx.deps[i[0]][i[1]] === 'function') {
-                    expression = cpx.deps[i[0]][i[1]].apply(cpx.deps[i[0]], expression.slice(1));
+                if (typeof dep[i[1]] === 'function') {
+                    expression = dep[i[1]].apply(dep, expression.slice(1));
                 } else {
                     throw new Error('cannot invoke ' + i[0] + '.' + i[1]);
                 }
@@ -64,13 +87,13 @@ module.exports = function processor(self) {
         return expression;
     };
 
-    var recurse = function processor$recurse(expression, attr) {
+    var recurse = function processor$recurse(expression) {
         var i, result;
         if (expression instanceof Object) {
             if (expression instanceof Array) {
                 result = new Array(expression.length);
                 for (i = 0; i < expression.length; ++i) {
-                    result[i] = recurse(expression[i], attr);
+                    result[i] = recurse(expression[i]);
                 }
                 if (typeof result[0] === 'string' && result[0].charAt(0) === '$') {
                     return evaluate(result);
@@ -84,7 +107,7 @@ module.exports = function processor(self) {
                 result = {};
                 for (i in expression) {
                     if (expression.hasOwnProperty(i)) {
-                        result[i] = recurse(expression[i], attr);
+                        result[i] = recurse(expression[i]);
                     }
                 }
                 return result;
@@ -92,14 +115,7 @@ module.exports = function processor(self) {
             throw new Error('invalid attribute content: ' + expression);
         }
         if (typeof expression === 'string' && expression.charAt(0) === '@') {
-            i = expression.substr(1);
-            if (attr.hasOwnProperty('@') && attr['@'].hasOwnProperty(i)) {
-                return attr['@'][i];
-            }
-            if (attr.hasOwnProperty(i)) {
-                return recurse(attr[i], attr);
-            }
-            throw new Error('missing attribute: ' + i);
+            return recurse(getAttribute(expression.substr(1)));
         }
         return expression;
     };
@@ -184,8 +200,6 @@ module.exports = function processor(self) {
         }
     };
 
-    var trail = [], parent = [];
-
     normalize(self);
 
     var _ = this.deps._ || recurse(self['@'].cpx.use._, self['@']);
@@ -195,6 +209,8 @@ module.exports = function processor(self) {
     }
 
     return {
+        cpx: cpx,
+        
         getLogger() {
             return {
                 trace() {
@@ -204,9 +220,9 @@ module.exports = function processor(self) {
             }
         },
 
-        dispatch(object) {
+        dispatch() {
             // TODO: add logging using Bunyan to get a full trace
-            var key, name, attr;
+            var key, name;
             if (object !== self) {
                 normalize(object);
             }
@@ -215,10 +231,7 @@ module.exports = function processor(self) {
                 var task = object['@'].$, dep, context, target;
                 for (key in task) {
                     if (task.hasOwnProperty(key)) {
-                        if (!attr) {
-                            attr = _.extend.apply(_, _.map([{'@': {}}].concat(parent.slice(0)).concat([object]), '@'));
-                        }
-                        context = recurse(task[key], attr);
+                        context = recurse(task[key]);
                         if (context instanceof Object) {
                             if (!(context instanceof Array)) {
                                 for (target in context) {
@@ -279,33 +292,36 @@ module.exports = function processor(self) {
             }
         },
 
-        execute(object) {
-            var logger = this.getLogger(object);
-            logger.trace(object, 'EXECUTE');
+        execute() {
+            var entity = object;
+            var logger = this.getLogger(entity);
+            logger.trace(entity, 'EXECUTE');
             var i, key;
-            if (object instanceof Array) {
-                parent.push(object);
-                for (i = 0; i < object.length; ++i) {
+            if (entity instanceof Array) {
+                parent.push(entity);
+                for (i = 0; i < entity.length; ++i) {
                     trail.push(i);
-                    this.execute(object[i]);
+                    object = entity[i];
+                    this.execute(entity[i]);
                     if (trail.pop() !== i) {
                         throw new Error('internal error: ' + i);
                     }
                 }
-                if (object !== parent.pop()) {
+                if (entity !== parent.pop()) {
                     throw new Error('internal error');
                 }
-            } else if (object instanceof Object) {
-                parent.push(object);
-                for (key in object) {
-                    if (object.hasOwnProperty(key)) {
+            } else if (entity instanceof Object) {
+                parent.push(entity);
+                for (key in entity) {
+                    if (entity.hasOwnProperty(key)) {
                         switch (key.charAt(0)) {
                             case '@':
                             case '$':
                                 break;
                             default:
                                 trail.push(key);
-                                this.execute(object[key]);
+                                object = entity[key];
+                                this.execute(entity[key]);
                                 if (trail.pop() !== key) {
                                     throw new Error('internal error: ' + key);
                                 }
@@ -313,12 +329,12 @@ module.exports = function processor(self) {
                         }
                     }
                 }
-                if (object !== parent.pop()) {
+                if (entity !== parent.pop()) {
                     throw new Error('internal error');
                 }
-                this.dispatch(object);
+                object = entity;
+                this.dispatch();
             }
-            return object;
         }
     };
 };

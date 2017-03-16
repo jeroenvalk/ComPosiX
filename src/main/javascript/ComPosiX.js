@@ -26,6 +26,8 @@ module.exports = function(url, stream, Proxy, processor) {
         local: null
     };
 
+    var cpx = null;
+
     return class ComPosiX {
 
         constructor() {
@@ -141,6 +143,10 @@ module.exports = function(url, stream, Proxy, processor) {
             }
         }
 
+        require(object, dep, parent) {
+            return this.dependency(object, parent || [], dep);
+        }
+
         dependency(object, parent, dep) {
             var result = this.deps[dep];
             if (result) {
@@ -156,7 +162,7 @@ module.exports = function(url, stream, Proxy, processor) {
                     return result;
                 }
             }
-            throw new Error('implementation for _ is required' + (dep === "_" ? ', e.g., Lodash or UnderscoreJS' : ''));
+            throw new Error('implementation for ' + dep + ' is required' + (dep === "_" ? ', e.g., Lodash or UnderscoreJS' : ''));
         }
 
         dependencies(entity, deps) {
@@ -205,7 +211,13 @@ module.exports = function(url, stream, Proxy, processor) {
         }
 
         execute(entity, trail, parent) {
-            return processor.call(this, entity).execute(entity);
+            if (!cpx) {
+                cpx = processor.call(this, entity);
+                cpx.execute();
+                cpx = null;
+                return entity;
+            }
+            throw new Error("processor busy");
         }
 
         trail(array) {
