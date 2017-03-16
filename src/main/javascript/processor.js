@@ -116,70 +116,74 @@ module.exports = function processor(self) {
         },
 
         normalize(object, trail, parent) {
-            var key, attr;
-            // TODO: fix processing of direct $task directives and direct @attr attributes
-            var task = {};
-            attr = {};
+            var i, size, aux, key, path, task, attr = object['@'];
+            if (Object.getPrototypeOf(object) !== Object.prototype) {
+                throw new Error(trail.join(".") + ": plain object expected");
+            }
+            if (attr && Object.getPrototypeOf(attr) !== Object.prototype) {
+                throw new Error('plain object expected: ' + trail.concat(["@"]).join("."));
+            }
+            if (attr && attr.$ && Object.getPrototypeOf(attr.$) !== Object.prototype) {
+                throw new Error('plain object expected: ' + trail.concat(["@","$"]).join("."));
+            }
+            if (object.$ && Object.getPrototypeOf(object.$) !== Object.prototype) {
+                throw new Error('plain object expected: ' + trail.concat(["$"]).join("."));
+            }
+            attr = attr || {};
+            if (object.$) {
+                attr.$ = attr.$ ? _.extend(attr.$, object.$) : object.$;
+                delete object.$;
+            }
+            task = attr.$ || {};
             for (key in object) {
                 if (object.hasOwnProperty(key)) {
                     switch (key.length) {
                         case 0:
                             throw new Error('empty property');
                         case 1:
-                            switch (key) {
-                                case '@':
-                                    _.extend(attr, object['@']);
-                                    _.extend(task, object['@'].$);
-                                    delete object['@'];
-                                    break;
-                                case '$':
-                                    _.extend(task, object.$);
-                                    delete object.$;
-                                    break;
-                            }
                             break;
                         default:
+                            aux = attr;
                             switch (key.charAt(0)) {
                                 case '@':
-                                    attr[key.substr(1)] = object[key];
+                                    path = key.substr(1).split(".");
+                                    size = path.length - 1; aux = attr;
+                                    for (i = 0; i < size; ++i) {
+                                        if (aux[path[i]]) {
+                                            aux = aux[path[i]];
+                                            if (Object.getPrototypeOf(aux) !== Object.prototype) {
+                                                throw new Error(trail.join(".") + ": cannot mixin: " + key);
+                                            }
+                                        } else {
+                                            aux = aux[path[i]] = {};
+                                        }
+                                    }
+                                    if (aux[path[size]]) {
+                                        throw new Error(trail.join(".") + ": duplicate attribute: " + key);
+                                    }
+                                    aux[path[size]] = object[key];
                                     delete object[key];
                                     break;
                                 case '$':
-                                    task[key.substr(1)] = object[key];
+                                    path = key.substr(1).split(".");
+                                    if (path.length !== 1) {
+                                        throw new Error(trail.join(".") + ": invalid task name: " + key);
+                                    }
+                                    task[path[0]] = object[key];
                                     delete object[key];
                                     break;
                             }
                     }
                 }
             }
-            if (false && attr['^']) {
-                var path = cpx.deps.path.posix;
-                if (typeof attr['^'] === 'string') {
-                    attr['^'] = path.normalize(attr['^']).split('/');
-                    for (key = 0; key < attr['^'].length; ++key) {
-                        if (attr['^'][key] !== '..') {
-                            break;
-                        }
-                    }
-                    attr['^'] = {
-                        depth: key,
-                        path: attr['^'].slice(key)
-                    };
-                    key = parent.length - key;
-                    if (parent[key]) {
-                        attr['^'].parent = parent[key];
-                        attr['^'].trail = trail.slice(key);
-                    } else {
-                        throw new Error();
-                    }
-                } else {
-                    delete attr['^'];
-                }
-            }
-            if (!_.isEmpty(task)) {
+            if (_.isEmpty(task)) {
+                delete attr.$;
+            } else {
                 attr.$ = task;
             }
-            if (!_.isEmpty(attr)) {
+            if (_.isEmpty(attr)) {
+                delete object['@'];
+            } else {
                 object['@'] = attr;
             }
             if (attr.const$) {

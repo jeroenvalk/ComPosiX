@@ -90,7 +90,7 @@ describe('ComPosiX', _.globals(function ($) {
             }
         });
 
-        expect(x['@']).not.to.equal(attr);
+        expect(x['@']).to.equal(attr);
         expect(x['@']).to.deep.equal(attr);
         expect(_.omit(x, '@')).to.deep.equal({
             "simple": {"a": [{"b": {"c": 4}}]},
