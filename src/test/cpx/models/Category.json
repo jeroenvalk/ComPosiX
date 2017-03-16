@@ -1,0 +1,8 @@
+{
+  "Category": {
+    "id": ["integer", {
+      "format": "int64"
+    }],
+    "name": "string"
+  }
+}

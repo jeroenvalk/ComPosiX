@@ -120,12 +120,19 @@ module.exports = class ComPosiX {
         }
     }
 
-    _() {
-        var result = this.deps._;
-        if (!result) {
-            throw new Error('implementation for _ is required, e.g., Lodash or UnderscoreJS');
+    cache(object, path) {
+        path = ['@', '@'].concat(path);
+        for (var i = 0; i < path.length; ++i) {
+            if (!object) {
+                break;
+            }
+            object = object[path[i]];
         }
-        return result;
+        return object;
+    }
+
+    _(object, parent) {
+        return this.dependency(object, parent, "_");
     }
 
     throwError(entity, msg) {
@@ -137,8 +144,29 @@ module.exports = class ComPosiX {
         }
     }
 
+    dependency(object, parent, dep) {
+        var result = this.deps[dep];
+        if (result) {
+            return result;
+        }
+        result = this.cache(object, ["deps",dep]);
+        if (result) {
+            return result;
+        }
+        for (var i = parent.length - 1; i >= 0; --i) {
+            result = this.cache(parent[i], ["deps",dep]);
+            if (result) {
+                return result;
+            }
+        }
+        throw new Error('implementation for _ is required' + (dep === "_" ? ', e.g., Lodash or UnderscoreJS' : ''));
+    }
+
     dependencies(entity, deps) {
         //console.log('DEPENDENCIES');
+        if (!this.deps._ && deps._) {
+            require("./underscore.js")(deps._);
+        }
         var scope;
         for (var name in this.deps) {
             if (this.deps.hasOwnProperty(name)) {
@@ -221,6 +249,7 @@ module.exports = class ComPosiX {
             }
             this.dispatch(entity, trail, parent);
         }
+        return entity;
     }
 
     trail(array) {
@@ -291,38 +320,46 @@ module.exports = class ComPosiX {
 
     recurse(expression, attr) {
         var i, result;
-        if (expression instanceof Array) {
-            result = new Array(expression.length);
-            for (i = 0; i < expression.length; ++i) {
-                result[i] = this.recurse(expression[i], attr);
-            }
-            if (typeof result[0] === 'string' && result[0].charAt(0) === '$') {
-                return this.evaluate(result);
-            }
-            return result;
-        }
         if (expression instanceof Object) {
-            result = {};
-            for (i in expression) {
-                if (expression.hasOwnProperty(i)) {
+            if (expression instanceof Array) {
+                result = new Array(expression.length);
+                for (i = 0; i < expression.length; ++i) {
                     result[i] = this.recurse(expression[i], attr);
                 }
+                if (typeof result[0] === 'string' && result[0].charAt(0) === '$') {
+                    return this.evaluate(result);
+                }
+                return result;
             }
-            return result;
+            if (expression instanceof Function) {
+                return expression.call(this);
+            }
+            if (Object.getPrototypeOf(expression) === Object.prototype) {
+                result = {};
+                for (i in expression) {
+                    if (expression.hasOwnProperty(i)) {
+                        result[i] = this.recurse(expression[i], attr);
+                    }
+                }
+                return result;
+            }
+            throw new Error('invalid attribute content: ' + expression);
         }
         if (typeof expression === 'string' && expression.charAt(0) === '@') {
             i = expression.substr(1);
-            if (attr && attr.hasOwnProperty(i)) {
-                return this.recurse(attr[i]);
-            } else if (attr) {
-                throw new Error('missing attribute: ' + expression);
+            if (attr.hasOwnProperty('@') && attr['@'].hasOwnProperty(i)) {
+                return attr['@'][i];
             }
+            if (attr.hasOwnProperty(i)) {
+                return this.recurse(attr[i], attr);
+            }
+            throw new Error('missing attribute: ' + i);
         }
         return expression;
     }
 
     normalize(object, trail, parent) {
-        var _, key, attr;
+        var _ = this._(object, parent), key, attr;
         // TODO: fix processing of direct $task directives and direct @attr attributes
         //this.attributes(object['@'], object['@']);
         var task = {};
@@ -333,7 +370,6 @@ module.exports = class ComPosiX {
                     case 0:
                         throw new Error('empty property');
                     case 1:
-                        if (!_) _ = this._();
                         switch (key) {
                             case '@':
                                 _.extend(attr, object['@']);
@@ -384,8 +420,16 @@ module.exports = class ComPosiX {
                 delete attr['^'];
             }
         }
-        attr.$ = task;
-        object['@'] = attr;
+        if (!_.isEmpty(task)) {
+            attr.$ = task;
+        }
+        if (!_.isEmpty(attr)) {
+            object['@'] = attr;
+        }
+        if (attr.const$) {
+            // TODO: implement constant inheritance feature
+            // attr['@'] = this.recurse(attr.const$, attr.const$);
+        }
     }
 
     dispatch(object, trail, parent) {
@@ -393,74 +437,81 @@ module.exports = class ComPosiX {
         // TODO: add logging using Bunyan to get a full trace
         // TODO: create a tool that splits the log accross files to allow diff compares
         // TODO: http://json-diff.com/
-        // console.log('DISPATCH');
-        var _ = this.deps._;
+        //console.log('DISPATCH');
+        var _ = this._(object, parent);
         var key, name, attr;
         this.normalize(object, trail, parent);
-        var task = object['@'].$, dep, context, target;
-        for (key in task) {
-            if (task.hasOwnProperty(key)) {
-                if (!attr) {
-                    attr = (key === 'dependencies' ? null : _.extend.apply(_, _.map([{'@': {}}].concat(parent.slice(0)).concat([object]), '@')));
-                    for (name in attr) {
-                        if (name !== '^' && name !== '$' && attr.hasOwnProperty(name)) {
-                            attr[name] = this.recurse(attr[name], attr);
-                        }
+        if (object['@']) {
+            var task = object['@'].$, dep, context, target;
+            for (key in task) {
+                if (task.hasOwnProperty(key)) {
+                    if (!attr) {
+                        attr = (key === 'dependencies' ? null : _.extend.apply(_, _.map([{'@': {}}].concat(parent.slice(0)).concat([object]), '@')));
                     }
-                }
-                context = task[key];
-                switch (key) {
-                    case 'dependencies':
-                        // do not recurse because dependencies can be cyclic
-                        break;
-                    default:
-                        context = this.recurse(context, attr);
-                        break;
-                }
-                if (context instanceof Object) {
-                    if (!(context instanceof Array)) {
-                        for (target in context) {
-                            if (context.hasOwnProperty(target)) {
-                                if (!(context[target] instanceof Array)) {
-                                    throw new Error("multitask '" + key + "' ambiguity in context: " + JSON.stringify(context));
+                    context = task[key];
+                    switch (key) {
+                        case 'dependencies':
+                            // do not recurse because dependencies can be cyclic
+                            break;
+                        default:
+                            context = this.recurse(context, attr);
+                            break;
+                    }
+                    if (context instanceof Object) {
+                        if (!(context instanceof Array)) {
+                            for (target in context) {
+                                if (context.hasOwnProperty(target)) {
+                                    if (!(context[target] instanceof Array)) {
+                                        throw new Error("multitask '" + key + "' ambiguity in context: " + JSON.stringify(context));
+                                    }
                                 }
                             }
                         }
+                    } else {
+                        throw new Error("task '" + key + "' ambiguity in context: " + JSON.stringify(context));
                     }
-                } else {
-                    throw new Error("task '" + key + "' ambiguity in context: " + JSON.stringify(context));
-                }
-                key = key.split(':');
-                switch (key.length) {
-                    case 1:
-                        dep = this;
-                        key = key[0];
-                        if (!this[key]) {
-                            throw new Error('method not defined: ' + key);
-                        }
-                        break;
-                    case 2:
-                        dep = this.deps[key[0]];
-                        if (!dep) {
-                            // TODO: skip unresolved dependencies and remove actions only when actually executed.
-                            continue;
-                            throw new Error('unresolved dependency: ' + key[0]);
-                        }
-                        if (!dep[key[1]]) {
-                            console.log(dep);
-                            throw new Error('method not defined: ' + key.join(':'));
-                        }
-                        key = key[1];
-                        break;
-                }
-                if (context instanceof Array) {
-                    dep[key].apply(dep, [object].concat(context));
-                } else {
-                    for (target in context) {
-                        if (context.hasOwnProperty(target)) {
-                            object[target] = dep[key].apply(dep, [object].concat(context[target]));
+                    key = key.split(':');
+                    switch (key.length) {
+                        case 1:
+                            dep = this;
+                            key = key[0];
+                            if (!this[key]) {
+                                throw new Error('method not defined: ' + key);
+                            }
+                            break;
+                        case 2:
+                            dep = this.dependency(object, parent, key[0]);
+                            if (!dep) {
+                                // skip unresolved dependencies
+                                continue;
+                                throw new Error('unresolved dependency: ' + key[0]);
+                            }
+                            if (!dep[key[1]]) {
+                                throw new Error('method not defined: ' + key.join(':'));
+                            }
+                            // remove action after execution; only unresolved dependencies remain
+                            delete task[key.join(':')];
+                            key = key[1];
+                            break;
+                    }
+                    if (context instanceof Array) {
+                        dep[key].apply(dep, [object].concat(context));
+                    } else {
+                        for (target in context) {
+                            if (context.hasOwnProperty(target)) {
+                                if (!object.hasOwnProperty(target)) {
+                                    object[target] = {};
+                                }
+                                dep[key].apply(dep, [object[target]].concat(context[target]));
+                            }
                         }
                     }
+                }
+            }
+            if (_.isEmpty(object['@'].$)) {
+                delete object['@'].$;
+                if (_.isEmpty(object['@'])) {
+                    delete object['@'];
                 }
             }
         }

@@ -10,11 +10,13 @@
   "license": "LGPL-3.0",
   "main": "src/main/webapp/index.js",
   "scripts": {
-    "start": "node -i -e \"require('.').boot()\""
+    "start": "node -i -e \"require('.').boot()\"",
+    "test": "mocha src/test/specs/*.spec.js"
   },
   "devDependencies": {
-    "underscore": "~1.8.3",
+    "chai": "^3.5.0",
     "lodash": "~4.17.2",
-    "request": "~2.79.0"
+    "request": "~2.79.0",
+    "underscore": "~1.8.3"
   }
 }
