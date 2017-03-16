@@ -21,22 +21,11 @@ describe('underscore', _.globals(function ($) {
     'use strict';
 
     var fs = require("fs");
-    var _ = require("lodash");
-    require("../../main/javascript/underscore")(_);
 
-    var expect = $.expect, cpx = $.cpx;
+    var _ = $._.runInContext(), cpx = new $.ComPosiX(), expect = $.expect;
 
-    var x = cpx.execute({
-        '@': {
-            '@': {
-                deps: {
-                    _: require("lodash")
-                }
-            },
-            const$: {
-                category: ["$get", "src/test/cpx/models/Category.json"]
-            }
-        }
+    before(function() {
+        require("../../../main/javascript/plugins/core")(_);
     });
 
     it("keysDeep", function () {

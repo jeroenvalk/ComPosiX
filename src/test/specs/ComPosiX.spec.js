@@ -18,16 +18,12 @@
 /* global describe, it */
 
 describe('ComPosiX', _.globals(function ($) {
-    var _ = require("lodash");
+    'use strict';
 
-    var cpx = $.cpx, expect = $.expect;
+    var _ = $._.runInContext(), cpx = new $.ComPosiX(), expect = $.expect;
 
     cpx.execute({
-        '@': {
-            '@': {
-                deps: _
-            }
-        },
+        '@const$.cpx.use._': _.constant(_),
         $dependencies: [{
             _: _
         }]

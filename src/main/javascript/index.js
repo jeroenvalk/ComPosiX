@@ -17,5 +17,5 @@
 
 var _ = require('./globals')();
 _.globals(function($) {
-    module.exports = $.cpx;
+    module.exports = new $.ComPosiX();
 })();

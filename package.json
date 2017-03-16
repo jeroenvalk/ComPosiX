@@ -11,7 +11,7 @@
   "main": "src/main/javascript/index.js",
   "scripts": {
     "start": "node -i -e \"require('.').boot()\"",
-    "test": "mocha --require src/test/global.js src/test/specs/*.spec.js"
+    "test": "mocha --require src/test/global.js src/test/specs/*.spec.js src/test/specs/plugins/*.spec.js"
   },
   "devDependencies": {
     "chai": "^3.5.0",

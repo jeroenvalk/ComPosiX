@@ -18,15 +18,19 @@
 module.exports = function processor(self) {
     'use strict';
 
-    var _;
-    
-    try {
-        _ = self['@']['@'].cpx.dep[dep];
-    } catch(e) {
-        //throw new Error("ComPosiX processor requires Lodash or UnderscoreJS");
+    var cpx = this, _ = self['@const$.cpx.use._'];
+
+    if (_ instanceof Function) {
+        _ = _();
+    } else {
+        _ = cpx.deps._;
     }
-    
-    var cpx = this, trail = [], parent = [];
+
+    if (!(_ instanceof Object)) {
+        throw new Error("ComPosiX processor requires Lodash or UnderscoreJS");
+    }
+
+    var trail = [], parent = [];
     
     return {
         getLogger() {
@@ -112,7 +116,8 @@ module.exports = function processor(self) {
         },
 
         normalize(object, trail, parent) {
-            var _ = cpx._(object, parent), key, attr;
+            //var _ = cpx._(object, parent),
+            var key, attr;
             // TODO: fix processing of direct $task directives and direct @attr attributes
             //cpx.attributes(object['@'], object['@']);
             var task = {};
@@ -189,7 +194,7 @@ module.exports = function processor(self) {
             // TODO: refactor to split processing from the ComPosiX object
             // TODO: add logging using Bunyan to get a full trace
             //console.log('DISPATCH');
-            var _ = cpx._(object, parent);
+            //var _ = cpx._(object, parent);
             var key, name, attr;
             this.normalize(object, trail, parent);
             if (object['@']) {

@@ -162,7 +162,7 @@ module.exports = function(url, stream, Proxy, processor) {
         dependencies(entity, deps) {
             //console.log('DEPENDENCIES');
             if (!this.deps._ && deps._) {
-                require("./underscore.js")(deps._);
+                require("./plugins/core.js")(deps._);
             }
             var scope;
             for (var name in this.deps) {
