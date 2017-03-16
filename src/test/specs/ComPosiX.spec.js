@@ -22,14 +22,103 @@ describe('ComPosiX', _.globals(function ($) {
 
     var _ = $._.runInContext(), cpx = new $.ComPosiX(), expect = $.expect;
 
-    cpx.execute({
-        '@cpx.use._': _.constant(_),
-        $dependencies: [{
-            _: _.constant(_)
-        }]
+    it("cpx.use", function () {
+        var x = cpx.execute({
+            "@cpx.use._": ["lodash"],
+            "@": {
+                "cpx": {
+                    "use": {
+                        "hello": _.constant({
+                            world: function () {
+                                return "HelloWorld!";
+                            }
+                        })
+                    }
+                }
+            },
+            "$_:set": [["$hello:world"], 0],
+            "nested": {
+                "$_:set": [["$hello:world"], 1]
+            }
+        })
+        //console.log(JSON.stringify(x));
+        expect(_.omit(x, ["@"])).to.deep.equal({
+            nested: {"HelloWorld!": 1},
+            "HelloWorld!": 0
+        })
+
+        var y = cpx.execute({
+            "@cpx.use._": ["lodash", function () {
+                return function (_) {
+                    _.mixin({
+                        world: function () {
+                            return "HelloWorld!";
+                        }
+                    })
+                }
+            }],
+            "$_:set": [["$_:world"], 0],
+            "nested": {
+                "$_:set": [["$_:world"], 1]
+            }
+        })
+        //console.log(JSON.stringify(y));
+        expect(_.omit(y, ["@"])).to.deep.equal({
+            nested: {"HelloWorld!": 1},
+            "HelloWorld!": 0
+        })
     });
 
+    it('set', function () {
+        var attr = {
+            cpx: {
+                use: {
+                    _: _.constant(_)
+                }
+            },
+            "@": {
+                deps: {
+                    _: _
+                }
+            }
+        };
+
+        var x = cpx.execute({
+            "@": attr,
+            "simple": {
+                "$_:set": ["a[0].b.c", 4],
+                "a": [{"b": {"c": 3}}]
+            },
+            "multi": {
+                "$_:set": {
+                    "one": ["a[0].b.c", 5],
+                    "two": [['x', '1', 'y', 'z'], 6]
+                },
+                "two": {
+                    "x": [2]
+                }
+            }
+        });
+
+        expect(x['@']).to.equal(attr);
+        expect(x['@']).to.deep.equal(attr);
+        expect(_.omit(x, '@')).to.deep.equal({
+            "simple": {"a": [{"b": {"c": 4}}]},
+            "multi": {
+                "one": {"a": [{"b": {"c": 5}}]},
+                "two": {"x": [2, {"y": {"z": 6}}]}
+            }
+        });
+    })
+
     cpx.execute({
+        '@': {
+            cpx: {
+                use: {
+                    _: [_.constant(_), "core"]
+                }
+            }
+        },
         a: {
             describe_MAIN: {
                 a: {
@@ -61,43 +150,37 @@ describe('ComPosiX', _.globals(function ($) {
             expected: 'HelloWorld',
             '$_:set': ["actual", "@attr"]
         },
+        testsuite: {
+            describe_ComPosiX: {
+                "it_cpx:use": {
+                    '@': {
+                        cpx: {
+                            use: {
+                                _: ["lodash"]
+                            }
+                        }
+                    },
+                    actual: {
+                        '@': {
+                            cpx: {
+                                use: {
+                                    _: _.constant(require("underscore"))
+                                }
+                            }
+                        },
+                        "$_:extend": [{
+                            "result": ["$flatten", [[[1], [2]], [[3], [4]]], true]
+                        }]
+                    },
+                    expected: {
+                        "$_:extend": [{
+                            "result": ["$flatten", [[[1], [2]], [[3], [4]]]]
+                        }]
+                    }
+                }
+            }
+        },
         "$_:test": []
     });
 
-    var attr = {
-        "@": {
-            deps: {
-                _: _
-            }
-        }
-    };
-
-    it('set', function () {
-        var x = cpx.execute({
-            "@": attr,
-            "simple": {
-                "$_:set": ["a[0].b.c", 4],
-                "a": [{"b": {"c": 3}}]
-            },
-            "multi": {
-                "$_:set": {
-                    "one": ["a[0].b.c", 5],
-                    "two": [['x', '1', 'y', 'z'], 6]
-                },
-                "two": {
-                    "x": [2]
-                }
-            }
-        });
-
-        expect(x['@']).to.equal(attr);
-        expect(x['@']).to.deep.equal(attr);
-        expect(_.omit(x, '@')).to.deep.equal({
-            "simple": {"a": [{"b": {"c": 4}}]},
-            "multi": {
-                "one": {"a": [{"b": {"c": 5}}]},
-                "two": {"x": [2, {"y": {"z": 6}}]}
-            }
-        });
-    })
 }));

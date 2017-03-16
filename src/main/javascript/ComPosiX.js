@@ -119,21 +119,6 @@ module.exports = function(url, stream, Proxy, processor) {
             }
         }
 
-        cache(object, path) {
-            path = ['@', '@'].concat(path);
-            for (var i = 0; i < path.length; ++i) {
-                if (!object) {
-                    break;
-                }
-                object = object[path[i]];
-            }
-            return object;
-        }
-
-        _(object, parent) {
-            return this.dependency(object, parent, "_");
-        }
-
         throwError(entity, msg) {
             var e = new Error(msg);
             if (entity instanceof Object) {
@@ -143,33 +128,7 @@ module.exports = function(url, stream, Proxy, processor) {
             }
         }
 
-        require(object, dep, parent) {
-            return this.dependency(object, parent || [], dep);
-        }
-
-        dependency(object, parent, dep) {
-            var result = this.deps[dep];
-            if (result) {
-                return result;
-            }
-            result = this.cache(object, ["deps",dep]);
-            if (result) {
-                return result;
-            }
-            for (var i = parent.length - 1; i >= 0; --i) {
-                result = this.cache(parent[i], ["deps",dep]);
-                if (result) {
-                    return result;
-                }
-            }
-            throw new Error('implementation for ' + dep + ' is required' + (dep === "_" ? ', e.g., Lodash or UnderscoreJS' : ''));
-        }
-
         dependencies(entity, deps) {
-            //console.log('DEPENDENCIES');
-            if (!this.deps._ && deps._) {
-                require("./plugins/core.js")(deps._);
-            }
             var scope;
             for (var name in this.deps) {
                 if (this.deps.hasOwnProperty(name)) {

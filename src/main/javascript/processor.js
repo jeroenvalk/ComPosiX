@@ -22,15 +22,7 @@ module.exports = function processor(self) {
 
     var getAttribute = function processor$getAttribute(path) {
         var i, part = path.split("."), result = object['@'];
-        result = result[part[0]];
         if (result) {
-            for (i = 1; i < part.length; ++i) {
-                result = result[part[i]];
-            }
-            return result;
-        }
-        for (i = parent.length - 1; i >= 0; --i) {
-            result = parent['@'];
             result = result[part[0]];
             if (result) {
                 for (i = 1; i < part.length; ++i) {
@@ -39,11 +31,44 @@ module.exports = function processor(self) {
                 return result;
             }
         }
+        for (i = parent.length - 1; i >= 0; --i) {
+            result = parent[i]['@'];
+            if (result) {
+                result = result[part[0]];
+                if (result) {
+                    for (i = 1; i < part.length; ++i) {
+                        result = result[part[i]];
+                    }
+                    return result;
+                }
+            }
+        }
         throw new Error(trail.join(".") + ": missing attribute: " + path);
     };
 
     var cpxRequire = function processor$cpxRequire(dep) {
-        return cpx.require(object, dep, parent);
+        var result = recurse(getAttribute(["cpx","use",dep].join(".")));
+        if (result instanceof Array) {
+            var head = result.shift();
+            if (typeof head === "string") {
+                switch(head) {
+                    case "lodash":
+                    case "underscore":
+                        head = require(head);
+                        break;
+                    default:
+                        throw new Error(trail.join(".") + ": require forbidden: " + head);
+                }
+            }
+            result = head.reduce(result, function(_, plugin) {
+                if (typeof plugin === "string") {
+                    plugin = require('./plugins/' + plugin);
+                }
+                plugin = plugin(_);
+                return plugin || _;
+            }, head.runInContext());
+        }
+        return result;
     };
     
     var isEmpty = function processor$isEmpty(object) {
@@ -202,7 +227,7 @@ module.exports = function processor(self) {
 
     normalize(self);
 
-    var _ = this.deps._ || recurse(self['@'].cpx.use._, self['@']);
+    var _ = this.deps._ || cpxRequire("_");
 
     if (!(_ instanceof Object)) {
         throw new Error("ComPosiX processor requires Lodash or UnderscoreJS");
@@ -255,7 +280,7 @@ module.exports = function processor(self) {
                                 }
                                 break;
                             case 2:
-                                dep = cpx.dependency(object, parent, key[0]);
+                                dep = cpxRequire(key[0]);
                                 if (!dep) {
                                     // skip unresolved dependencies
                                     continue;

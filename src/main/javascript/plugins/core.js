@@ -34,7 +34,7 @@ module.exports = function (_) {
                 });
             } else if (/[.]it[_\s][^.]*/.test(key)) {
                 it(key, function() {
-                   expect(value.actual).to.deep.equal(value.expected);
+                   expect(_.omit(value.actual, ['@'])).to.deep.equal(_.omit(value.expected, ["@"]));
                 });
             }
         });
