@@ -8,10 +8,10 @@
     "url": "http://www.composix.org/"
   },
   "license": "LGPL-3.0",
-  "main": "src/main/webapp/index.js",
+  "main": "src/main/javascript/index.js",
   "scripts": {
     "start": "node -i -e \"require('.').boot()\"",
-    "test": "mocha src/test/specs/*.spec.js"
+    "test": "mocha --require src/test/global.js src/test/specs/*.spec.js"
   },
   "devDependencies": {
     "chai": "^3.5.0",

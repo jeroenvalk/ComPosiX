@@ -15,5 +15,7 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-var ComPosiX = require('../javascript/ComPosiX.js');
-module.exports = new ComPosiX();
+var _ = require('./globals')();
+_.globals(function($) {
+    module.exports = $.cpx;
+})();

@@ -1,6 +1,9 @@
-var expect = require('chai').expect;
+/* globals describe, it */
 
 module.exports = function (_) {
+    'use strict';
+
+    var expect = require('chai').expect;
 
     var getType = function cpx$getType(type, key) {
         if (type instanceof Object) {
@@ -195,7 +198,7 @@ module.exports = function (_) {
                 }
             });
             var x = {};
-            result = {
+            var result = {
                 swagger: function (models) {
                     var refs = [];
                     _.extend(x, _.mapValues(models, function (value, name) {

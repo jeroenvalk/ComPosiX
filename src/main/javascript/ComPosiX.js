@@ -15,668 +15,393 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-'use strict';
+module.exports = function(url, stream, Proxy, processor) {
+    'use strict';
 
-var url = require('url');
-var stream = require('stream');
-var Proxy = require('./Proxy');
+    var dependencies = {
+        path: null,
+        fs: null,
+        http: null,
+        request: null,
+        local: null
+    };
 
-var dependencies = {
-    path: null,
-    fs: null,
-    http: null,
-    request: null,
-    local: null
-};
+    return class ComPosiX {
 
-module.exports = class ComPosiX {
-
-    constructor() {
-        this.deps = Object.create(dependencies);
-        this.deps.cpx = this;
-        this.deps.logger = null;
-        this.deps._ = null;
-        this._registry = {
-            ComPosiX: this
-        };
-        this.data = {};
-    }
-
-    boot(entity, deps) {
-        if (!deps) {
-            deps = {};
+        constructor() {
+            this.deps = Object.create(dependencies);
+            this.deps.cpx = this;
+            this.deps.logger = null;
+            this.deps._ = null;
+            this._registry = {
+                ComPosiX: this
+            };
+            this.data = {};
         }
-        deps.logger = entity || deps.logger || null;
-        deps.path = deps.path || require('path');
-        deps.fs = deps.fs || require('fs');
-        deps.http = deps.http || require('http');
-        deps._ = deps._ || require('lodash');
-        deps.request = deps.request || require('request');
-        var path = deps.path;
-        deps.pathname = path.resolve(deps.pathname || 'ComPosiX.js');
-        deps.local = null;
-        this.dependencies(null, deps);
-        var bootstrap = require(deps.pathname);
-        this.execute(bootstrap);
-        // TODO: add $logger:info task to get logging output
-        this.deps.logger && this.deps.logger.info(bootstrap);
-    }
 
-    install(entity, _) {
-        var cpx = this;
-        var deep = function (a, b) {
-            return _.isObject(a) && _.isObject(b) ? _.extend(a, b, deep) : b;
-        };
-        var extend = _.extend;
-        _.mixin(_.extend({
-            register: function cpx$register() {
-                cpx.register.apply(cpx, arguments);
-            },
-            execute: function cpx$execute() {
-                cpx.execute.apply(cpx, arguments);
-            },
-            trail: function cpx$trail(object, path) {
-                if (!(path instanceof Array)) {
-                    path = _.toPath(path);
-                }
-                var result = new Array(path.length + 1);
-                result[0] = object;
-                for (var i = 0; i < path.length; ++i) {
-                    if (object) {
-                        object = object[path[i]];
-                        result[i + 1] = object;
-                    } else {
-                        break;
+        boot(entity, deps) {
+            if (!deps) {
+                deps = {};
+            }
+            deps.logger = entity || deps.logger || null;
+            deps.path = deps.path || require('path');
+            deps.fs = deps.fs || require('fs');
+            deps.http = deps.http || require('http');
+            deps._ = deps._ || require('lodash');
+            deps.request = deps.request || require('request');
+            var path = deps.path;
+            deps.pathname = path.resolve(deps.pathname || 'ComPosiX.js');
+            deps.local = null;
+            this.dependencies(null, deps);
+            var bootstrap = require(deps.pathname);
+            this.execute(bootstrap);
+            // TODO: add $logger:info task to get logging output
+            this.deps.logger && this.deps.logger.info(bootstrap);
+        }
+
+        install(entity, _) {
+            var cpx = this;
+            var deep = function (a, b) {
+                return _.isObject(a) && _.isObject(b) ? _.extend(a, b, deep) : b;
+            };
+            var extend = _.extend;
+            _.mixin(_.extend({
+                register: function cpx$register() {
+                    cpx.register.apply(cpx, arguments);
+                },
+                execute: function cpx$execute() {
+                    cpx.execute.apply(cpx, arguments);
+                },
+                trail: function cpx$trail(object, path) {
+                    if (!(path instanceof Array)) {
+                        path = _.toPath(path);
+                    }
+                    var result = new Array(path.length + 1);
+                    result[0] = object;
+                    for (var i = 0; i < path.length; ++i) {
+                        if (object) {
+                            object = object[path[i]];
+                            result[i + 1] = object;
+                        } else {
+                            break;
+                        }
                     }
                 }
-            }
-        }, _.merge ? {} : {
-            extend: function cpx$extend() {
-                var argv = Array.prototype.slice.call(arguments);
-                var fn = _(argv).find(_.isFunction);
-                if (!fn) {
-                    return extend.apply(_, argv);
+            }, _.merge ? {} : {
+                extend: function cpx$extend() {
+                    var argv = Array.prototype.slice.call(arguments);
+                    var fn = _(argv).find(_.isFunction);
+                    if (!fn) {
+                        return extend.apply(_, argv);
+                    }
+                    var target = argv.shift();
+                    _(argv).each(function (source) {
+                        _(_(source).allKeys()).each(function (key) {
+                            target[key] = fn(target[key], source[key]);
+                        })
+                    });
+                    return target;
+                },
+                merge: function cpx$merge() {
+                    var argv = Array.prototype.slice.call(arguments);
+                    argv.push(deep);
+                    return _.extend.apply(_, argv);
                 }
-                var target = argv.shift();
-                _(argv).each(function (source) {
-                    _(_(source).allKeys()).each(function (key) {
-                        target[key] = fn(target[key], source[key]);
-                    })
-                });
-                return target;
-            },
-            merge: function cpx$merge() {
-                var argv = Array.prototype.slice.call(arguments);
-                argv.push(deep);
-                return _.extend.apply(_, argv);
+            }, _.toPath ? {} : {
+                toPath: function cpx$toPath(path) {
+                    return _.compact(path.split(/[.[\]]/));
+                }
+            }));
+            if (entity instanceof Object) {
+                entity._ = _;
             }
-        }, _.toPath ? {} : {
-            toPath: function cpx$toPath(path) {
-                return _.compact(path.split(/[.[\]]/));
+        }
+
+        cache(object, path) {
+            path = ['@', '@'].concat(path);
+            for (var i = 0; i < path.length; ++i) {
+                if (!object) {
+                    break;
+                }
+                object = object[path[i]];
             }
-        }));
-        if (entity instanceof Object) {
-            entity._ = _;
+            return object;
         }
-    }
 
-    cache(object, path) {
-        path = ['@', '@'].concat(path);
-        for (var i = 0; i < path.length; ++i) {
-            if (!object) {
-                break;
+        _(object, parent) {
+            return this.dependency(object, parent, "_");
+        }
+
+        throwError(entity, msg) {
+            var e = new Error(msg);
+            if (entity instanceof Object) {
+                entity.ERROR = e;
+            } else {
+                throw e;
             }
-            object = object[path[i]];
         }
-        return object;
-    }
 
-    _(object, parent) {
-        return this.dependency(object, parent, "_");
-    }
-
-    throwError(entity, msg) {
-        var e = new Error(msg);
-        if (entity instanceof Object) {
-            entity.ERROR = e;
-        } else {
-            throw e;
-        }
-    }
-
-    dependency(object, parent, dep) {
-        var result = this.deps[dep];
-        if (result) {
-            return result;
-        }
-        result = this.cache(object, ["deps",dep]);
-        if (result) {
-            return result;
-        }
-        for (var i = parent.length - 1; i >= 0; --i) {
-            result = this.cache(parent[i], ["deps",dep]);
+        dependency(object, parent, dep) {
+            var result = this.deps[dep];
             if (result) {
                 return result;
             }
-        }
-        throw new Error('implementation for _ is required' + (dep === "_" ? ', e.g., Lodash or UnderscoreJS' : ''));
-    }
-
-    dependencies(entity, deps) {
-        //console.log('DEPENDENCIES');
-        if (!this.deps._ && deps._) {
-            require("./underscore.js")(deps._);
-        }
-        var scope;
-        for (var name in this.deps) {
-            if (this.deps.hasOwnProperty(name)) {
-                scope = this.deps;
-            } else {
-                scope = dependencies;
-            }
-            switch (scope[name]) {
-                case null:
-                    if (deps[name] === undefined) {
-                        this.throwError(entity, "unresolved dependency: " + name);
-                    }
-                    scope[name] = deps[name];
-                    break;
-                default:
-                    if (deps[name] !== undefined && scope[name] !== deps[name]) {
-                        this.throwError(entity, "dependency change: " + name);
-                    }
-                    break;
-            }
-        }
-    }
-
-    registry(path) {
-        if (path) {
-            var part = path.split('.', 2);
-            return this._registry[part[0]].registry(part[1]);
-        }
-        return this;
-    }
-
-    register(entity, path) {
-        var _ = this.deps._;
-        //console.log('REGISTER');
-        if (path) {
-            return this.registry(path).register(entity);
-        }
-        _.merge(this.data, entity);
-    }
-
-    execute(entity, trail, parent) {
-        //console.log('EXECUTE');
-        var i, key;
-        if (!trail) {
-            trail = [];
-            parent = [];
-        }
-        if (entity instanceof Array) {
-            parent.push(entity);
-            for (i = 0; i < entity.length; ++i) {
-                trail.push(i);
-                this.execute(entity[i], trail, parent);
-                if (trail.pop() !== i) {
-                    throw new Error('internal error: ' + i);
-                }
-            }
-            if (entity !== parent.pop()) {
-                throw new Error('internal error');
-            }
-        } else if (entity instanceof Object) {
-            parent.push(entity);
-            for (key in entity) {
-                if (entity.hasOwnProperty(key)) {
-                    switch (key.charAt(0)) {
-                        case '@':
-                        case '$':
-                            break;
-                        default:
-                            trail.push(key);
-                            this.execute(entity[key], trail, parent);
-                            if (trail.pop() !== key) {
-                                throw new Error('internal error: ' + key);
-                            }
-                            break;
-                    }
-                }
-            }
-            if (entity !== parent.pop()) {
-                throw new Error('internal error');
-            }
-            this.dispatch(entity, trail, parent);
-        }
-        return entity;
-    }
-
-    trail(array) {
-        var current = this.$;
-        var result = [];
-        var allowInsert = true;
-        for (var i = 0; i < array.length; ++i) {
-            if (allowInsert && current._insert) {
-                allowInsert = false;
-                result.push(current._insert[array[i]]._);
-            } else {
-                allowInsert = true;
-                current = current[array[i]];
-                if (current._) {
-                    result.push(current._);
-                }
-            }
-        }
-        return result;
-    }
-
-    keys(object) {
-        var i, j = 0, result = Object.keys(object);
-        for (i = 0; i < result.length; ++i) {
-            switch (result[i].charAt(0)) {
-                case '@':
-                case '_':
-                    break;
-                default:
-                    result[j++] = result[i];
-            }
-        }
-        return result.slice(0, j);
-    }
-
-    evaluate(expression) {
-        var i = expression[0].substr(1).split(':');
-        switch (i.length) {
-            case 1:
-                i.unshift('_');
-                break;
-            case 2:
-                break;
-            default:
-                throw new Error('invalid method: ' + i.join(':'));
-        }
-        var dep = this.deps[i[0]];
-        if (!dep) {
-            throw new Error('missing dependency: ' + i[0]);
-        }
-        switch (i[1]) {
-            case 'chain':
-                expression = expression[1].reverse();
-                for (i = expression.length - 2; i >= 0; --i) {
-                    expression[i] = this.deps.path.join(expression[i + 1], expression[i]);
-                }
-                break;
-            default:
-                if (typeof this.deps[i[0]][i[1]] === 'function') {
-                    expression = this.deps[i[0]][i[1]].apply(this.deps[i[0]], expression.slice(1));
-                } else {
-                    throw new Error('cannot invoke ' + i[0] + '.' + i[1]);
-                }
-                break;
-        }
-        return expression;
-    }
-
-    recurse(expression, attr) {
-        var i, result;
-        if (expression instanceof Object) {
-            if (expression instanceof Array) {
-                result = new Array(expression.length);
-                for (i = 0; i < expression.length; ++i) {
-                    result[i] = this.recurse(expression[i], attr);
-                }
-                if (typeof result[0] === 'string' && result[0].charAt(0) === '$') {
-                    return this.evaluate(result);
-                }
+            result = this.cache(object, ["deps",dep]);
+            if (result) {
                 return result;
             }
-            if (expression instanceof Function) {
-                return expression.call(this);
-            }
-            if (Object.getPrototypeOf(expression) === Object.prototype) {
-                result = {};
-                for (i in expression) {
-                    if (expression.hasOwnProperty(i)) {
-                        result[i] = this.recurse(expression[i], attr);
-                    }
-                }
-                return result;
-            }
-            throw new Error('invalid attribute content: ' + expression);
-        }
-        if (typeof expression === 'string' && expression.charAt(0) === '@') {
-            i = expression.substr(1);
-            if (attr.hasOwnProperty('@') && attr['@'].hasOwnProperty(i)) {
-                return attr['@'][i];
-            }
-            if (attr.hasOwnProperty(i)) {
-                return this.recurse(attr[i], attr);
-            }
-            throw new Error('missing attribute: ' + i);
-        }
-        return expression;
-    }
-
-    normalize(object, trail, parent) {
-        var _ = this._(object, parent), key, attr;
-        // TODO: fix processing of direct $task directives and direct @attr attributes
-        //this.attributes(object['@'], object['@']);
-        var task = {};
-        attr = {};
-        for (key in object) {
-            if (object.hasOwnProperty(key)) {
-                switch (key.length) {
-                    case 0:
-                        throw new Error('empty property');
-                    case 1:
-                        switch (key) {
-                            case '@':
-                                _.extend(attr, object['@']);
-                                _.extend(task, object['@'].$);
-                                delete object['@'];
-                                break;
-                            case '$':
-                                _.extend(task, object.$);
-                                delete object.$;
-                                break;
-                        }
-                        break;
-                    default:
-                        switch (key.charAt(0)) {
-                            case '@':
-                                attr[key.substr(1)] = object[key];
-                                delete object[key];
-                                break;
-                            case '$':
-                                task[key.substr(1)] = object[key];
-                                delete object[key];
-                                break;
-                        }
-                }
-            }
-        }
-        if (false && attr['^']) {
-            var path = this.deps.path.posix;
-            if (typeof attr['^'] === 'string') {
-                attr['^'] = path.normalize(attr['^']).split('/');
-                for (key = 0; key < attr['^'].length; ++key) {
-                    if (attr['^'][key] !== '..') {
-                        break;
-                    }
-                }
-                attr['^'] = {
-                    depth: key,
-                    path: attr['^'].slice(key)
-                };
-                key = parent.length - key;
-                if (parent[key]) {
-                    attr['^'].parent = parent[key];
-                    attr['^'].trail = trail.slice(key);
-                } else {
-                    throw new Error();
-                }
-            } else {
-                delete attr['^'];
-            }
-        }
-        if (!_.isEmpty(task)) {
-            attr.$ = task;
-        }
-        if (!_.isEmpty(attr)) {
-            object['@'] = attr;
-        }
-        if (attr.const$) {
-            // TODO: implement constant inheritance feature
-            // attr['@'] = this.recurse(attr.const$, attr.const$);
-        }
-    }
-
-    dispatch(object, trail, parent) {
-        // TODO: refactor to split processing from the ComPosiX object
-        // TODO: add logging using Bunyan to get a full trace
-        // TODO: create a tool that splits the log accross files to allow diff compares
-        // TODO: http://json-diff.com/
-        //console.log('DISPATCH');
-        var _ = this._(object, parent);
-        var key, name, attr;
-        this.normalize(object, trail, parent);
-        if (object['@']) {
-            var task = object['@'].$, dep, context, target;
-            for (key in task) {
-                if (task.hasOwnProperty(key)) {
-                    if (!attr) {
-                        attr = (key === 'dependencies' ? null : _.extend.apply(_, _.map([{'@': {}}].concat(parent.slice(0)).concat([object]), '@')));
-                    }
-                    context = task[key];
-                    switch (key) {
-                        case 'dependencies':
-                            // do not recurse because dependencies can be cyclic
-                            break;
-                        default:
-                            context = this.recurse(context, attr);
-                            break;
-                    }
-                    if (context instanceof Object) {
-                        if (!(context instanceof Array)) {
-                            for (target in context) {
-                                if (context.hasOwnProperty(target)) {
-                                    if (!(context[target] instanceof Array)) {
-                                        throw new Error("multitask '" + key + "' ambiguity in context: " + JSON.stringify(context));
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        throw new Error("task '" + key + "' ambiguity in context: " + JSON.stringify(context));
-                    }
-                    key = key.split(':');
-                    switch (key.length) {
-                        case 1:
-                            dep = this;
-                            key = key[0];
-                            if (!this[key]) {
-                                throw new Error('method not defined: ' + key);
-                            }
-                            break;
-                        case 2:
-                            dep = this.dependency(object, parent, key[0]);
-                            if (!dep) {
-                                // skip unresolved dependencies
-                                continue;
-                                throw new Error('unresolved dependency: ' + key[0]);
-                            }
-                            if (!dep[key[1]]) {
-                                throw new Error('method not defined: ' + key.join(':'));
-                            }
-                            // remove action after execution; only unresolved dependencies remain
-                            delete task[key.join(':')];
-                            key = key[1];
-                            break;
-                    }
-                    if (context instanceof Array) {
-                        dep[key].apply(dep, [object].concat(context));
-                    } else {
-                        for (target in context) {
-                            if (context.hasOwnProperty(target)) {
-                                if (!object.hasOwnProperty(target)) {
-                                    object[target] = {};
-                                }
-                                dep[key].apply(dep, [object[target]].concat(context[target]));
-                            }
-                        }
-                    }
-                }
-            }
-            if (_.isEmpty(object['@'].$)) {
-                delete object['@'].$;
-                if (_.isEmpty(object['@'])) {
-                    delete object['@'];
-                }
-            }
-        }
-    }
-
-    which(object, file, search) {
-        var i, j;
-        var path = this.deps.path;
-        var fs = this.deps.fs;
-        var basedir = path.resolve(path.dirname(this.deps.pathname || '.'));
-        for (i = 0; i < file.length; ++i) {
-            if (search.length === 1) {
-                // existence check not needed if only one choice possible
-                file[i] = path.resolve(basedir, search[0], file[i]);
-            } else {
-                for (j = 0; j < search.length; ++j) {
-                    try {
-                        if (fs.statSync(path.resolve(basedir, search[j], file[i])).isFile()) {
-                            file[i] = path.resolve(basedir, search[j], file[i]);
-                            break;
-                        }
-                    } catch (e) {
-                        // not found
-                    }
-                }
-            }
-            if (j === search.length) throw new Error('file not found: ' + file[i]);
-        }
-        return file;
-    }
-
-    extend(object, arg) {
-        var key = this.keys(object);
-        for (var i = 0; i < key.length; ++i) {
-            this.normalize(object[key]);
-            if (!object[key]['@']._.extend) {
-                object[key]['@']._.extend = arg;
-            }
-        }
-        return object;
-    }
-
-    include(object, arg) {
-        var _ = this.deps._;
-        _(_(arg).keys()).each(function (proto) {
-            switch (proto) {
-                case 'file':
-                    object = require('./' + arg[proto].filename);
-            }
-        });
-        return object;
-    }
-
-    listen(object, arg) {
-        var proxy = new Proxy(this);
-        proxy.listen(arg.port);
-        return object;
-    }
-
-    pipe(self, path) {
-        var _ = this.deps._;
-        var result = _.get(self, path, null);
-        if (result) {
-            return result;
-        }
-        result = new stream.PassThrough({objectMode: true});
-        _.set(self, path, result);
-        return result;
-    }
-
-    serialize(self, data) {
-        switch (typeof data) {
-            case 'string':
-                return Buffer.from(data);
-            case 'object':
-                if (data instanceof String) {
-                    return Buffer.from(data.valueOf());
-                }
-                if (data instanceof Buffer) {
-                    return data;
-                }
-                if (data instanceof Array) {
-                    var result = new stream.PassThrough({objectMode: true});
-                    for (let i = 0; i < data.length; ++i) {
-                        result.write(this.serialize(data[i]));
-                    }
+            for (var i = parent.length - 1; i >= 0; --i) {
+                result = this.cache(parent[i], ["deps",dep]);
+                if (result) {
                     return result;
                 }
-                return Buffer.from(JSON.stringify(data));
-            default:
-                return null;
+            }
+            throw new Error('implementation for _ is required' + (dep === "_" ? ', e.g., Lodash or UnderscoreJS' : ''));
         }
-    }
 
-    write(self, stream, data) {
-        self = this;
-        if (data instanceof Buffer) {
-            stream.write(data);
-        } else {
-            throw new Error('not implemented');
-            // TODO: implement proper stream concatenation
-            data.on('data', function (data) {
-                self.write(null, stream, data);
-            });
+        dependencies(entity, deps) {
+            //console.log('DEPENDENCIES');
+            if (!this.deps._ && deps._) {
+                require("./underscore.js")(deps._);
+            }
+            var scope;
+            for (var name in this.deps) {
+                if (this.deps.hasOwnProperty(name)) {
+                    scope = this.deps;
+                } else {
+                    scope = dependencies;
+                }
+                switch (scope[name]) {
+                    case null:
+                        if (deps[name] === undefined) {
+                            this.throwError(entity, "unresolved dependency: " + name);
+                        }
+                        scope[name] = deps[name];
+                        break;
+                    default:
+                        if (deps[name] !== undefined && scope[name] !== deps[name]) {
+                            this.throwError(entity, "dependency change: " + name);
+                        }
+                        break;
+                }
+            }
         }
-    }
 
-    server(self, options) {
-        var _ = this.deps._;
-        var http = this.deps.http;
-        var msg, result = this.pipe(self, 'cpx.result');
-        self = this;
-        http.createServer(function (req, res) {
-            var www = self.data.www;
-            switch (req.method) {
-                case 'GET':
-                    msg = self.serialize(null, _.get(www, url.parse(req.url).pathname.split('/').slice(1)));
-                    if (msg) {
-                        res.writeHead(200, msg.headers);
-                        self.write(null, res, msg);
-                    } else {
-                        res.statusCode = 404;
-                        res.statusMessage = 'Not found';
+        registry(path) {
+            if (path) {
+                var part = path.split('.', 2);
+                return this._registry[part[0]].registry(part[1]);
+            }
+            return this;
+        }
+
+        register(entity, path) {
+            var _ = this.deps._;
+            //console.log('REGISTER');
+            if (path) {
+                return this.registry(path).register(entity);
+            }
+            _.merge(this.data, entity);
+        }
+
+        execute(entity, trail, parent) {
+            return processor.call(this, entity).execute(entity);
+        }
+
+        trail(array) {
+            var current = this.$;
+            var result = [];
+            var allowInsert = true;
+            for (var i = 0; i < array.length; ++i) {
+                if (allowInsert && current._insert) {
+                    allowInsert = false;
+                    result.push(current._insert[array[i]]._);
+                } else {
+                    allowInsert = true;
+                    current = current[array[i]];
+                    if (current._) {
+                        result.push(current._);
                     }
-                    res.end();
-                    break;
-                case 'POST':
-                    msg = [];
-                    req.on('data', function (chunk) {
-                        msg.push(chunk);
-                    });
-                    req.on('end', function () {
-                        msg = JSON.parse(msg.join(''));
-                        self.execute(msg);
-                        res.write(JSON.stringify(msg));
+                }
+            }
+            return result;
+        }
+
+        keys(object) {
+            var i, j = 0, result = Object.keys(object);
+            for (i = 0; i < result.length; ++i) {
+                switch (result[i].charAt(0)) {
+                    case '@':
+                    case '_':
+                        break;
+                    default:
+                        result[j++] = result[i];
+                }
+            }
+            return result.slice(0, j);
+        }
+
+        which(object, file, search) {
+            var i, j;
+            var path = this.deps.path;
+            var fs = this.deps.fs;
+            var basedir = path.resolve(path.dirname(this.deps.pathname || '.'));
+            for (i = 0; i < file.length; ++i) {
+                if (search.length === 1) {
+                    // existence check not needed if only one choice possible
+                    file[i] = path.resolve(basedir, search[0], file[i]);
+                } else {
+                    for (j = 0; j < search.length; ++j) {
+                        try {
+                            if (fs.statSync(path.resolve(basedir, search[j], file[i])).isFile()) {
+                                file[i] = path.resolve(basedir, search[j], file[i]);
+                                break;
+                            }
+                        } catch (e) {
+                            // not found
+                        }
+                    }
+                }
+                if (j === search.length) throw new Error('file not found: ' + file[i]);
+            }
+            return file;
+        }
+
+        extend(object, arg) {
+            var key = this.keys(object);
+            for (var i = 0; i < key.length; ++i) {
+                this.normalize(object[key]);
+                if (!object[key]['@']._.extend) {
+                    object[key]['@']._.extend = arg;
+                }
+            }
+            return object;
+        }
+
+        include(object, arg) {
+            var _ = this.deps._;
+            _(_(arg).keys()).each(function (proto) {
+                switch (proto) {
+                    case 'file':
+                        object = require('./' + arg[proto].filename);
+                }
+            });
+            return object;
+        }
+
+        listen(object, arg) {
+            var proxy = new Proxy(this);
+            proxy.listen(arg.port);
+            return object;
+        }
+
+        pipe(self, path) {
+            var _ = this.deps._;
+            var result = _.get(self, path, null);
+            if (result) {
+                return result;
+            }
+            result = new stream.PassThrough({objectMode: true});
+            _.set(self, path, result);
+            return result;
+        }
+
+        serialize(self, data) {
+            switch (typeof data) {
+                case 'string':
+                    return Buffer.from(data);
+                case 'object':
+                    if (data instanceof String) {
+                        return Buffer.from(data.valueOf());
+                    }
+                    if (data instanceof Buffer) {
+                        return data;
+                    }
+                    if (data instanceof Array) {
+                        var result = new stream.PassThrough({objectMode: true});
+                        for (let i = 0; i < data.length; ++i) {
+                            result.write(this.serialize(data[i]));
+                        }
+                        return result;
+                    }
+                    return Buffer.from(JSON.stringify(data));
+                default:
+                    return null;
+            }
+        }
+
+        write(self, stream, data) {
+            self = this;
+            if (data instanceof Buffer) {
+                stream.write(data);
+            } else {
+                throw new Error('not implemented');
+                // TODO: implement proper stream concatenation
+                data.on('data', function (data) {
+                    self.write(null, stream, data);
+                });
+            }
+        }
+
+        server(self, options) {
+            var _ = this.deps._;
+            var http = this.deps.http;
+            var msg, result = this.pipe(self, 'cpx.result');
+            self = this;
+            http.createServer(function (req, res) {
+                var www = self.data.www;
+                switch (req.method) {
+                    case 'GET':
+                        msg = self.serialize(null, _.get(www, url.parse(req.url).pathname.split('/').slice(1)));
+                        if (msg) {
+                            res.writeHead(200, msg.headers);
+                            self.write(null, res, msg);
+                        } else {
+                            res.statusCode = 404;
+                            res.statusMessage = 'Not found';
+                        }
                         res.end();
-                    });
-                    break;
-            }
-            result.write({
-                url: req.url,
-                headers: req.headers
-            });
-        }).listen(options.port);
-        return result;
-    }
+                        break;
+                    case 'POST':
+                        msg = [];
+                        req.on('data', function (chunk) {
+                            msg.push(chunk);
+                        });
+                        req.on('end', function () {
+                            msg = JSON.parse(msg.join(''));
+                            self.execute(msg);
+                            res.write(JSON.stringify(msg));
+                            res.end();
+                        });
+                        break;
+                }
+                result.write({
+                    url: req.url,
+                    headers: req.headers
+                });
+            }).listen(options.port);
+            return result;
+        }
 
-    request(self, uri, options) {
-        var _ = this.deps._;
-        var http = this.deps.http;
-        var data = this.serialize(null, options.body);
-        return new Promise(function (resolve, reject) {
-            var req = http.request(_.extend(url.parse(uri), options), function (res) {
-                // TODO: integrate JSONStreams to read the response
-                resolve({
-                    headers: res.headers,
-                    statusCode: res.statusCode,
-                    statusMessage: res.statusMessage,
-                })
+        request(self, uri, options) {
+            var _ = this.deps._;
+            var http = this.deps.http;
+            var data = this.serialize(null, options.body);
+            return new Promise(function (resolve, reject) {
+                var req = http.request(_.extend(url.parse(uri), options), function (res) {
+                    // TODO: integrate JSONStreams to read the response
+                    resolve({
+                        headers: res.headers,
+                        statusCode: res.statusCode,
+                        statusMessage: res.statusMessage,
+                    })
+                });
+                if (data) {
+                    req.write(data);
+                }
+                req.end();
             });
-            if (data) {
-                req.write(data);
-            }
-            req.end();
-        });
-    }
+        }
 
+    };
 };
