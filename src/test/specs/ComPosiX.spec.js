@@ -23,7 +23,7 @@ describe('ComPosiX', _.globals(function ($) {
     var _ = $._.runInContext(), cpx = new $.ComPosiX(), expect = $.expect;
 
     cpx.execute({
-        '@const$.cpx.use._': _.constant(_),
+        '@cpx.use._': _.constant(_),
         $dependencies: [{
             _: _.constant(_)
         }]
