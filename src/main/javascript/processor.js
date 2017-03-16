@@ -18,20 +18,98 @@
 module.exports = function processor(self) {
     'use strict';
 
-    var cpx = this, _ = self['@const$.cpx.use._'];
+    var normalize = function processor$normalize(object) {
+        if (Object.getPrototypeOf(object) !== Object.prototype) {
+            throw new Error(trail.join(".") + ": plain object expected");
+        }
+        if (object.$ && (Object.getPrototypeOf(object.$) !== Object.prototype || !Object.keys(object.$).length)) {
+            throw new Error('non-empty POJO expected: ' + trail.concat(["$"]).join("."));
+        }
 
-    if (_ instanceof Function) {
-        _ = _();
-    } else {
-        _ = cpx.deps._;
-    }
+        var i, size, aux, key, path, task, attr = object['@'];
+        if (attr) {
+            if (attr['@']) {
+                // already normalized
+                return;
+            }
+            if (Object.getPrototypeOf(attr) !== Object.prototype || !Object.keys(attr).length) {
+                throw new Error('non-empty POJO expected: ' + trail.concat(["@"]).join("."));
+            }
+            if (attr.$) {
+                throw new Error('pending tasks found: ' + trail.concat(["@","$"]).join("."));
+            }
+        }
+        attr = attr || {};
+        if (object.$) {
+            attr.$ = attr.$ ? _.extend(attr.$, object.$) : object.$;
+            delete object.$;
+        }
+        task = attr.$ || {};
+        for (key in object) {
+            if (object.hasOwnProperty(key)) {
+                switch (key.length) {
+                    case 0:
+                        throw new Error('empty property');
+                    case 1:
+                        break;
+                    default:
+                        aux = attr;
+                        switch (key.charAt(0)) {
+                            case '@':
+                                path = key.substr(1).split(".");
+                                size = path.length - 1; aux = attr;
+                                for (i = 0; i < size; ++i) {
+                                    if (aux[path[i]]) {
+                                        aux = aux[path[i]];
+                                        if (Object.getPrototypeOf(aux) !== Object.prototype) {
+                                            throw new Error(trail.join(".") + ": cannot mixin: " + key);
+                                        }
+                                    } else {
+                                        aux = aux[path[i]] = {};
+                                    }
+                                }
+                                if (aux[path[size]]) {
+                                    throw new Error(trail.join(".") + ": duplicate attribute: " + key);
+                                }
+                                aux[path[size]] = object[key];
+                                delete object[key];
+                                break;
+                            case '$':
+                                path = key.substr(1).split(".");
+                                if (path.length !== 1) {
+                                    throw new Error(trail.join(".") + ": invalid task name: " + key);
+                                }
+                                task[path[0]] = object[key];
+                                delete object[key];
+                                break;
+                        }
+                }
+            }
+        }
+        if (Object.keys(task).length) {
+            attr.$ = task;
+        } else {
+            delete attr.$;
+        }
+        if (Object.keys(attr).length) {
+            object['@'] = attr;
+        } else {
+            delete object['@'];
+        }
+    };
+
+    var trail = [], parent = [];
+
+    normalize(self);
+
+    var _ = this.deps._ ||  self['@'].const$.cpx.use._();
 
     if (!(_ instanceof Object)) {
         throw new Error("ComPosiX processor requires Lodash or UnderscoreJS");
     }
 
-    var trail = [], parent = [];
-    
+    var cpx = this;
+
     return {
         getLogger() {
             return {
@@ -41,6 +119,8 @@ module.exports = function processor(self) {
                 }
             }
         },
+
+        normalize: normalize,
 
         evaluate(expression) {
             var i = expression[0].substr(1).split(':');
@@ -115,89 +195,13 @@ module.exports = function processor(self) {
             return expression;
         },
 
-        normalize(object, trail, parent) {
-            var i, size, aux, key, path, task, attr = object['@'];
-            if (Object.getPrototypeOf(object) !== Object.prototype) {
-                throw new Error(trail.join(".") + ": plain object expected");
-            }
-            if (attr && Object.getPrototypeOf(attr) !== Object.prototype) {
-                throw new Error('plain object expected: ' + trail.concat(["@"]).join("."));
-            }
-            if (attr && attr.$ && Object.getPrototypeOf(attr.$) !== Object.prototype) {
-                throw new Error('plain object expected: ' + trail.concat(["@","$"]).join("."));
-            }
-            if (object.$ && Object.getPrototypeOf(object.$) !== Object.prototype) {
-                throw new Error('plain object expected: ' + trail.concat(["$"]).join("."));
-            }
-            attr = attr || {};
-            if (object.$) {
-                attr.$ = attr.$ ? _.extend(attr.$, object.$) : object.$;
-                delete object.$;
-            }
-            task = attr.$ || {};
-            for (key in object) {
-                if (object.hasOwnProperty(key)) {
-                    switch (key.length) {
-                        case 0:
-                            throw new Error('empty property');
-                        case 1:
-                            break;
-                        default:
-                            aux = attr;
-                            switch (key.charAt(0)) {
-                                case '@':
-                                    path = key.substr(1).split(".");
-                                    size = path.length - 1; aux = attr;
-                                    for (i = 0; i < size; ++i) {
-                                        if (aux[path[i]]) {
-                                            aux = aux[path[i]];
-                                            if (Object.getPrototypeOf(aux) !== Object.prototype) {
-                                                throw new Error(trail.join(".") + ": cannot mixin: " + key);
-                                            }
-                                        } else {
-                                            aux = aux[path[i]] = {};
-                                        }
-                                    }
-                                    if (aux[path[size]]) {
-                                        throw new Error(trail.join(".") + ": duplicate attribute: " + key);
-                                    }
-                                    aux[path[size]] = object[key];
-                                    delete object[key];
-                                    break;
-                                case '$':
-                                    path = key.substr(1).split(".");
-                                    if (path.length !== 1) {
-                                        throw new Error(trail.join(".") + ": invalid task name: " + key);
-                                    }
-                                    task[path[0]] = object[key];
-                                    delete object[key];
-                                    break;
-                            }
-                    }
-                }
-            }
-            if (_.isEmpty(task)) {
-                delete attr.$;
-            } else {
-                attr.$ = task;
-            }
-            if (_.isEmpty(attr)) {
-                delete object['@'];
-            } else {
-                object['@'] = attr;
-            }
-            if (attr.const$) {
-                // TODO: implement constant inheritance feature
-                // attr['@'] = this.recurse(attr.const$, attr.const$);
-            }
-        },
-
-        dispatch(object, trail, parent) {
+        dispatch(object) {
             // TODO: add logging using Bunyan to get a full trace
-            //console.log('DISPATCH');
-            //var _ = cpx._(object, parent);
             var key, name, attr;
-            this.normalize(object, trail, parent);
+            if (object !== self) {
+                this.normalize(object);
+            }
+            // TODO: implement constant inheritance feature
             if (object['@']) {
                 var task = object['@'].$, dep, context, target;
                 for (key in task) {
@@ -266,33 +270,33 @@ module.exports = function processor(self) {
             }
         },
 
-        execute(self) {
-            var logger = this.getLogger(self);
-            logger.trace(self, 'EXECUTE');
+        execute(object) {
+            var logger = this.getLogger(object);
+            logger.trace(object, 'EXECUTE');
             var i, key;
-            if (self instanceof Array) {
-                parent.push(self);
-                for (i = 0; i < self.length; ++i) {
+            if (object instanceof Array) {
+                parent.push(object);
+                for (i = 0; i < object.length; ++i) {
                     trail.push(i);
-                    this.execute(self[i], trail, parent);
+                    this.execute(object[i]);
                     if (trail.pop() !== i) {
                         throw new Error('internal error: ' + i);
                     }
                 }
-                if (self !== parent.pop()) {
+                if (object !== parent.pop()) {
                     throw new Error('internal error');
                 }
-            } else if (self instanceof Object) {
-                parent.push(self);
-                for (key in self) {
-                    if (self.hasOwnProperty(key)) {
+            } else if (object instanceof Object) {
+                parent.push(object);
+                for (key in object) {
+                    if (object.hasOwnProperty(key)) {
                         switch (key.charAt(0)) {
                             case '@':
                             case '$':
                                 break;
                             default:
                                 trail.push(key);
-                                this.execute(self[key], trail, parent);
+                                this.execute(object[key]);
                                 if (trail.pop() !== key) {
                                     throw new Error('internal error: ' + key);
                                 }
@@ -300,12 +304,12 @@ module.exports = function processor(self) {
                         }
                     }
                 }
-                if (self !== parent.pop()) {
+                if (object !== parent.pop()) {
                     throw new Error('internal error');
                 }
-                this.dispatch(self, trail, parent);
+                this.dispatch(object);
             }
-            return self;
+            return object;
         }
     };
 };
