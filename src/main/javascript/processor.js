@@ -88,8 +88,8 @@ module.exports = function processor(self) {
                     }
                     return result;
                 }
-                if (expression instanceof Function) {
-                    return expression.call(cpx);
+                if (expression instanceof Function && _.isEmpty(expression)) {
+                    return expression.call(null);
                 }
                 if (Object.getPrototypeOf(expression) === Object.prototype) {
                     result = {};
@@ -116,10 +116,8 @@ module.exports = function processor(self) {
         },
 
         normalize(object, trail, parent) {
-            //var _ = cpx._(object, parent),
             var key, attr;
             // TODO: fix processing of direct $task directives and direct @attr attributes
-            //cpx.attributes(object['@'], object['@']);
             var task = {};
             attr = {};
             for (key in object) {
@@ -191,7 +189,6 @@ module.exports = function processor(self) {
         },
 
         dispatch(object, trail, parent) {
-            // TODO: refactor to split processing from the ComPosiX object
             // TODO: add logging using Bunyan to get a full trace
             //console.log('DISPATCH');
             //var _ = cpx._(object, parent);
@@ -202,17 +199,9 @@ module.exports = function processor(self) {
                 for (key in task) {
                     if (task.hasOwnProperty(key)) {
                         if (!attr) {
-                            attr = (key === 'dependencies' ? null : _.extend.apply(_, _.map([{'@': {}}].concat(parent.slice(0)).concat([object]), '@')));
+                            attr = _.extend.apply(_, _.map([{'@': {}}].concat(parent.slice(0)).concat([object]), '@'));
                         }
-                        context = task[key];
-                        switch (key) {
-                            case 'dependencies':
-                                // do not recurse because dependencies can be cyclic
-                                break;
-                            default:
-                                context = this.recurse(context, attr);
-                                break;
-                        }
+                        context = this.recurse(task[key], attr);
                         if (context instanceof Object) {
                             if (!(context instanceof Array)) {
                                 for (target in context) {

@@ -25,7 +25,7 @@ describe('ComPosiX', _.globals(function ($) {
     cpx.execute({
         '@const$.cpx.use._': _.constant(_),
         $dependencies: [{
-            _: _
+            _: _.constant(_)
         }]
     });
 
