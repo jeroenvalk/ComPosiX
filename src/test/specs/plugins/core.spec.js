@@ -17,10 +17,8 @@
 
 /* global describe, it */
 
-describe('underscore', _.globals(function ($) {
+describe('core', _.globals(function ($) {
     'use strict';
-
-    var fs = require("fs");
 
     var _ = $._.runInContext(), cpx = new $.ComPosiX(), expect = $.expect;
 
@@ -128,83 +126,5 @@ describe('underscore', _.globals(function ($) {
             });
         });
     });
-
-    it('swagger', function () {
-        var category = JSON.parse(fs.readFileSync('src/test/cpx/models/Category.json'));
-        var actual = _.swagger(_.extend({}, category));
-        expect(actual.Category).to.deep.equal(JSON.parse(fs.readFileSync('src/test/cpx/models/swagger.json')).definitions.Category);
-    });
-
-    it('sequelize', function () {
-        var result = _.sequelizeQuery(
-            {
-                Company: "$Company$",
-                Department: "$Department$",
-                Application: "$Application$"
-            },
-            {
-                Company: {
-                    groupBy: ['kvknumber'],
-                    Department: {
-                        where: {
-                            kvknumber: {
-                                $col: 'company.kvknumber'
-                            }
-                        },
-                        required: false,
-                        Application: {
-                            required: false
-                        }
-                    }
-                }
-            }
-        );
-        //console.log(JSON.stringify(result));
-        expect(result).to.deep.equal({
-            "Company": {
-                "sequelize": [
-                    "$Company$",
-                    "findAll",
-                    {
-                        "include": [
-                            {
-                                "as": "Department",
-                                "model": "$Department$",
-                                "where": {
-                                    "kvknumber": {
-                                        "$col": "company.kvknumber"
-                                    }
-                                },
-                                "required": false,
-                                "include": [
-                                    {
-                                        "as": "Application",
-                                        "model": "$Application$",
-                                        "required": false
-                                    }
-                                ]
-                            }
-                        ]
-                    }
-                ],
-                "groupBy": [
-                    "kvknumber"
-                ],
-                "includes": {
-                    "Department": {
-                        "where": {
-                            "kvknumber": {
-                                "$col": "company.kvknumber"
-                            }
-                        },
-                        "required": false,
-                        "Application": {
-                            "required": false
-                        }
-                    }
-                }
-            }
-        });
-    });
-
+    
 }));
