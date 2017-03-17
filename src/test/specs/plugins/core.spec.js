@@ -72,44 +72,6 @@ describe('underscore', _.globals(function ($) {
         });
     });
 
-    it('hierarchy', function () {
-        var result = _.hierarchy(/[.](describe)|(it)[_\s][^.]*/, {
-            a: {
-                describe_MAIN: {
-                    a: {
-                        describe_A: {
-                            tryout: {
-                                it_A: {
-                                    actual: 'a',
-                                    expected: 'a'
-                                }
-                            }
-                        }
-                    },
-                    b: {
-                        describe_B: {
-                            it_B: {
-                                actual: 'b',
-                                expected: 'b'
-                            }
-                        }
-                    }
-                }
-            }
-        });
-        //console.log(JSON.stringify(result));
-        expect(result).to.deep.equal({
-            ".a.describe_MAIN": {
-                ".a.describe_A": {
-                    ".tryout.it_A": {
-                        "actual": "a",
-                        "expected": "a"
-                    }
-                }, ".b.describe_B": {".it_B": {"actual": "b", "expected": "b"}}
-            }
-        });
-    });
-
     it('all', function (done) {
         _([
             [{

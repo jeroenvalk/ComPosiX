@@ -115,7 +115,7 @@ describe('ComPosiX', _.globals(function ($) {
         '@': {
             cpx: {
                 use: {
-                    _: [_.constant(_), "core"]
+                    _: [_.constant(_), "core", "testing"]
                 }
             }
         },
