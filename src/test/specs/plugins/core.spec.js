@@ -24,7 +24,7 @@ describe('underscore', _.globals(function ($) {
 
     var _ = $._.runInContext(), cpx = new $.ComPosiX(), expect = $.expect;
 
-    before(function() {
+    before(function () {
         require("../../../main/javascript/plugins/core")(_);
     });
 
@@ -111,13 +111,37 @@ describe('underscore', _.globals(function ($) {
     });
 
     it('all', function (done) {
-        _.all([{
-            a: 1
-        }]);
+        _([
+            [{
+                a: 1
+            }],
+            1,
+            {a: 1},
+            [1, 2],
+            new String("a"),
+            "a"
+        ]).each(function (value) {
+            expect(_.all(value)).to.equal(value);
+        })
+
         _([Promise.resolve(1), Promise.resolve(2)]).all().then(function (result) {
             expect(result).to.deep.equal([1, 2]);
-            done();
+            _({
+                a: {
+                    b: [Promise.resolve(1), Promise.resolve(2)],
+                    c: Promise.resolve(3)
+                },
+                d: Promise.resolve(4)
+            }).all().then(function (result) {
+                expect(result).to.deep.equal({a: {b: [1, 2], c: 3}, d: 4});
+                done();
+            }).catch(function(e) {
+                done(e);
+            });
+        }).catch(function(e) {
+            done(e);
         });
+
     });
 
     it('then', function () {
@@ -133,6 +157,14 @@ describe('underscore', _.globals(function ($) {
                 return val;
             })).to.equal(value);
         })
+
+        var result = _({
+            a: Promise.resolve(1)
+        }).then(function(result) {
+            expect(result).to.deep.equal({
+                a: 1
+            });
+        });
     });
 
     it('swagger', function () {

@@ -5,6 +5,17 @@ module.exports = function (_) {
 
     var expect = require('chai').expect;
 
+    var groupBy = function(keys, query, data) {
+        _.each(_.pick(query, keys), function(query, key) {
+            _.each(data[key], function(value) {
+                groupBy(keys, query, value);
+            });
+            if (query.groupBy) {
+                data[key] = _.groupBy(data[key], query.groupBy);
+            }
+        });
+    };
+    
     var getType = function cpx$getType(type, key) {
         if (type instanceof Object) {
             return type.$ref ? type : _.extend({
@@ -46,13 +57,15 @@ module.exports = function (_) {
             if (entity instanceof Object) {
                 // now it is no longer possible to iterate over strings
                 _.each(entity, function(value, key) {
-                    var flag = true;
-                    _.each(_.keysDeep(value), function(tail) {
-                        flag = false;
-                        result.push([key, tail].join("."));
-                    });
-                    if (flag) {
-                        result.push(key + "");
+                    if (key !== "@") {
+                        var flag = true;
+                        _.each(_.keysDeep(value), function(tail) {
+                            flag = false;
+                            result.push([key, tail].join("."));
+                        });
+                        if (flag) {
+                            result.push(key + "");
+                        }
                     }
                 });
             }
@@ -79,13 +92,12 @@ module.exports = function (_) {
             testHierarchy(entity);
         },
         all: function cpx$all(entity) {
-            var array = _.at(entity, _.keysDeep(entity));
-            var i, index = [], result = new Array(array.length);
+            var keys = _.keysDeep(entity);
+            var array = _.at(entity, keys);
+            var i, index = [];
             for (i = 0; i < array.length; ++i) {
                 if (array[i] instanceof Promise) {
                     index.push(i);
-                } else {
-                    result[i] = array[i];
                 }
             }
             if (index.length > 0) {
@@ -95,16 +107,16 @@ module.exports = function (_) {
                 }
                 return Promise.all(promise).then(function (res) {
                     for (var i = 0; i < index.length; ++i) {
-                        result[index[i]] = res[i];
+                        _.set(entity, keys[index[i]], res[i]);
                     }
-                    return result;
+                    return entity;
                 });
             } else {
-                return result;
+                return entity;
             }
         },
         then: function cpx$then(entity, onFulfilled, onRejected) {
-            return onFulfilled(entity);
+            //return onFulfilled(entity);
             var result = _(entity).all();
             return result instanceof Promise ? result.then(onFulfilled, onRejected) : onFulfilled(result);
         },
@@ -238,18 +250,18 @@ module.exports = function (_) {
             };
             return result;
         },
-        sequelizeIncludes: function (db, includes) {
-            return _(db).then(function (x) {
+        sequelizeIncludes: function (x, includes) {
+            //return _(db).then(function (x) {
                 var result = _.map(includes, function(value, key) {
                     return _.extend({model: x[key], as: key}, _.pick(value, ['where', 'required']), _.sequelizeIncludes(x, _.pick(value, _.keys(x))));
                 });
                 return result.length > 0 ? {
                     include: result
                 } : {};
-            });
+            //});
         },
-        sequelizeQuery: function (db, query) {
-            return _(db).then(function (x) {
+        sequelizeQuery: function (x, query) {
+            //return _(db).then(function (x) {
                 return _.mapValues(query, function (value, key) {
                     var includes = _.pick(value, _.keys(x));
                     return {
@@ -258,20 +270,22 @@ module.exports = function (_) {
                         includes: includes
                     };
                 });
-            });
+            //});
         },
         query: function (db, query) {
             return new Promise(function (resolve, reject) {
                 db.sequelize.then(function (x) {
-                    query = _.sequelizeQuery(x, query);
-                    _.each(query, function(value, key) {
+                    _.each(_.sequelizeQuery(x, query), function(value, key) {
                         _.attempt(_.spread(_.bindKey)(value.sequelize)).then(function (array) {
                             var data = _.zipObject([key], [_.map(array, function (item) {
                                 return item.get({plain: true});
                             })]);
+                            groupBy(_.keys(x), query, data);
                             resolve(data);
                         });
                     });
+                }).catch(function(e) {
+                    console.log(e.stack);
                 });
             });
         }
