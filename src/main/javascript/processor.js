@@ -128,16 +128,18 @@ module.exports = function processor(self) {
             if (expression instanceof Function && isEmpty(expression)) {
                 return expression.call(null);
             }
-            if (Object.getPrototypeOf(expression) === Object.prototype) {
-                result = {};
-                for (i in expression) {
-                    if (expression.hasOwnProperty(i)) {
-                        result[i] = recurse(expression[i]);
+            switch(Object.getPrototypeOf(expression)) {
+                case Object.prototype:
+                    result = {};
+                    for (i in expression) {
+                        if (expression.hasOwnProperty(i)) {
+                            result[i] = recurse(expression[i]);
+                        }
                     }
-                }
-                return result;
+                    return result;
+                default:
+                    throw new Error('invalid attribute content: ' + expression);
             }
-            throw new Error('invalid attribute content: ' + expression);
         }
         if (typeof expression === 'string' && expression.charAt(0) === '@') {
             return recurse(getAttribute(expression.substr(1)));

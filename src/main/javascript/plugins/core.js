@@ -20,15 +20,45 @@
 module.exports = function (_) {
     'use strict';
 
+    var flattenDeep = _.flattenDeep;
+
     _.mixin({
-        keysDeep: function cpx$keysDeep(entity) {
+        flattenDeep: function core$flattenDeep(object) {
+            if (object instanceof Promise) {
+                return object.then(function (result) {
+                    return _.flattenDeep(result);
+                });
+            }
+            if (object instanceof Array) {
+                return flattenDeep(object);
+            }
+            var i = 0, index = [];
+            var aux = _.map(object, function (value, key) {
+                if (value instanceof Promise) {
+                    index.push(i);
+                }
+                ++i;
+                return _.flattenDeep(value);
+            });
+            if (!index.length) {
+                return _.flatten(aux);
+            }
+            //console.log(aux);
+            return Promise.all(_.at(aux, index)).then(function (result) {
+                for (var i = 0; i < index.length; ++i) {
+                    aux[index[i]] = result[i];
+                }
+                return _.flatten(aux);
+            });
+        },
+        keysDeep: function core$keysDeep(entity) {
             var result = [];
             if (entity instanceof Object) {
                 // now it is no longer possible to iterate over strings
-                _.each(entity, function(value, key) {
+                _.each(entity, function (value, key) {
                     if (key !== "@") {
                         var flag = true;
-                        _.each(_.keysDeep(value), function(tail) {
+                        _.each(_.keysDeep(value), function (tail) {
                             flag = false;
                             result.push([key, tail].join("."));
                         });
@@ -40,7 +70,7 @@ module.exports = function (_) {
             }
             return result;
         },
-        all: function cpx$all(entity) {
+        all: function core$all(entity) {
             var keys = _.keysDeep(entity);
             var array = _.at(entity, keys);
             var i, index = [];
@@ -64,18 +94,17 @@ module.exports = function (_) {
                 return entity;
             }
         },
-        then: function cpx$then(entity, onFulfilled, onRejected) {
-            //return onFulfilled(entity);
+        then: function core$then(entity, onFulfilled, onRejected) {
             var result = _(entity).all();
             return result instanceof Promise ? result.then(onFulfilled, onRejected) : onFulfilled(result);
         },
-        isPromise: function cpx$isPromise(entity) {
+        isPromise: function core$isPromise(entity) {
             return typeof entity.then === "function";
         },
-        isReadable: function cpx$isStream(entity) {
+        isReadable: function core$isStream(entity) {
             return typeof entity.on === "function" && typeof entity.end === "function";
         },
-        toPromise: function cpx$toPromise(entity, value) {
+        toPromise: function core$toPromise(entity, value) {
             if (entity instanceof Promise && !value) {
                 return entity;
             }

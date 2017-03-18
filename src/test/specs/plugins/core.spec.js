@@ -20,10 +20,81 @@
 describe('core', _.globals(function ($) {
     'use strict';
 
-    var _ = $._.runInContext(), cpx = new $.ComPosiX(), expect = $.expect;
+    var base, _ = $._.runInContext(), cpx = new $.ComPosiX(), expect = $.expect;
 
     before(function () {
         require("../../../main/javascript/plugins/core")(_);
+        base = {
+            '@': {
+                cpx: {
+                    use: {
+                        _: _.constant(_)
+                    }
+                }
+            }
+        };
+    });
+
+    it("flattenDeep", function (done) {
+        var x = cpx.execute(cpx.execute(_.merge(base, {
+            '@': {
+                sync: [
+                    [1, [2, [3, [4]], 5]],
+                    {a: 1, b: 2},
+                    {a: [1], b: [2]},
+                    {
+                        a: {a: [1], b: [2, 3]},
+                        b: 4,
+                        c: {a: [5, 6], b: [7]}
+                    }
+                ],
+                async: ["$flatten", [["$map", "@sync", _.constant(function (value) {
+                    return _.constant(Promise.resolve(value));
+                })], [
+                    // _.constant({
+                    //     a: {a: Promise.resolve([1]), b: [2, 3]},
+                    //     b: Promise.resolve(4),
+                    //     c: Promise.resolve({a: [5, 6], b: [7]})
+                    // })
+                ]]]
+            },
+            result: {
+                "$_:extend": [{
+                    "$_:extend": [{
+                        sync: ["$map", "@sync", _.constant(function (value) {
+                            return ["$flattenDeep", value];
+                        })],
+                        async: ["$map", "@async", _.constant(function (value) {
+                            return ["$then", ["$flattenDeep", value]];
+                        })]
+                    }]
+                }]
+            }
+        })));
+        var expected = {
+            sync: [
+                [1, 2, 3, 4, 5],
+                [],
+                [1, 2],
+                [1, 2, 3, 5, 6, 7]
+            ]
+        }
+        expect(x.result.sync).to.deep.equal(expected.sync);
+        _.then(x.result).then(function (result) {
+            expect(result).to.deep.equal({
+                sync: expected.sync,
+                async: expected.sync
+            });
+            var y = _.flattenDeep({
+                a: {a: Promise.resolve([1]), b: [2, 3]},
+                b: Promise.resolve(4),
+                c: Promise.resolve({a: [5, 6], b: [7]})
+            });
+            return _.then(y).then(function(value) {
+                expect(value).to.deep.equal([1, 2, 3, 5, 6, 7]);
+                done();
+            })
+        }).catch(done);
     });
 
     it("keysDeep", function () {
@@ -82,26 +153,25 @@ describe('core', _.globals(function ($) {
             "a"
         ]).each(function (value) {
             expect(_.all(value)).to.equal(value);
-        })
-
-        _([Promise.resolve(1), Promise.resolve(2)]).all().then(function (result) {
-            expect(result).to.deep.equal([1, 2]);
-            _({
-                a: {
-                    b: [Promise.resolve(1), Promise.resolve(2)],
-                    c: Promise.resolve(3)
-                },
-                d: Promise.resolve(4)
-            }).all().then(function (result) {
-                expect(result).to.deep.equal({a: {b: [1, 2], c: 3}, d: 4});
-                done();
-            }).catch(function(e) {
-                done(e);
-            });
-        }).catch(function(e) {
-            done(e);
         });
 
+        _(Promise.resolve(1)).all().then(function(result) {
+            expect(result).to.equal(1);
+        }).then(function() {
+            return _([Promise.resolve(1), Promise.resolve(2)]).all().then(function (result) {
+                expect(result).to.deep.equal([1, 2]);
+                return _({
+                    a: {
+                        b: [Promise.resolve(1), Promise.resolve(2)],
+                        c: Promise.resolve(3)
+                    },
+                    d: Promise.resolve(4)
+                }).all().then(function (result) {
+                    expect(result).to.deep.equal({a: {b: [1, 2], c: 3}, d: 4});
+                    done();
+                });
+            });
+        }).catch(done);
     });
 
     it('then', function () {
@@ -120,11 +190,11 @@ describe('core', _.globals(function ($) {
 
         var result = _({
             a: Promise.resolve(1)
-        }).then(function(result) {
+        }).then(function (result) {
             expect(result).to.deep.equal({
                 a: 1
             });
         });
     });
-    
+
 }));

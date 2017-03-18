@@ -156,6 +156,7 @@ module.exports = function (_) {
                                 return item.get({plain: true});
                             })]);
                             groupBy(_.keys(x), query, data);
+                            data.x = x;
                             resolve(data);
                         });
                     });

@@ -357,7 +357,7 @@ module.exports = function(url, stream, Proxy, processor) {
         request(self, uri, options) {
             var _ = this.deps._;
             var http = this.deps.http;
-            var data = this.serialize(null, options.body);
+            var data = options && options.body && this.serialize(null, options.body);
             return new Promise(function (resolve, reject) {
                 var req = http.request(_.extend(url.parse(uri), options), function (res) {
                     // TODO: integrate JSONStreams to read the response
