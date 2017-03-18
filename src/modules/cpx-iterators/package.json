@@ -1,0 +1,15 @@
+{
+  "name": "cpx-iterators",
+  "version": "0.0.1-SNAPSHOT",
+  "repository": "git@github.com:jeroenvalk/ComPosiX.git",
+  "author": {
+    "name": "dr. ir. Jeroen M. Valk",
+    "email": "jeroen@composix.org",
+    "url": "http://www.composix.org/"
+  },
+  "license": "LGPL-3.0",
+  "main": "src/main/javascript/index.js",
+  "scripts": {
+    "test": "mocha --require src/test/global src/test/specs/*.spec.js"
+  }
+}
