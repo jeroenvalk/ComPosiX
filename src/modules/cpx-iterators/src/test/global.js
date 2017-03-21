@@ -19,6 +19,7 @@
 
 global._ = {
     globals: function(fn) {
+        'use strict';
         return function() {
             let $ = {};
             require('../main/javascript/globals')($);

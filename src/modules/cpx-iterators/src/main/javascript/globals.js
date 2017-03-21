@@ -1,4 +1,5 @@
 module.exports = function ($) {
+    'use strict';
 
     const reverseKeys = function (entity) {
         let result, size, k;
