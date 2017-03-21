@@ -15,17 +15,21 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* global global, require */
+module.exports = function (_) {
+    'use strict';
 
-global._ = {
-    globals: function(fn) {
-        return function() {
-            let $ = {};
-            require('../main/javascript/globals')($);
-            $.http = require('http');
-            $.chai = require('chai');
-            $._ = require('lodash');
-            return fn.call(null, $);
+    var Node = require("../Node");
+
+    _.mixin({
+        node: function cpxIterators$node(fn, modes) {
+            return new Node(fn, modes);
+        },
+        pipe: function(source, target) {
+            return source.pipe(target);
         }
-    }
+    }, {
+        chain: false
+    });
+
+    return _;
 };

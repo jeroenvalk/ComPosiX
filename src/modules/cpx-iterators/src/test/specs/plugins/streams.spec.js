@@ -20,42 +20,65 @@
 describe('streams', _.globals(function (use) {
     'use strict';
 
-    let _ = use._.runInContext(), expect = use.chai.expect;
+    const url = require("url"), stream = require("stream");
+
+    const _ = use._.runInContext(), expect = use.chai.expect, http = use.http;
 
     before(function () {
-        require("../../../main/javascript/plugins/core")(_);
         require("../../../main/javascript/plugins/streams")(_);
     });
 
-    let node, $$;
+    let node, $$, request;
 
     it("local", function () {
         // do not pipe streams but pipe NODES!
-        let source = _.node(function (readable, writable) { // create a write node
-            readable.on("end", function () {
-                writable.write("Hello");
-                writable.write("World!"); // that writes two utf8 data chunks
-                writable.end();
-            });
-        });
-        node = _.node(function (readable, writable) { // and pipe it
-            let array = [];   // into another node that
-            readable.on("data", function (data) {
-                array.push(data.toString());  // collects all chunks
-            });   // accepting either strings or buffers
-            readable.on("end", function () {
-                writable.write(array.join(" ")); // and joins them together
-                writable.end();
-            });
-        });
-        source.pipe(node).pipe(_.node(function (readable) {
-            readable.on("data", function () { // and pipe it again
+        let source = _.node(function (writable) { // create a write node
+            writable.write("Hello");
+            writable.write("World!"); // that writes two utf8 data chunks
+            writable.end();
+        }, 1);
+        node = function () {
+            return _.node(function (readable, writable) { // and pipe it
+                let array = [];   // into another node that
+                readable.on("data", function (data) {
+                    array.push(data.toString());  // collects all chunks
+                });   // accepting either strings or buffers
+                readable.on("end", function () {
+                    writable.write(array.join(" ")); // and joins them together
+                    writable.end();
+                });
+            })
+        };
+        source.pipe(node()).pipe(_.node(function (readable) {
+            readable.on("data", function (data) { // and pipe it again
                 expect(data).to.equal("Hello World!"); // to check out the result
             });
         }));
     });
 
-    it("Google", function () {
+    it("swagger", function (done) {
+        let EOF = _.node(function (writable) {
+            writable.end();
+        }, 1);
+        request = function (uri) {
+            return _.node(function (readable, writable) {
+                const req = http.get(_.extend({method: "GET"}, url.parse(uri)), function (res) {
+                    res.pipe(writable);
+                });
+                req.end();
+            });
+        };
+        let result = new stream.PassThrough();
+        let aux = _(EOF).pipe(request("http://composix.nl/api/petstore/swagger.json")).pipe(node()).pipe(result);
+        result.on("data", function (data) {
+            expect(JSON.parse(data.toString()).swagger).to.equal("2.0");
+        });
+        result.on("end", function () {
+            done();
+        })
+    });
+
+    xit("Google", function () {
         // imagine the cool things you can do with that
         $$ = function (selector) {
             return _.node(function (readable, writable) {
@@ -83,7 +106,7 @@ describe('streams', _.globals(function (use) {
         }));
     });
 
-    it("PartyAgenda", function () {
+    xit("PartyAgenda", function () {
         _.node({
             "salsa_nl": request("http://www.salsa.nl/uitgaansagendas/latin-agenda.php").pipe($$({
                 "div.ibox": {
@@ -91,7 +114,7 @@ describe('streams', _.globals(function (use) {
                 }
             })).pipe(function (readable, writable) {
                 readable.on("data", function (readable) {
-                    readable.on("data", function(readable) {
+                    readable.on("data", function (readable) {
                         // TODO: think on how to structure this
                     })
                 });
