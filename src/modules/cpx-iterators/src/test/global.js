@@ -23,6 +23,7 @@ global._ = {
             let $ = {};
             require('../main/javascript/globals')($);
             $.http = require('http');
+            $.https = require('https');
             $.chai = require('chai');
             $._ = require('lodash');
             return fn.call(null, $);
