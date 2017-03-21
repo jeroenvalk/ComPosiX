@@ -24,7 +24,7 @@ module.exports = function processor(self) {
         var i, part = path.split("."), result = object['@'];
         if (result) {
             result = result[part[0]];
-            if (result) {
+            if (result !== undefined) {
                 for (i = 1; i < part.length; ++i) {
                     result = result[part[i]];
                 }
@@ -33,7 +33,7 @@ module.exports = function processor(self) {
         }
         for (i = parent.length - 1; i >= 0; --i) {
             result = parent[i]['@'];
-            if (result) {
+            if (result !== undefined) {
                 result = result[part[0]];
                 if (result) {
                     for (i = 1; i < part.length; ++i) {
@@ -178,7 +178,8 @@ module.exports = function processor(self) {
             if (object.hasOwnProperty(key)) {
                 switch (key.length) {
                     case 0:
-                        throw new Error('empty property');
+                        break;
+                        //throw new Error('empty property');
                     case 1:
                         break;
                     default:
