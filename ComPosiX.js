@@ -15,24 +15,25 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-var fs = require('fs');
+const fs = require('fs');
+const _ = require('underscore');
 
 module.exports = {
-    registry: {
+    "@": {
+        cpx: {
+            pkg: JSON.parse(fs.readFileSync('package.json')),
+            use: {
+                _: _.constant(_)
+            }
+        }
+    },
+    server: {
         $server: [{
             port: 80
         }],
-        '@': {
-            cpx: {
-                pkg: JSON.parse(fs.readFileSync('package.json'))
-            }
-        },
-        $register: ['ComPosiX'],
-        www: {
-            cpx: {
-                '$_:extend': ['@cpx'],
-                sayhi: 'Hello world!'
-            }
+        cpx: {
+            '$_:extend': ['@cpx'],
+            sayhi: 'Hello world!'
         }
     },
     register: {
@@ -41,18 +42,15 @@ module.exports = {
         },
         $request: {
             petstore: ["http://localhost/", {
-                method: "POST",
+                method: "PUT",
                 body: {
-                    "$_:extend": [{
-                        www: {
-                            api: {
-                                petstore: {
-                                    "swagger.json": '@petstore'
-                                }
+                    cpx: {
+                        api: {
+                            petstore: {
+                                "swagger.json": '@petstore'
                             }
                         }
-                    }],
-                    $register: ['ComPosiX']
+                    }
                 }
             }]
         }

@@ -28,12 +28,13 @@ module.exports = function ($) {
 
     $.url = $.url || require('url');
     $.stream = $.stream || require('stream');
-    $.Proxy = $.Proxy || require('./plugins/Proxy');
+    $.http = $.http || require('http');
+    $._ = $._ || require('lodash');
     $.processor = $.processor || require('./processor');
     
     var globals = {
-        _: $._ || require('lodash'),
-        ComPosiX: $.ComPosiX || require('./ComPosiX')($.url, $.stream, $.Proxy, $.processor),
+        _: $._,
+        ComPosiX: $.ComPosiX || require('./ComPosiX')($.url, $.stream, $.http, $._, $.processor),
         expect: $.expect || require('chai').expect
     };
 

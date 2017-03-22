@@ -21,37 +21,29 @@ module.exports = function processor(self) {
     var cpx = this, object = self, trail = [], parent = [];
 
     var getAttribute = function processor$getAttribute(path) {
-        var i, part = path.split("."), result = object['@'];
-        if (result) {
-            result = result[part[0]];
-            if (result !== undefined) {
-                for (i = 1; i < part.length; ++i) {
+        var part = path.split("."), result = object['@'];
+        for (let i = parent.length; i >= 0; --i) {
+            result = (parent[i] || object)['@'];
+            for (let i = 0; i < part.length; ++i) {
+                if (result instanceof Object) {
                     result = result[part[i]];
+                } else {
+                    result = undefined;
                 }
-                return result;
             }
-        }
-        for (i = parent.length - 1; i >= 0; --i) {
-            result = parent[i]['@'];
             if (result !== undefined) {
-                result = result[part[0]];
-                if (result) {
-                    for (i = 1; i < part.length; ++i) {
-                        result = result[part[i]];
-                    }
-                    return result;
-                }
+                return result;
             }
         }
         throw new Error(trail.join(".") + ": missing attribute: " + path);
     };
 
     var cpxRequire = function processor$cpxRequire(dep) {
-        var result = recurse(getAttribute(["cpx","use",dep].join(".")));
+        var result = recurse(getAttribute(["cpx", "use", dep].join(".")));
         if (result instanceof Array) {
             var head = result.shift();
             if (typeof head === "string") {
-                switch(head) {
+                switch (head) {
                     case "lodash":
                     case "underscore":
                         head = require(head);
@@ -60,7 +52,7 @@ module.exports = function processor(self) {
                         throw new Error(trail.join(".") + ": require forbidden: " + head);
                 }
             }
-            result = head.reduce(result, function(_, plugin) {
+            result = head.reduce(result, function (_, plugin) {
                 if (typeof plugin === "string") {
                     plugin = require('./plugins/' + plugin);
                 }
@@ -70,7 +62,7 @@ module.exports = function processor(self) {
         }
         return result;
     };
-    
+
     var isEmpty = function processor$isEmpty(object) {
         if (object instanceof Object) {
             for (var key in object) {
@@ -81,7 +73,7 @@ module.exports = function processor(self) {
         }
         return true;
     };
-    
+
     var evaluate = function processor$evaluate(expression) {
         var i = expression[0].substr(1).split(':');
         switch (i.length) {
@@ -94,6 +86,9 @@ module.exports = function processor(self) {
                 throw new Error('invalid method: ' + i.join(':'));
         }
         var dep = cpxRequire(i[0]);
+        if (!dep) {
+            throw new Error("unresolved dependency: " + i[0]);
+        }
         switch (i[1]) {
             case 'chain':
                 expression = expression[1].reverse();
@@ -128,7 +123,7 @@ module.exports = function processor(self) {
             if (expression instanceof Function && isEmpty(expression)) {
                 return expression.call(null);
             }
-            switch(Object.getPrototypeOf(expression)) {
+            switch (Object.getPrototypeOf(expression)) {
                 case Object.prototype:
                     result = {};
                     for (i in expression) {
@@ -165,7 +160,7 @@ module.exports = function processor(self) {
                 throw new Error('non-empty POJO expected: ' + trail.concat(["@"]).join("."));
             }
             if (attr.$) {
-                throw new Error('pending tasks found: ' + trail.concat(["@","$"]).join("."));
+                throw new Error('pending tasks found: ' + trail.concat(["@", "$"]).join("."));
             }
         }
         attr = attr || {};
@@ -179,7 +174,7 @@ module.exports = function processor(self) {
                 switch (key.length) {
                     case 0:
                         break;
-                        //throw new Error('empty property');
+                    //throw new Error('empty property');
                     case 1:
                         break;
                     default:
@@ -187,7 +182,8 @@ module.exports = function processor(self) {
                         switch (key.charAt(0)) {
                             case '@':
                                 path = key.substr(1).split(".");
-                                size = path.length - 1; aux = attr;
+                                size = path.length - 1;
+                                aux = attr;
                                 for (i = 0; i < size; ++i) {
                                     if (aux[path[i]]) {
                                         aux = aux[path[i]];
@@ -238,7 +234,7 @@ module.exports = function processor(self) {
 
     return {
         cpx: cpx,
-        
+
         getLogger() {
             return {
                 trace() {

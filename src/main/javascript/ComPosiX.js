@@ -15,7 +15,7 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-module.exports = function(url, stream, Proxy, processor) {
+module.exports = function(url, stream, http, _, processor) {
     'use strict';
 
     var dependencies = {
@@ -260,23 +260,7 @@ module.exports = function(url, stream, Proxy, processor) {
             return object;
         }
 
-        listen(object, arg) {
-            var proxy = new Proxy(this);
-            proxy.listen(arg.port);
-            return object;
-        }
-
-        pipe(self, path) {
-            var _ = this.deps._;
-            var result = _.get(self, path, null);
-            if (result) {
-                return result;
-            }
-            result = new stream.PassThrough({objectMode: true});
-            _.set(self, path, result);
-            return result;
-        }
-
+        // TODO: write _.write() function that takes a stream and chunks JSON into it (also implement objectmode)
         serialize(self, data) {
             switch (typeof data) {
                 case 'string':
@@ -301,57 +285,50 @@ module.exports = function(url, stream, Proxy, processor) {
             }
         }
 
-        write(self, stream, data) {
-            self = this;
-            if (data instanceof Buffer) {
-                stream.write(data);
-            } else {
-                throw new Error('not implemented');
-                // TODO: implement proper stream concatenation
-                data.on('data', function (data) {
-                    self.write(null, stream, data);
-                });
-            }
-        }
-
-        server(self, options) {
-            var _ = this.deps._;
-            var http = this.deps.http;
-            var msg, result = this.pipe(self, 'cpx.result');
-            self = this;
+        server(object, options) {
+            const self = this;
             http.createServer(function (req, res) {
-                var www = self.data.www;
+                let msg, target = req.url === "/" ? object : _.get(object, url.parse(req.url).pathname.split('/').slice(1));
                 switch (req.method) {
                     case 'GET':
-                        msg = self.serialize(null, _.get(www, url.parse(req.url).pathname.split('/').slice(1)));
+                        msg = target
                         if (msg) {
-                            res.writeHead(200, msg.headers);
-                            self.write(null, res, msg);
+                            res.writeHead(200, {});
+                            // TODO: use _.serialize to avoid in-memory buffering
+                            res.write(JSON.stringify(msg));
                         } else {
                             res.statusCode = 404;
                             res.statusMessage = 'Not found';
                         }
                         res.end();
                         break;
-                    case 'POST':
+                    case 'PUT':
                         msg = [];
+                        // TODO: use _.read which takes a stream on JSON chunks and merges them
+                        // TODO: think about streaming and how it merges into the target streams
                         req.on('data', function (chunk) {
                             msg.push(chunk);
                         });
                         req.on('end', function () {
-                            msg = JSON.parse(msg.join(''));
-                            self.execute(msg);
-                            res.write(JSON.stringify(msg));
+                            try {
+                                _.merge(target, JSON.parse(msg.join('')));
+                                res.statusCode = 201;
+                                res.statusMessage = "Created";
+                            } catch(e) {
+                                res.statusCode = 415;
+                                res.statusMessage = "Unsupported Media Type";
+                            }
                             res.end();
                         });
                         break;
+                        // TODO: implement POST or PATCH which is like PUT but also executes
+                    default:
+                        res.statusCode = 405;
+                        res.statusMessage = "Method Not Allowed";
+                        res.end();
+                        break;
                 }
-                result.write({
-                    url: req.url,
-                    headers: req.headers
-                });
             }).listen(options.port);
-            return result;
         }
 
         request(self, uri, options) {
