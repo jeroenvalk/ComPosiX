@@ -302,6 +302,14 @@ module.exports = function(url, stream, http, _, processor) {
                         }
                         res.end();
                         break;
+                    case 'PURGE':
+                        _.each(target, function(value, key) {
+                            delete target[key];
+                        });
+                        res.statusCode = 204;
+                        res.statusMessage = "No Content";
+                        res.end();
+                        break;
                     case 'PUT':
                         msg = [];
                         // TODO: use _.read which takes a stream on JSON chunks and merges them
