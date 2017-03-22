@@ -293,7 +293,7 @@ module.exports = function(url, stream, http, _, processor) {
                     case 'GET':
                         msg = target
                         if (msg) {
-                            res.writeHead(200, {});
+                            res.writeHead(200, {"Access-Control-Allow-Origin": "*"});
                             // TODO: use _.serialize to avoid in-memory buffering
                             res.write(JSON.stringify(msg));
                         } else {
