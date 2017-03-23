@@ -21,8 +21,8 @@ const _ = require('lodash');
 module.exports = {
     "@": {
         cpx: {
-            hostname: "localhost",
-            port: 8080,
+            hostname: "composix.nl",
+            port: 80,
             pkg: JSON.parse(fs.readFileSync('package.json')),
             use: {
                 _: [_.constant(_), "core"]
