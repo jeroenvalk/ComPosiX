@@ -169,11 +169,14 @@ module.exports = function(url, stream, http, _, processor) {
             _.merge(this.data, entity);
         }
 
-        execute(entity, trail, parent) {
+        execute(entity, parent) {
             if (!cpx) {
-                cpx = processor.call(this, entity);
-                cpx.execute();
-                cpx = null;
+                cpx = processor.call(this, entity, parent);
+                try {
+                    cpx.execute();
+                } finally {
+                    cpx = null;
+                }
                 return entity;
             }
             throw new Error("processor busy");
@@ -287,8 +290,13 @@ module.exports = function(url, stream, http, _, processor) {
 
         server(object, options) {
             const self = this;
+            let secret;
+            require('crypto').randomBytes(48, function(err, buffer) {
+                secret = buffer.toString("base64");
+                console.log(secret);
+            });
             http.createServer(function (req, res) {
-                let msg, target = req.url === "/" ? object : _.get(object, url.parse(req.url).pathname.split('/').slice(1));
+                let msg, pathname = url.parse(req.url).pathname.split('/').slice(1), target = req.url === "/" ? object.target : _.get(object.target, pathname);
                 switch (req.method) {
                     case 'GET':
                         msg = target
@@ -329,6 +337,37 @@ module.exports = function(url, stream, http, _, processor) {
                             res.end();
                         });
                         break;
+                    case 'POST':
+                        msg = [];
+                        req.on('data', function (chunk) {
+                            msg.push(chunk);
+                        });
+                        req.on('end', function () {
+                            msg = msg.join('');
+                            try {
+                                msg = JSON.parse(msg);
+                                res.statusCode = 202;
+                                res.statusMessage = "Accepted";
+                            } catch(e) {
+                                res.statusCode = 415;
+                                res.statusMessage = "Unsupported Media Type";
+                                res.end();
+                                return;
+                            }
+                            try {
+                                if (url.parse(req.url, true).query.update && JSON.stringify(url.parse(req.url, true).query.update)) {
+                                    _.set(object, ["src", pathname].join("."), JSON.parse(msg));
+                                    _.set(object.target, pathname, msg);
+                                }
+                                self.execute(msg, [object]);
+                            } catch(e) {
+                                res.statusCode = 400;
+                                res.statusMessage = "Bad Request";
+                                res.end(e.stack);
+                            }
+                            res.end(JSON.stringify(msg));
+                        });
+                        break;
                         // TODO: implement POST or PATCH which is like PUT but also executes
                     default:
                         res.statusCode = 405;
@@ -339,12 +378,12 @@ module.exports = function(url, stream, http, _, processor) {
             }).listen(options.port);
         }
 
-        request(self, uri, options) {
+        request(self, options) {
             var _ = this.deps._;
             var http = this.deps.http;
             var data = options && options.body && this.serialize(null, options.body);
             return new Promise(function (resolve, reject) {
-                var req = http.request(_.extend(url.parse(uri), options), function (res) {
+                var req = http.request(_.extend(options.url ? url.parse(options.url) : {}, options), function (res) {
                     // TODO: integrate JSONStreams to read the response
                     resolve({
                         headers: res.headers,

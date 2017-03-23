@@ -23,6 +23,33 @@ module.exports = function (_) {
     var flattenDeep = _.flattenDeep;
 
     _.mixin({
+        definition: function (schema) {
+            if (!schema) {
+                throw new Error();
+            }
+            return {
+                type: 'object',
+                properties: _.mapValues(schema, function (value) {
+                    var isArray = value instanceof Array;
+                    if (isArray) {
+                        value = value[0];
+                    }
+                    if (_.isString(value)) {
+                        return {
+                            type: value,
+                            required: !isArray
+                        }
+                    }
+                    if (isArray) {
+                        return {
+                            type: 'array',
+                            items: value
+                        }
+                    }
+                    return value;
+                })
+            }
+        },
         flattenDeep: function core$flattenDeep(object) {
             if (object instanceof Promise) {
                 return object.then(function (result) {

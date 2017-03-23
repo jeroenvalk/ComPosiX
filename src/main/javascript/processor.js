@@ -15,10 +15,11 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-module.exports = function processor(self) {
+module.exports = function processor(self, parent) {
     'use strict';
 
-    var cpx = this, object = self, trail = [], parent = [];
+    var cpx = this, object = self, trail = [];
+    parent = parent || [];
 
     var getAttribute = function processor$getAttribute(path) {
         var part = path.split("."), result = object['@'];
