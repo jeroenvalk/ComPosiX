@@ -35,10 +35,18 @@ module.exports = function ($) {
     var globals = {
         _: $._,
         ComPosiX: $.ComPosiX || require('./ComPosiX')($.url, $.stream, $.http, $._, $.processor),
+        node: {
+            chai: require('chai')
+        },
         expect: $.expect || require('chai').expect
     };
 
     globals._.mixin({
+        describe: function globals$describe(name, fn) {
+            describe(name, function() {
+                fn.call(null, globals);
+            })
+        },
         globals: function globals$globals(fn) {
             return function () {
                 fn.call(this, globals);
