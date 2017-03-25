@@ -73,5 +73,11 @@ _.describe('ComPosiX', function($) {
             cpx.use(object, plugin);
             expect(plugins).to.deep.equal([[id - 2, undefined],[id - 1, undefined]]);
         });
+
+        it("cpx-iteration", function() {
+            plugins.length = 0;
+            cpx.use(object, 'cpx-iteration');
+            expect(plugins).to.have.length.above(0);
+        });
     });
 });
