@@ -41,6 +41,25 @@ module.exports = function(url, stream, http, _, processor) {
             this.data = {};
         }
 
+        use(object, plugin) {
+            let name;
+            if (typeof plugin === 'string') {
+                name = plugin;
+                try {
+                    plugin = require(plugin);
+                } catch(e) {
+                    plugin = require('../../modules/' + plugin);
+                }
+            }
+            if (plugin instanceof Function && plugin.length === 1) {
+                return plugin.call(this, object);
+            }
+            if (Object.getPrototypeOf(plugin) === Object.prototype) {
+                return object.mixin(plugin);
+            }
+            throw new Error((name ? name + ": " : "") + "invalid plugin");
+        }
+
         boot(entity, deps) {
             if (!deps) {
                 deps = {};
