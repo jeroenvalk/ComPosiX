@@ -20,7 +20,10 @@ module.exports = function (_) {
 
     var Node = require("../Node");
     var stream = require('stream');
-    var http = require('http');
+    var http = {
+        "http:": require('http'),
+        "https:": require('https')
+    };
     var Readable = stream.Readable, PassThrough = stream.PassThrough;
 
     const writable = function (array) {
@@ -159,7 +162,7 @@ module.exports = function (_) {
                 ++todo;
                 const body = options.body;
                 delete options.body;
-                body.pipe(http.request(options, function (res) {
+                body.pipe(http[options.protocol].request(options, function (res) {
                     const body = new stream.PassThrough();
                     writable.write({
                         //    headers: res.headers,

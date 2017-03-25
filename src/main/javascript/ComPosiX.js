@@ -41,14 +41,31 @@ module.exports = function(url, stream, http, _, processor) {
             this.data = {};
         }
 
+        debug(object, flag) {
+            if (flag) {
+                this.use(object, {
+                    describe: function cpx$describe(name, fn) {
+                        describe(name, function() {
+                            fn.call(null, {
+                                _: object,
+                                npm: {
+                                    chai: require('chai')
+                                }
+                            });
+                        });
+                    }
+                });
+            }
+        }
+
         use(object, plugin) {
             let name;
             if (typeof plugin === 'string') {
-                name = plugin;
+                name = plugin; plugin = plugin.split(".");
                 try {
-                    plugin = require(plugin);
+                    plugin = require(plugin[plugin.length - 1]);
                 } catch(e) {
-                    plugin = require('../../modules/' + plugin);
+                    plugin = require('../../modules/' + plugin[plugin.length - 1]);
                 }
             }
             if (plugin instanceof Function && plugin.length === 1) {
