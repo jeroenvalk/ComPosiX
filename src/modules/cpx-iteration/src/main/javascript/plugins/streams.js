@@ -35,6 +35,43 @@ module.exports = function (_) {
         return readable;
     };
 
+    const readObject = function(object, stream) {
+        let result = [];
+        for (const key in stream) {
+            if (stream.hasOwnProperty(key)) {
+                if (stream[key] instanceof Readable) {
+                    object[key] = [];
+                } else {
+                    object[key] = {};
+                }
+                result.push(_.writable(object[key], stream[key]));
+            }
+        }
+        return Promise.all(result);
+    };
+
+    const readArray = function(array, stream) {
+        return new Promise(function (resolve, reject) {
+            let result = [];
+            stream.on("data", function (writable) {
+                if (Object.getPrototypeOf(writable) === Object.prototype) {
+                    const value = {};
+                    array.push(value);
+                    result.push(_.writable(value, writable));
+                } else if (writable instanceof Buffer || typeof writable === 'string') {
+                    array.push(writable);
+                } else {
+                    reject(new Error("object or buffer expected"));
+                }
+            });
+            stream.on("end", function () {
+                Promise.all(result).then(function (value) {
+                    resolve(value);
+                });
+            });
+        });
+    };
+
     const readable = function (array) {
         let writable = null;
         const stream = function (readable, offset, count) {
@@ -82,42 +119,13 @@ module.exports = function (_) {
                 if (Object.getPrototypeOf(writable) !== Object.prototype) {
                     throw new Error("object expected");
                 }
-                let result = [];
-                for (const key in writable) {
-                    if (writable.hasOwnProperty(key)) {
-                        if (writable[key] instanceof Readable) {
-                            object[key] = [];
-                        } else {
-                            object[key] = {};
-                        }
-                        result.push(_.writable(object[key], writable[key]));
-                    }
-                }
-                return Promise.all(result);
+                return readObject(object, writable);
             }
             if (object instanceof Array) {
-                return new Promise(function (resolve, reject) {
-                    if (!(writable instanceof Readable)) {
-                        throw new Error("stream expected");
-                    }
-                    let result = [];
-                    writable.on("data", function (writable) {
-                        if (Object.getPrototypeOf(writable) === Object.prototype) {
-                            const value = {};
-                            object.push(value);
-                            result.push(_.writable(value, writable));
-                        } else if (writable instanceof Buffer || typeof writable === 'string') {
-                            object.push(writable);
-                        } else {
-                            reject(new Error("object or buffer expected"));
-                        }
-                    });
-                    writable.on("end", function () {
-                        Promise.all(result).then(function (value) {
-                            resolve(value);
-                        });
-                    });
-                });
+                if (!(writable instanceof Readable)) {
+                    throw new Error("stream expected");
+                }
+                return readArray(object, writable);
             }
         },
         readable: function (object) {
@@ -165,7 +173,9 @@ module.exports = function (_) {
                 body.pipe(http[options.protocol].request(options, function (res) {
                     const body = new stream.PassThrough();
                     writable.write({
-                        //    headers: res.headers,
+                        //statusCode: res.statusCode,
+                        //statusMessage: res.statusMessage,
+                        //headers: res.headers,
                         body: body
                     });
                     res.pipe(body);

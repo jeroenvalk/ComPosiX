@@ -47,31 +47,42 @@ describe('streams', _.globals(function (use) {
 
         it("nested", function (done) {
             const x = [], writable = new stream.PassThrough({objectMode: true});
-            let flag = false;
+            let flag = false, properties = {
+                //timestamp: new Date(),
+                //seqnr: 0,
+                //message: "Hello World!",
+                //flag: false
+            };
             let readable = new stream.PassThrough();
             _(x).writable(writable).then(function () {
                 expect(flag).to.equal(true);
                 done();
             }).catch(done);
-            writable.write({readable: readable});
+            writable.write({
+                properties: properties,
+                stream: readable
+            });
             writable.end();
             readable.write("Hello World!");
             readable.end();
-            expect(x).to.deep.equal([{readable: [new Buffer("Hello World!")]}])
+            expect(x).to.deep.equal([{
+                properties: properties,
+                stream: [new Buffer("Hello World!")]
+            }]);
             flag = true;
         });
 
-        it("object", function(done) {
+        it("object", function (done) {
             const x = {}, main = new stream.PassThrough();
             let flag = false;
             try {
                 _(x).writable(main);
                 expect(true).to.equal(false);
-            } catch(e) {
+            } catch (e) {
 
             }
             expect(x).to.deep.equal({});
-            _(x).writable({main: main}).then(function() {
+            _(x).writable({main: main}).then(function () {
                 expect(flag).to.equal(true);
                 done();
             }).catch(done);
@@ -89,7 +100,7 @@ describe('streams', _.globals(function (use) {
             _(x).writable(main).then(function () {
                 expect(true).to.equal(false);
                 done();
-            }, function(e) {
+            }, function (e) {
                 expect(e).to.be.an.instanceof(Error);
                 done();
             });
@@ -120,7 +131,7 @@ describe('streams', _.globals(function (use) {
             }).catch(done);
         });
 
-        it("indirection", function(done) {
+        it("indirection", function (done) {
             const x = [];
             _(x).writable(_(["Hello", [[" "], "World!"]]).readable()).then(function () {
                 expect(x).to.deep.equal([new Buffer("Hello"), new Buffer(" "), new Buffer("World!")]);
