@@ -33,7 +33,7 @@ module.exports = function (_) {
     };
 
     const readable = function (array) {
-        const writable = (array.length > 0 && (typeof array[0] === "string" || array[0] instanceof Buffer)) ? new PassThrough() : new PassThrough({objectMode: true});
+        let writable = null;
         const stream = function (readable, offset, count) {
             if (readable instanceof Array) {
                 for (let i = offset; i < readable.length; ++i) {
@@ -44,8 +44,14 @@ module.exports = function (_) {
                         });
                     }
                 }
-                writable.end();
                 return count;
+            }
+            if (!writable) {
+                if (typeof readable === "string" || readable instanceof Buffer) {
+                    writable = new PassThrough();
+                } else {
+                    writable = new PassThrough({objectMode: true});
+                }
             }
             if (readable instanceof Promise) {
                 return readable.then(function (readable) {
@@ -56,7 +62,14 @@ module.exports = function (_) {
             writable.write(readable);
             return ++count;
         }
-        stream(array, 0, 0);
+        const result = stream(array, 0, 0);
+        if (result instanceof Promise) {
+            result.then(function() {
+                writable.end();
+            });
+        } else {
+            writable.end();
+        }
         return writable;
     };
 
@@ -80,7 +93,7 @@ module.exports = function (_) {
                 return Promise.all(result);
             }
             if (object instanceof Array) {
-                return new Promise(function(resolve, reject) {
+                return new Promise(function (resolve, reject) {
                     if (!(writable instanceof Readable)) {
                         throw new Error("stream expected");
                     }
@@ -90,12 +103,14 @@ module.exports = function (_) {
                             const value = {};
                             object.push(value);
                             result.push(_.writable(value, writable));
-                        } else {
+                        } else if (writable instanceof Buffer || typeof writable === 'string') {
                             object.push(writable);
+                        } else {
+                            reject(new Error("object or buffer expected"));
                         }
                     });
                     writable.on("end", function () {
-                        Promise.all(result).then(function(value) {
+                        Promise.all(result).then(function (value) {
                             resolve(value);
                         });
                     });
@@ -106,14 +121,21 @@ module.exports = function (_) {
             if (Object.getPrototypeOf(object) === Object.prototype) {
                 let keys = [], values = [], result = {};
                 for (const key in object) {
-                    if (object.hasOwnProperty(key)) {
-                        const value = object[key];
-                        if (value instanceof Promise) {
-                            keys.push(key);
-                            values.push(value);
-                        } else {
-                            result[key] = _.readable(value);
-                        }
+                    switch (key.charAt(0)) {
+                        case '@':
+                        case '$':
+                            break;
+                        default:
+                            if (object.hasOwnProperty(key)) {
+                                const value = object[key];
+                                if (value instanceof Promise) {
+                                    keys.push(key);
+                                    values.push(value);
+                                } else {
+                                    result[key] = _.readable(value);
+                                }
+                            }
+                            break;
                     }
                 }
                 if (!keys.length) {
@@ -140,7 +162,7 @@ module.exports = function (_) {
                 body.pipe(http.request(options, function (res) {
                     const body = new stream.PassThrough();
                     writable.write({
-                    //    headers: res.headers,
+                        //    headers: res.headers,
                         body: body
                     });
                     res.pipe(body);
@@ -149,7 +171,7 @@ module.exports = function (_) {
                     }
                 }));
             });
-            readable.on('end', function() {
+            readable.on('end', function () {
                 if (todo) {
                     done = true;
                 } else {

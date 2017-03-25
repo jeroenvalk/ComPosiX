@@ -30,11 +30,11 @@ describe('streams', _.globals(function (use) {
 
     let node, $$, request;
 
-    describe("writable", function() {
-        it("simple", function(done) {
+    describe("writable", function () {
+        it("simple", function (done) {
             const x = [""], writable = new stream.PassThrough();
             let flag = false;
-            _(x).writable(writable).then(function() {
+            _(x).writable(writable).then(function () {
                 expect(flag).to.equal(true);
                 done();
             }).catch(done);
@@ -45,12 +45,12 @@ describe('streams', _.globals(function (use) {
             //expect(flag).to.equal(false);
         });
 
-        it("nested", function(done) {
+        it("nested", function (done) {
             const x = [], writable = new stream.PassThrough({objectMode: true});
             let flag = false;
             let readable = new stream.PassThrough();
-            _(x).writable(writable).then(function() {
-                expect(flag).to.deep.equal(true);
+            _(x).writable(writable).then(function () {
+                expect(flag).to.equal(true);
                 done();
             }).catch(done);
             writable.write({readable: readable});
@@ -60,30 +60,79 @@ describe('streams', _.globals(function (use) {
             expect(x).to.deep.equal([{readable: [new Buffer("Hello World!")]}])
             flag = true;
         });
+
+        it("object", function(done) {
+            const x = {}, main = new stream.PassThrough();
+            let flag = false;
+            try {
+                _(x).writable(main);
+                expect(true).to.equal(false);
+            } catch(e) {
+
+            }
+            expect(x).to.deep.equal({});
+            _(x).writable({main: main}).then(function() {
+                expect(flag).to.equal(true);
+                done();
+            }).catch(done);
+            main.write("Hello World!");
+            main.end();
+            expect(x).to.deep.equal({main: [new Buffer("Hello World!")]});
+            flag = true;
+        });
+
+        it("indirection", function (done) {
+            const x = [];
+            const main = new stream.PassThrough({objectMode: true});
+            const indirect = new stream.PassThrough();
+            let flag = false;
+            _(x).writable(main).then(function () {
+                expect(true).to.equal(false);
+                done();
+            }, function(e) {
+                expect(e).to.be.an.instanceof(Error);
+                done();
+            });
+            main.write(indirect);
+            main.end();
+            indirect.write("Hello World!");
+            indirect.end();
+            expect(x).to.deep.equal([]);
+            flag = true;
+        });
     });
 
-    describe("readable", function() {
-        it("simple", function(done) {
+    describe("readable", function () {
+        it("simple", function (done) {
             const x = [];
-            _(x).writable(_(["Hello World!"]).readable()).then(function() {
+            _(x).writable(_(["Hello World!"]).readable()).then(function () {
                 expect(x).to.deep.equal([new Buffer("Hello World!")]);
                 done();
 
             }).catch(done);
         });
 
-        it("nested", function(done) {
+        it("nested", function (done) {
             const x = [];
-            _(x).writable(_([{readable: ["Hello World!"]}]).readable()).then(function() {
-               expect(x).to.deep.equal([{readable: [new Buffer("Hello World!")]}]);
-               done();
+            _(x).writable(_([{readable: ["Hello World!"]}]).readable()).then(function () {
+                expect(x).to.deep.equal([{readable: [new Buffer("Hello World!")]}]);
+                done();
             }).catch(done);
-        })
+        });
+
+        it("indirection", function(done) {
+            const x = [];
+            _(x).writable(_(["Hello", [[" "], "World!"]]).readable()).then(function () {
+                expect(x).to.deep.equal([new Buffer("Hello"), new Buffer(" "), new Buffer("World!")]);
+                done();
+
+            }).catch(done);
+        });
     });
 
-    it("request", function(done) {
+    it("request", function (done) {
         const x = [], writable = new stream.PassThrough({objectMode: true});
-        _(x).writable(writable).then(function() {
+        _(x).writable(writable).then(function () {
             expect(JSON.parse(x[0].body.toString()).swagger).to.equal("2.0");
             done();
         }).catch(done);
@@ -97,7 +146,7 @@ describe('streams', _.globals(function (use) {
         }]).readable()).request(writable);
     });
 
-    describe("node", function() {
+    describe("node", function () {
         it("local", function () {
             // do not pipe streams but pipe NODES!
             let source = _.node(function (writable) { // create a write node
