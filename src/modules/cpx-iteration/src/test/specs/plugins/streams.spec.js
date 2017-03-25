@@ -48,10 +48,10 @@ describe('streams', _.globals(function (use) {
         it("nested", function (done) {
             const x = [], writable = new stream.PassThrough({objectMode: true});
             let flag = false, properties = {
-                //timestamp: new Date(),
-                //seqnr: 0,
-                //message: "Hello World!",
-                //flag: false
+                timestamp: new Date(),
+                seqnr: 0,
+                message: "Hello World!",
+                flag: false
             };
             let readable = new stream.PassThrough();
             _(x).writable(writable).then(function () {
@@ -144,6 +144,9 @@ describe('streams', _.globals(function (use) {
     it("request", function (done) {
         const x = [], writable = new stream.PassThrough({objectMode: true});
         _(x).writable(writable).then(function () {
+            expect(x[0].statusCode).to.equal(200);
+            expect(x[0].statusMessage).to.equal("OK");
+            expect(x[0].headers['access-control-allow-origin']).to.equal('*');
             expect(JSON.parse(x[0].body.toString()).swagger).to.equal("2.0");
             done();
         }).catch(done);

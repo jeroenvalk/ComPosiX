@@ -35,22 +35,36 @@ module.exports = function (_) {
         return readable;
     };
 
-    const readObject = function(object, stream) {
+    const readObject = function (object, stream) {
         let result = [];
         for (const key in stream) {
             if (stream.hasOwnProperty(key)) {
-                if (stream[key] instanceof Readable) {
-                    object[key] = [];
-                } else {
-                    object[key] = {};
+                let readable = stream[key];
+                switch (Object.getPrototypeOf(readable)) {
+                    case Array.prototype:
+                    case Object.prototype:
+                        result.push(readObject(object[key] = {}, readable));
+                        break;
+                    case Boolean.prototype:
+                    case Date.prototype:
+                    case Number.prototype:
+                    case String.prototype:
+                        object[key] = readable;
+                        break;
+                    default:
+                        if (readable instanceof Readable) {
+                            result.push(readArray(object[key] = [], readable));
+                        } else {
+                            throw new Error("only serializable object allowed");
+                        }
+                        break;
                 }
-                result.push(_.writable(object[key], stream[key]));
             }
         }
         return Promise.all(result);
     };
 
-    const readArray = function(array, stream) {
+    const readArray = function (array, stream) {
         return new Promise(function (resolve, reject) {
             let result = [];
             stream.on("data", function (writable) {
@@ -104,7 +118,7 @@ module.exports = function (_) {
         }
         const result = stream(array, 0, 0);
         if (result instanceof Promise) {
-            result.then(function() {
+            result.then(function () {
                 writable.end();
             });
         } else {
@@ -173,9 +187,9 @@ module.exports = function (_) {
                 body.pipe(http[options.protocol].request(options, function (res) {
                     const body = new stream.PassThrough();
                     writable.write({
-                        //statusCode: res.statusCode,
-                        //statusMessage: res.statusMessage,
-                        //headers: res.headers,
+                        statusCode: res.statusCode,
+                        statusMessage: res.statusMessage,
+                        headers: res.headers,
                         body: body
                     });
                     res.pipe(body);
