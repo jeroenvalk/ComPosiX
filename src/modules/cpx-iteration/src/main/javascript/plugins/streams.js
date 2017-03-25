@@ -131,16 +131,17 @@ module.exports = function (_) {
         writable: function (object, writable) {
             if (Object.getPrototypeOf(object) === Object.prototype) {
                 if (Object.getPrototypeOf(writable) !== Object.prototype) {
-                    throw new Error("object expected");
+                    throw new Error("composite stream must be an Object");
                 }
                 return readObject(object, writable);
             }
             if (object instanceof Array) {
                 if (!(writable instanceof Readable)) {
-                    throw new Error("stream expected");
+                    throw new Error("composite stream must be a stream.Readable");
                 }
                 return readArray(object, writable);
             }
+            throw new Error("plain object or array expected");
         },
         readable: function (object) {
             if (Object.getPrototypeOf(object) === Object.prototype) {
