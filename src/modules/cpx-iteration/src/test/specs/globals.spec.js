@@ -17,7 +17,7 @@
 
 /* global describe, it */
 
-describe("cpx-iterators", _.globals(function($) {
+describe("cpx-iterations", _.globals(function($) {
     'use strict';
 
     /**
