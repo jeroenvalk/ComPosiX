@@ -183,6 +183,9 @@ module.exports = function (_) {
             let todo = 0, done = false;
             readable.on('data', function (options) {
                 ++todo;
+                if (!http[options.protocol]) {
+                    throw new Error("option 'protocol' must be 'http:' or 'https:'");
+                }
                 const body = options.body;
                 delete options.body;
                 body.pipe(http[options.protocol].request(options, function (res) {

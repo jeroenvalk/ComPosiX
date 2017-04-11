@@ -15,69 +15,106 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.describe('ComPosiX', function($) {
+_.describe('ComPosiX', function ($) {
     'use strict';
 
     const expect = $.expect;
 
     /* global describe, it */
 
-    const ComPosiX = require("../../main/javascript/ComPosiX")();
+    const ComPosiX = require("../../main/javascript/ComPosiX")(null, null, null, null, require('../../main/javascript/processor'));
     const cpx = new ComPosiX();
 
-    describe("use", function() {
+    const underscore = {
+        isEmpty(object) {
+            if (object instanceof Object) {
+                for (var key in object) {
+                    if (object.hasOwnProperty(key)) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+    }
+
+    describe("use", function () {
         let plugins = [], id = 0;
         const object = {
             mixin(plugin, options) {
                 plugins.push([plugin, options]);
             }
         };
-        const plugin = function(object) {
+        const plugin = function (object) {
             object.mixin(id++);
         }
         const e = new Error();
 
-        it("wrong", function(done) {
+        it("wrong", function (done) {
             try {
                 cpx.use({}, plugin);
                 throw e;
-            } catch(e) {}
+            } catch (e) {
+            }
             expect(id).to.equal(1);
             expect(plugins).to.deep.equal([]);
 
             try {
                 cpx.use({}, object);
                 throw e;
-            } catch(e) {}
+            } catch (e) {
+            }
             try {
                 cpx.use(object, new Date());
                 throw e;
-            } catch(e) {}
+            } catch (e) {
+            }
             try {
-                cpx.use(object, function(a,b){});
+                cpx.use(object, function (a, b) {
+                });
                 throw e;
-            } catch(e) {}
+            } catch (e) {
+            }
             expect(plugins).to.deep.equal([]);
             done();
         });
 
-        it("object", function() {
+        it("object", function () {
             plugins.length = 0;
             cpx.use(object, {});
             expect(plugins).to.deep.equal([[{}, undefined]]);
         });
 
-        it("function", function() {
+        it("function", function () {
             plugins.length = 0;
             cpx.use(object, plugin);
             cpx.use(object, plugin);
-            expect(plugins).to.deep.equal([[id - 2, undefined],[id - 1, undefined]]);
+            expect(plugins).to.deep.equal([[id - 2, undefined], [id - 1, undefined]]);
         });
 
-        it("cpx-iteration", function() {
+        it("cpx-iteration", function () {
             plugins.length = 0;
             cpx.use(object, 'cpx-iteration');
             expect(plugins).to.have.length.above(0);
+        });
+    });
+
+    describe("execute", function () {
+        it("simple", function () {
+            let x = {
+                "@": {
+                    cpx: {
+                        use: {
+                            _: _.constant(underscore)
+                        }
+                    }
+                },
+                "$extend": [{}]
+            };
+            let y = cpx.execute(x);
+            expect(y).to.equal(x);
+            delete x['@'];
+            expect(underscore.isEmpty(x)).to.equal(true);
         });
     });
 });

@@ -129,7 +129,14 @@ module.exports = function processor(self, parent) {
                     result = {};
                     for (i in expression) {
                         if (expression.hasOwnProperty(i)) {
-                            result[i] = recurse(expression[i]);
+                            switch(i.charAt(0)) {
+                                case '$':
+                                case '@':
+                                    result[i] = expression[i];
+                                    break;
+                                default:
+                                    result[i] = recurse(expression[i]);
+                            }
                         }
                     }
                     return result;
