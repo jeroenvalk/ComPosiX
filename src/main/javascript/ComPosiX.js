@@ -63,7 +63,7 @@ module.exports = function(url, stream, http, _, processor) {
             if (typeof plugin === 'string') {
                 name = plugin; plugin = plugin.split(".");
                 try {
-                    plugin = require(plugin[plugin.length - 1]);
+                    plugin = require("./plugins/" + name);
                 } catch(e) {
                     plugin = require('../../modules/' + plugin[plugin.length - 1]);
                 }

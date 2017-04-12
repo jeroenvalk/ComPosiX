@@ -41,7 +41,9 @@ module.exports = function(_) {
                 case Object.prototype:
                     fs.existsSync(pathname) || fs.mkdirSync(pathname);
                     _.each(object, function(value, key) {
-                        _.fsWriteSync(value, path.join(pathname, key), options);
+                        if (key.charAt(0) !== '@') {
+                            _.fsWriteSync(value, path.join(pathname, key), options);
+                        }
                     });
                     break;
                 case Buffer.prototype:
