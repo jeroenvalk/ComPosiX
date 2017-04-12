@@ -5,7 +5,7 @@
   "author": {
     "name": "dr. ir. Jeroen M. Valk",
     "email": "jeroen@composix.org",
-    "url": "http://www.composix.org/"
+    "url": "https://github.com/jeroenvalk/ComPosiX"
   },
   "license": "LGPL-3.0",
   "main": "src/main/javascript/index.js",
