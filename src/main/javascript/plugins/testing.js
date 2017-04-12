@@ -37,7 +37,7 @@ module.exports = function (_) {
     _.mixin({
         hierarchy: function cpx$hierarchy(regex, entity) {
             var paths = _.map(_(entity).keysDeep(), function(path) {
-                path = "." + path;
+                path = "." + path.join(".");
                 var i = 0, j, result = [];
                 while ((j = path.indexOf(".", j + 1)) >= 0) {
                     if (regex.test(path.substring(i, j))) {

@@ -32,12 +32,12 @@ module.exports = function (_) {
                 properties: _.mapValues(schema, function (value) {
                     var isArray = value instanceof Array;
                     if (isArray) {
+                        // TODO: properly handle optional fields
                         value = value[0];
                     }
                     if (_.isString(value)) {
                         return {
-                            type: value,
-                            required: !isArray
+                            type: value
                         }
                     }
                     if (isArray) {
@@ -87,10 +87,11 @@ module.exports = function (_) {
                         var flag = true;
                         _.each(_.keysDeep(value), function (tail) {
                             flag = false;
-                            result.push([key, tail].join("."));
+                            tail.unshift(key);
+                            result.push(tail);
                         });
                         if (flag) {
-                            result.push(key + "");
+                            result.push([key]);
                         }
                     }
                 });
