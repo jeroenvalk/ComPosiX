@@ -61,11 +61,21 @@ module.exports = function(url, stream, http, _, processor) {
         use(object, plugin) {
             let name;
             if (typeof plugin === 'string') {
-                name = plugin; plugin = plugin.split(".");
-                try {
-                    plugin = require("./plugins/" + name);
-                } catch(e) {
-                    plugin = require('../../modules/' + plugin[plugin.length - 1]);
+                name = plugin; plugin = plugin.split(":", 2);
+                if (plugin.length > 1) {
+                    switch(plugin[0]) {
+                        case 'cpx':
+                            try {
+                                plugin = require("./plugins/" + plugin[1]);
+                            } catch(e) {
+                                plugin = require('../../modules/cpx-' + plugin[1]);
+                            }
+                            break;
+                        default:
+                            throw new Error('unknown prefix: ' + plugin[0]);
+                    }
+                } else {
+                    require(name);
                 }
             }
             if (plugin instanceof Function && plugin.length === 1) {

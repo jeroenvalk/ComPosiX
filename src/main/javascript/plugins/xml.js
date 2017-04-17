@@ -45,14 +45,14 @@ module.exports = function(_) {
                 writable.write(serializeTag(tagname, attr));
                 _.each(data, function (value, key) {
                     if (key.charAt(0) !== '@') {
-                        serializeXML(key, {}, value, writable);
+                        serializeXML(key, value['@'] ? value['@'][key] : {}, value, writable);
                     }
                 });
                 writable.write('</' + tagname + '>');
                 break;
             case Array.prototype:
                 for (let i = 0; i < data.length; ++i) {
-                    serializeXML(tagname, attr, data[i], writable);
+                    serializeXML(tagname, data[i]['@'] ? data[i]['@'][tagname]: {}, data[i], writable);
                 }
                 break;
             default:
