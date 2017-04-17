@@ -17,7 +17,7 @@
 
 /* global module */
 
-module.exports = function(_) {
+module.exports = function (_) {
     'use strict';
 
     const validator = function validator(swagger) {
@@ -34,12 +34,12 @@ module.exports = function(_) {
             });
         };
 
-        const validateSchema = function(object, force) {
+        const validateSchema = function (object, force) {
             if (schema.$ref) {
                 schema = _.get(swagger, schema.$ref.split('/').slice(1));
             }
             const current = schema, method = ['is', schema.type.charAt(0).toUpperCase(), schema.type.substr(1)].join('');
-            switch(schema.type) {
+            switch (schema.type) {
                 case 'object':
                     if (!_.isPlainObject(object)) {
                         return error();
@@ -100,7 +100,7 @@ module.exports = function(_) {
                     pathname = pathname.split(".");
                 }
                 path.push(pathname[0]);
-                switch(pathname[0]) {
+                switch (pathname[0]) {
                     case 'definitions':
                         path.push(pathname[1]);
                         schema = swagger.definitions[pathname[1]];
