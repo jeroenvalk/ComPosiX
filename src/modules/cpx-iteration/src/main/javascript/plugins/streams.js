@@ -188,19 +188,28 @@ module.exports = function (_) {
                 }
                 const body = options.body;
                 delete options.body;
-                body.pipe(http[options.protocol].request(options, function (res) {
+                const req = http[options.protocol].request(options, function (res) {
                     const body = new stream.PassThrough();
-                    writable.write({
+                    const response = {
                         statusCode: res.statusCode,
                         statusMessage: res.statusMessage,
                         headers: res.headers,
                         body: body
-                    });
+                    };
+                    if (req.toCurl) {
+                        response.curl = req.toCurl().replace(/(\\n0?)|(\\r)/g, "");
+                    }
+                    writable.write(response);
                     res.pipe(body);
                     if (!--todo && done) {
                         writable.end();
                     }
-                }));
+                });
+                if (body) {
+                    body.pipe(req);
+                } else {
+                    req.end();
+                }
             });
             readable.on('end', function () {
                 if (todo) {
