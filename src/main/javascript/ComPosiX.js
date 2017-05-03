@@ -15,8 +15,10 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-module.exports = function(url, stream, http, _, processor) {
+module.exports = function (url, stream, http, _, processor) {
     'use strict';
+
+    const path = require('path');
 
     var dependencies = {
         path: null,
@@ -41,11 +43,47 @@ module.exports = function(url, stream, http, _, processor) {
             this.data = {};
         }
 
+        project(object, testing) {
+            const cpx = this;
+            cpx.use(object, 'cpx:filesystem');
+            const index = typeof testing === 'boolean' ? 2 : 1;
+            const flag = index > 1 ? testing : false;
+            const argv = [{
+                "@": {
+                    "cpx": {
+                        "use": {
+                            "_": _.constant(object)
+                        }
+                    }
+                }
+            }];
+            for (var i = index; i < arguments.length; ++i) {
+                try {
+                    argv.push(object.parseSync(object.fsReadSync(null, path.join(arguments[i], 'src/main/resources'))));
+                } catch(e) {
+
+                }
+                try {
+                    if (flag) argv.push(object.parseSync(object.fsReadSync(null, path.join(arguments[i], 'src/test/resources'))));
+                } catch(e) {
+
+                }
+            }
+            const resources = object.merge.apply(object, argv);
+            cpx.use(object, {
+                run: function project$run(fn) {
+                    cpx.execute(resources);
+                    return fn.call(null, object, cpx, resources, flag ? require('chai') : null);
+                }
+            });
+            return object;
+        }
+
         debug(object, flag) {
-            if (flag) {
+            if (!object.describe) {
                 this.use(object, {
                     describe: function cpx$describe(name, fn) {
-                        describe(name, function() {
+                        describe(name, function () {
                             fn.call(null, {
                                 _: object,
                                 npm: {
@@ -56,18 +94,20 @@ module.exports = function(url, stream, http, _, processor) {
                     }
                 });
             }
+            return object;
         }
 
         use(object, plugin) {
             let name;
             if (typeof plugin === 'string') {
-                name = plugin; plugin = plugin.split(":", 2);
+                name = plugin;
+                plugin = plugin.split(":", 2);
                 if (plugin.length > 1) {
-                    switch(plugin[0]) {
+                    switch (plugin[0]) {
                         case 'cpx':
                             try {
                                 plugin = require("./plugins/" + plugin[1]);
-                            } catch(e) {
+                            } catch (e) {
                                 plugin = require('../../modules/cpx-' + plugin[1]);
                             }
                             break;
@@ -337,7 +377,7 @@ module.exports = function(url, stream, http, _, processor) {
         server(object, options) {
             const self = this;
             let secret;
-            require('crypto').randomBytes(48, function(err, buffer) {
+            require('crypto').randomBytes(48, function (err, buffer) {
                 secret = buffer.toString("base64");
                 console.log(secret);
             });
@@ -357,7 +397,7 @@ module.exports = function(url, stream, http, _, processor) {
                         res.end();
                         break;
                     case 'PURGE':
-                        _.each(target, function(value, key) {
+                        _.each(target, function (value, key) {
                             delete target[key];
                         });
                         res.statusCode = 204;
@@ -376,7 +416,7 @@ module.exports = function(url, stream, http, _, processor) {
                                 _.merge(target, JSON.parse(msg.join('')));
                                 res.statusCode = 201;
                                 res.statusMessage = "Created";
-                            } catch(e) {
+                            } catch (e) {
                                 res.statusCode = 415;
                                 res.statusMessage = "Unsupported Media Type";
                             }
@@ -394,7 +434,7 @@ module.exports = function(url, stream, http, _, processor) {
                                 msg = JSON.parse(msg);
                                 res.statusCode = 202;
                                 res.statusMessage = "Accepted";
-                            } catch(e) {
+                            } catch (e) {
                                 res.statusCode = 415;
                                 res.statusMessage = "Unsupported Media Type";
                                 res.end();
@@ -406,7 +446,7 @@ module.exports = function(url, stream, http, _, processor) {
                                     _.set(object.target, pathname, msg);
                                 }
                                 self.execute(msg, [object]);
-                            } catch(e) {
+                            } catch (e) {
                                 res.statusCode = 400;
                                 res.statusMessage = "Bad Request";
                                 res.end(e.stack);
@@ -414,7 +454,7 @@ module.exports = function(url, stream, http, _, processor) {
                             res.end(JSON.stringify(msg));
                         });
                         break;
-                        // TODO: implement POST or PATCH which is like PUT but also executes
+                    // TODO: implement POST or PATCH which is like PUT but also executes
                     default:
                         res.statusCode = 405;
                         res.statusMessage = "Method Not Allowed";
