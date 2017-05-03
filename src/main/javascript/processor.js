@@ -18,6 +18,19 @@
 module.exports = function processor(self, parent) {
     'use strict';
 
+    const Exception = class Exception {
+
+        constructor(message, error) {
+            this.message = message;
+            this.cause = error;
+            this.error = new Error(message);
+        }
+
+        toString() {
+            return this.message + "\nCaused by:\n" + this.info.cause.stack;
+        }
+    };
+
     var cpx = this, object = self, trail = [];
     parent = parent || [];
 
@@ -40,7 +53,15 @@ module.exports = function processor(self, parent) {
     };
 
     var cpxRequire = function processor$cpxRequire(dep) {
-        var result = recurse(getAttribute(["cpx", "use", dep].join(".")));
+        var attr = getAttribute(["cpx", "use", dep].join("."));
+        try {
+            var result = recurse(attr);
+        } catch(e) {
+            throw new Exception({
+                message: '@cpx.use.' + dep + ': ' + JSON.stringify(attr, null, 2),
+                cause: e
+            });
+        }
         if (result instanceof Array) {
             var head = result.shift();
             if (typeof head === "string") {
@@ -122,14 +143,18 @@ module.exports = function processor(self, parent) {
                 return result;
             }
             if (expression instanceof Function && isEmpty(expression)) {
-                return expression.call(null);
+                try {
+                    return expression.call(null);
+                } catch(e) {
+                    throw new Exception("function evaluation error", e);
+                }
             }
             switch (Object.getPrototypeOf(expression)) {
                 case Object.prototype:
                     result = {};
                     for (i in expression) {
                         if (expression.hasOwnProperty(i)) {
-                            switch(i.charAt(0)) {
+                            switch (i.charAt(0)) {
                                 case '$':
                                 case '@':
                                     result[i] = expression[i];
@@ -145,6 +170,9 @@ module.exports = function processor(self, parent) {
             }
         }
         if (typeof expression === 'string' && expression.charAt(0) === '@') {
+            if (expression.charAt(1) === '@') {
+                return expression.substr(1);
+            }
             return recurse(getAttribute(expression.substr(1)));
         }
         return expression;
@@ -213,8 +241,10 @@ module.exports = function processor(self, parent) {
                                 if (path.length !== 1) {
                                     throw new Error(trail.join(".") + ": invalid task name: " + key);
                                 }
-                                task[path[0]] = object[key];
-                                delete object[key];
+                                if (object[key] instanceof Object) {
+                                    task[path[0]] = object[key];
+                                    delete object[key];
+                                }
                                 break;
                         }
                 }
