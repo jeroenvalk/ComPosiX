@@ -23,6 +23,54 @@ module.exports = function(_) {
     const path = require('path'), fs = require('fs');
 
     _.mixin({
+        parseSync: function filesystem$parse(object, options) {
+            // TODO: check if object is readable to throw error: cannot synchrously parse async stream (or peek into it if possible)
+            // TODO: check if object is promise to throw error: cannot synchronously parse promise (or peek into it if possible)
+            // TODO: make sure that writeable streams are silently ignored
+            _.each(object, function(value, key) {
+                const ext = path.extname(key);
+                switch(ext) {
+                    case '.json':
+                        // TODO: implement writing if path.basename(key, ext) is a writable stream
+                        if (object[key] instanceof Buffer) {
+                            // TODO: create readable streams for arrays
+                            object[path.basename(key, ext)] = JSON.parse(object[key].toString());
+                            if (!options || options.purge !== false) {
+                                delete object[key];
+                            }
+                        } else {
+                            throw new Error('buffer expected');
+                        }
+                        break;
+                    default:
+                        _.parseSync(object[key]);
+                        break;
+                }
+            });
+            return object;
+        },
+        stringifySync: function(object, options) {
+            // TODO: check if object is readable to throw error: cannot synchrously parse async stream
+            // TODO: check if object is promise to throw error: cannot synchronously parse promise
+            // TODO: make sure that writeable streams are silently ignored
+            _.each(object, function(value, key) {
+                const ext = path.extname(key);
+                switch(ext) {
+                    case '.json':
+                        // TODO: implement writing if object[key] is a writable stream
+                        // TODO: create readable streams for arrays
+                        object[key] = JSON.stringify(object[path.basename(key, ext)], null, options && options.pretty ? '\t' : undefined);
+                        if (!options || options.purge !== false) {
+                            delete object[path.basename(key, ext)];
+                        }
+                        break;
+                    default:
+                        _.stringifySync(object[key]);
+                        break;
+                }
+            });
+            return object;
+        },
         fsReadSync: function filesystem$fsReadSync(object, pathname, options) {
             const stat = fs.statSync(pathname);
             if (stat.isDirectory()) {
