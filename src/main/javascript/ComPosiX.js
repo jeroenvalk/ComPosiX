@@ -52,6 +52,8 @@ module.exports = function (url, stream, http, _, processor) {
                 "@": {
                     "cpx": {
                         "use": {
+                            "url": _.constant(url),
+                            "path": _.constant(path),
                             "_": _.constant(object)
                         }
                     }
@@ -72,7 +74,6 @@ module.exports = function (url, stream, http, _, processor) {
             const resources = object.merge.apply(object, argv);
             cpx.use(object, {
                 run: function project$run(fn) {
-                    cpx.execute(resources);
                     return fn.call(null, object, cpx, resources, flag ? require('chai') : null);
                 }
             });

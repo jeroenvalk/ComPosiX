@@ -22,6 +22,12 @@ module.exports = function(_) {
 
     const path = require('path'), fs = require('fs');
 
+    const stripWhitespace = function(str) {
+        str = str.replace(/>\s*/g, '>');
+        str = str.replace(/\s*</g, '<');
+        return str;
+    };
+
     _.mixin({
         parseSync: function filesystem$parse(object, options) {
             // TODO: check if object is readable to throw error: cannot synchrously parse async stream (or peek into it if possible)
@@ -35,6 +41,16 @@ module.exports = function(_) {
                         if (object[key] instanceof Buffer) {
                             // TODO: create readable streams for arrays
                             object[path.basename(key, ext)] = JSON.parse(object[key].toString());
+                            if (!options || options.purge !== false) {
+                                delete object[key];
+                            }
+                        } else {
+                            throw new Error('buffer expected');
+                        }
+                        break;
+                    case '.xml':
+                        if (object[key] instanceof Buffer) {
+                            object[path.basename(key, ext)] = [stripWhitespace(object[key].toString())];
                             if (!options || options.purge !== false) {
                                 delete object[key];
                             }
