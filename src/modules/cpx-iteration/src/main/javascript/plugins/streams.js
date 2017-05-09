@@ -205,6 +205,18 @@ module.exports = function (_) {
                         writable.end();
                     }
                 });
+                req.on("error", function(e) {
+                    writable.write(e);
+                    if (!--todo && done) {
+                        writable.end();
+                    }
+                });
+                req.on("timeout", function() {
+                    writable.write(new Error('timeout'));
+                    if (!--todo && done) {
+                        writable.end();
+                    }
+                });
                 if (body) {
                     body.pipe(req);
                 } else {
