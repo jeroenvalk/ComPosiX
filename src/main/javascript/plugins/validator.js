@@ -35,7 +35,7 @@ module.exports = function (_) {
         };
 
         const validateSchema = function (object) {
-            var key;
+            var key, i;
             if (schema.$ref) {
                 schema = _.get(swagger, schema.$ref.split('/').slice(1));
             }
@@ -47,7 +47,7 @@ module.exports = function (_) {
                     }
                     if (x.options.defaults) {
                         key = _.difference(_.keys(schema.properties), _.keys(object));
-                        for (let i = 0; i < key.length; ++i) {
+                        for (i = 0; i < key.length; ++i) {
                             if (schema.properties[key].default) {
                                 object[key] = schema.properties[key].default;
                             }
@@ -62,7 +62,7 @@ module.exports = function (_) {
                     }
                     if (current.properties) {
                         path.push('properties');
-                        for (let i = 0; i < key.length; ++i) {
+                        for (i = 0; i < key.length; ++i) {
                             schema = current.properties[key[i]];
                             if (_.isPlainObject(schema)) {
                                 trail.push(key[i]);
@@ -81,7 +81,7 @@ module.exports = function (_) {
                     }
                     path.push('items');
                     schema = schema.items;
-                    for (let i = 0; i < object.length; ++i) {
+                    for (i = 0; i < object.length; ++i) {
                         trail.push(i);
                         validateSchema(object[i]);
                         trail.pop();
