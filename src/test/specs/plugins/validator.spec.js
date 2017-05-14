@@ -22,12 +22,19 @@ describe('validator', _.globals(function ($) {
 
     const _ = $._.runInContext(), expect = $.expect, fs = require('fs');
 
+    const swagger = JSON.parse(fs.readFileSync('src/test/cpx/models/swagger.json'));
+
     before(function () {
         require("../../../main/javascript/plugins/validator")(_);
     });
 
+    it("select", function() {
+        const params = _.validator({}).select(swagger, {"type": "object", "recurse": true, "required": ["in"]}, 10);
+        expect(params.length).to.equal(9);
+    });
+
     it("validate", function() {
-        const errors = _.validator(JSON.parse(fs.readFileSync('src/test/cpx/models/swagger.json'))).validate({
+        const errors = _.validator(swagger).validate({
             name: "Doggie",
             photoUrls: []
         }, ['definitions', 'Pet']);
