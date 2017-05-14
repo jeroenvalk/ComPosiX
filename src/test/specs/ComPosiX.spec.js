@@ -94,7 +94,7 @@ _.describe('ComPosiX', function ($) {
 
         it("cpx-iteration", function () {
             plugins.length = 0;
-            cpx.use(object, 'cpx-iteration');
+            cpx.use(object, 'cpx:iteration');
             expect(plugins).to.have.length.above(0);
         });
     });

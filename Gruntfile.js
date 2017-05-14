@@ -22,7 +22,7 @@ module.exports = function (grunt) {
                 replacements: [
                     {
                         from: "module.exports=",
-                        to: "/* This file is part of ComPosiX v0.1.0 © https://github.com/jeroenvalk/ComPosiX/blob/master/src/main/javascript/plugins/validator.js */("
+                        to: "/* This file is part of ComPosiX v0.1.1-SNAPSHOT © https://github.com/jeroenvalk/ComPosiX/blob/master/src/main/javascript/plugins/validator.js */("
                     },
                     {
                         from: "_.mixin({validator:validator})};",
