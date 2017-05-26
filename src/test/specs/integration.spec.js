@@ -164,7 +164,7 @@ describe('integration', _.globals(function ($) {
                         '@': {
                             cpx: {
                                 use: {
-                                    _: _.constant(require("underscore"))
+                                    _: _.constant(require("lodash"))
                                 }
                             }
                         },

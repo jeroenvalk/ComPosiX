@@ -17,8 +17,6 @@
     "chai": "^3.5.0",
     "grunt-babel": "^6.0.0",
     "grunt-text-replace": "^0.4.0",
-    "lodash": "~4.17.2",
-    "request": "~2.79.0",
-    "underscore": "~1.8.3"
+    "lodash": "~4.17.2"
   }
 }
