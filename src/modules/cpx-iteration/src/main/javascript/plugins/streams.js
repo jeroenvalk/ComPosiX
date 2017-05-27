@@ -18,13 +18,22 @@
 module.exports = function (_) {
     'use strict';
 
-    var Node = require("../Node");
-    var stream = require('stream');
-    var http = {
-        "http:": require('http'),
-        "https:": require('https')
-    };
-    var Readable = stream.Readable, PassThrough = stream.PassThrough;
+    const stream = require('stream');
+    const Readable = stream.Readable, PassThrough = stream.PassThrough;
+
+    class Channel {
+        constructor() {
+            this.passthrough = new PassThrough({objectMode: true});
+        }
+
+        getWritable() {
+            return this.passthrough;
+        }
+
+        getReadable() {
+            return this.passthrough;
+        }
+    }
 
     const writable = function (array) {
         const readable = (array.length > 0 && (typeof array[0] === "string" || array[0] instanceof Buffer)) ? new PassThrough() : new PassThrough({objectMode: true});
@@ -127,7 +136,93 @@ module.exports = function (_) {
         return writable;
     };
 
+    const endpoint = new stream.PassThrough({objectMode: true});
+    const argv = ['$'];
+
+    endpoint.on('data', function(data) {
+        var i, j;
+        switch(Object.getPrototypeOf(data)) {
+            case Array.prototype:
+                for (i = 0; i < data.length; ++i) {
+                    if (typeof data[i] === 'string' && data[i].charAt(0) === '$') {
+                        j = 0;
+                        if (argv[0] === '$') {
+                            for (j = 1; j < argv.length; ++j) {
+                                if (argv[j].charAt(0) === '$') {
+                                    break;
+                                }
+                            }
+                        }
+                        if (j < argv.length) {
+                            const method = argv[j++].substr(1);
+                            switch(method) {
+                                case "mixin":
+                                    argv[j] = _.mapValues(argv[j], function(value) {
+                                        return function() {
+                                            return _.wiring(value);
+                                        }
+                                    });
+                                    break;
+                            }
+                            _[method].apply(_, argv.slice(j));
+                        }
+                        argv.length = 0;
+                    }
+                    argv.push(data[i]);
+                }
+                break;
+            default:
+                argv.push(data);
+                break;
+        }
+    });
+
+    const Node = require("../Node");
+    const http = {
+        "http:": require('http'),
+        "https:": require('https')
+    };
+
     _.mixin({
+        mainstream: function() {
+            for (var i = 0; i < arguments.length; ++i) {
+                endpoint.write([arguments[i]]);
+            }
+        },
+        wiring: function(stream) {
+            // TODO: accept JSON schema as second argument for type-safe streaming
+            const connectReadable = function(readable, fn) {
+                readable.on('data', function(data) {
+                    fn(stream, data);
+                });
+                // TODO: close all writables on EOF
+            };
+            const todo = [];
+            const result = _.mapValues(stream, function (value, key) {
+                var channel, endpoint;
+                switch(Object.getPrototypeOf(value)) {
+                    case Function.prototype:
+                        delete stream[key];
+                        channel = new Channel();
+                        endpoint = channel.getReadable();
+                        if (!endpoint) throw new Error();
+                        _.set(stream, key, endpoint);
+                        todo.push([endpoint, value]);
+                        return channel.getWritable();
+                    case Array.prototype:
+                        delete stream[key];
+                        channel = new Channel();
+                        _.set(stream, key, channel.getWritable());
+                        return channel.getReadable();
+                    default:
+                        return value;
+                }
+            });
+            _.each(todo, function(pair) {
+                connectReadable.apply(null, pair);
+            });
+            return result;
+        },
         writable: function (object, writable) {
             if (Object.getPrototypeOf(object) === Object.prototype) {
                 if (Object.getPrototypeOf(writable) !== Object.prototype) {

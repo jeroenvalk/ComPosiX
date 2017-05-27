@@ -30,6 +30,75 @@ describe('streams', _.globals(function (use) {
 
     let node, $$, request;
 
+    describe("mainstream", function () {
+        it('mixin', function () {
+            var flag = false;
+            _.mainstream("$mixin", _.wiring({
+                echo: {
+                    writable: function (x, data) {
+                        x.readable.write(data);
+                    },
+                    readable: []
+                }
+            }), '$');
+            _.echo().readable.on('data', function (data) {
+                flag = true;
+                expect(data).to.deep.equal({msg: "Hello World"});
+            });
+            _.echo().writable.write({msg: "Hello World"});
+            expect(flag).to.equal(true);
+        });
+    });
+
+    describe("wiring", function () {
+        it("direct", function () {
+            var flag = false;
+            const y = {
+                readable: [""]
+            };
+            const x = _.wiring(y);
+            x.readable.on("data", function (data) {
+                flag = true;
+                expect(data).to.equal("Hello World");
+            });
+            expect(flag).to.equal(false);
+            y.readable.write("Hello World");
+            expect(flag).to.equal(true);
+        });
+
+        it("inverse", function() {
+            var flag = false;
+            const y = {
+                writable: ["", null]
+            };
+            const x = _.wiring(y);
+            y.writable.on("data", function (data) {
+                flag = true;
+                expect(data).to.equal("Hello World");
+            });
+            expect(flag).to.equal(false);
+            x.writable.write("Hello World");
+            expect(flag).to.equal(true);
+        });
+
+        it("echo", function () {
+            var flag = false;
+            const x = _.wiring({
+                writable: function (y, data) {
+                    y.readable.write(data);
+                },
+                readable: []
+            });
+            x.readable.on("data", function (data) {
+                flag = true;
+                expect(data).to.deep.equal({msg: "Hello World"});
+            });
+            expect(flag).to.equal(false);
+            x.writable.write({msg: "Hello World"});
+            expect(flag).to.equal(true);
+        });
+    });
+
     describe("writable", function () {
         it("simple", function (done) {
             const x = [""], writable = new stream.PassThrough();
