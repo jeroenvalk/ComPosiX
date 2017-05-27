@@ -17,14 +17,14 @@
 
 /* global module */
 
-module.exports = function(_) {
+module.exports = function (_) {
     'use strict';
 
     const serializeTag = function core$serializeTag(tagname, attr) {
         const result = ['<', tagname];
         let text;
         if (attr) {
-            _.each(attr, function(value, key) {
+            _.each(attr, function (value, key) {
                 if (key.charAt(0) === '$') {
                     text = value;
                 } else {
@@ -52,7 +52,7 @@ module.exports = function(_) {
                 break;
             case Array.prototype:
                 for (let i = 0; i < data.length; ++i) {
-                    serializeXML(tagname, data[i]['@'] ? data[i]['@'][tagname]: {}, data[i], writable);
+                    serializeXML(tagname, data[i]['@'] ? data[i]['@'][tagname] : {}, data[i], writable);
                 }
                 break;
             default:
@@ -64,18 +64,23 @@ module.exports = function(_) {
     };
 
     _.mixin({
-        toXML: function core$serialize(object, pattern) {
-            let result = [];
+        toXML: function core$serialize(object) {
+            const result = [];
 
             function write(chunk) {
                 result.push(chunk);
             }
 
-            if (_.isString(pattern)) {
-                const data = object[pattern], tagname = data['@'] ? _.keys(data['@'])[0] : null;
-                serializeXML(tagname, tagname ? data['@'][tagname] : {}, data, {write: write});
-                object[pattern] = result.join("");
+            for (var i = 1; i < arguments.length; ++i) {
+                const pattern = arguments[i];
+                result.length = 0;
+                if (_.isString(pattern)) {
+                    const data = object[pattern], tagname = data['@'] ? _.keys(data['@'])[0] : null;
+                    serializeXML(tagname, tagname ? data['@'][tagname] : {}, data, {write: write});
+                    object[pattern] = result.join("");
+                }
             }
+
         }
     });
 };
