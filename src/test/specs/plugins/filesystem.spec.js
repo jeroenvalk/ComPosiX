@@ -20,20 +20,39 @@
 describe('filesystem', _.globals(function ($) {
     'use strict';
 
+    const path = require('path');
     const _ = $._.runInContext(), expect = $.expect, fs = require('fs');
 
     before(function () {
+        require("../../../modules/cpx-iteration")(_);
         require("../../../main/javascript/plugins/filesystem")(_);
     });
 
-    it('fsReadSync', function() {
+    it('module', function (done) {
+        _.module().readable.on("data", function (data) {
+            const result = [];
+            data.chain.on("data", function (data) {
+                result.push(data);
+            });
+            data.chain.on("end", function () {
+                expect(result).to.deep.equal([{
+                    dirname: path.resolve('.'),
+                    pkg: JSON.parse(fs.readFileSync('package.json'))
+                }]);
+                done();
+            });
+        });
+        _.module().writable.write({dirname: '.'});
+    });
+
+    it('fsReadSync', function () {
         const result = {};
         _.fsReadSync(result, "src/test/cpx", 'utf8');
         expect(JSON.parse(result.models['Category.json'])).to.deep.equal(JSON.parse(fs.readFileSync('src/test/cpx/models/Category.json')));
         expect(JSON.parse(result.models['swagger.json'])).to.deep.equal(JSON.parse(fs.readFileSync('src/test/cpx/models/swagger.json')));
     });
 
-    it('fsWriteSync', function() {
+    it('fsWriteSync', function () {
         const source = _.fsReadSync(null, "src/test/cpx")
         _.fsWriteSync(source, 'target');
         expect(_.fsReadSync(null, "target/models")).to.deep.equal(source.models);

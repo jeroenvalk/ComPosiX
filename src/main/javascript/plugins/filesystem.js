@@ -28,7 +28,65 @@ module.exports = function(_) {
         return str;
     };
 
+    const writeModule = function(x, data) {
+        var dirname = data.dirname;
+        const writer = function (x) {
+            const filename = path.resolve(dirname, 'package.json');
+            fs.readFile(filename, function (err, data) {
+                if (err) {
+                    if (dirname === '/') {
+                        x.chain.end();
+                        return;
+                    }
+                    dirname = path.resolve(dirname, '..');
+                } else {
+                    const pkg = JSON.parse(data);
+                    x.chain.write({
+                        dirname: path.resolve(dirname),
+                        pkg: pkg
+                    });
+                    if (pkg.directories && pkg.directories.parent) {
+                        dirname = path.resolve(pathname, pkg.directories.parent);
+                    } else {
+                        dirname = path.resolve(dirname, '..');
+                    }
+                }
+                writer(x);
+            })
+        };
+        const y = {
+            chain: []
+        }
+        x.readable.write(_.wiring(y));
+        writer.call(null, y);
+    };
+
+    const modules = _.wiring({
+        writable: writeModule,
+        readable: []
+    });
+
+    _.mainstream('$mixin', {
+        module: modules
+    }, '$');
+
     _.mixin({
+        read: function filesystem$read(readable) {
+          switch(Object.getPrototypeOf(readable)) {
+              case Array.prototype:
+                  return readable.shift();
+              default:
+                  throw new Error();
+          }
+        },
+        write: function filesystem$write(writable, data) {
+           switch(Object.getPrototypeOf(writable)) {
+               case Array.prototype:
+                   return writable.push(data);
+               default:
+                   throw new Error();
+           }
+        },
         parseSync: function filesystem$parse(object, options) {
             // TODO: check if object is readable to throw error: cannot synchrously parse async stream (or peek into it if possible)
             // TODO: check if object is promise to throw error: cannot synchronously parse promise (or peek into it if possible)
