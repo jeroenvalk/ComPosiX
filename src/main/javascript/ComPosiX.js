@@ -43,8 +43,43 @@ module.exports = function (url, stream, http, _, processor) {
             this.data = {};
         }
 
+        module(data) {
+            const __ = data.use._ || _;
+            this.use(__, 'cpx:iteration');
+            this.use(__, 'cpx:filesystem');
+            const argv = [];
+            if (argv.length) {
+                throw new Error();
+            }
+            argv.push({
+                "@": {
+                    "cpx": {
+                        "use": __.extend({
+                            _: __.constant(__),
+                            url: __.constant(url),
+                            path: __.constant(path),
+                        }, data.use)
+                    }
+                }
+            });
+            const result = __.wiring(data);
+            __.module().readable.on('data', function (data) {
+                data.chain.on('data', function(data) {
+                    const dirname = path.resolve(data.dirname, (data.pkg.directories && data.pkg.directories.resources) || 'src/main/resources');
+                    argv.push(__.parseSync(__.fsReadSync(null, dirname)));
+                });
+                data.chain.on('end', function() {
+                    result.executions.write(__.merge.apply(__, argv));
+                });
+            });
+            __.module().writable.write({
+                dirname: '.'
+            });
+        }
+
         project(object, testing) {
             const cpx = this;
+            cpx.use(object, 'cpx:iteration');
             cpx.use(object, 'cpx:filesystem');
             const index = typeof testing === 'boolean' ? 2 : 1;
             const flag = index > 1 ? testing : false;
@@ -62,12 +97,12 @@ module.exports = function (url, stream, http, _, processor) {
             for (var i = index; i < arguments.length; ++i) {
                 try {
                     argv.push(object.parseSync(object.fsReadSync(null, path.join(arguments[i], 'src/main/resources'))));
-                } catch(e) {
+                } catch (e) {
 
                 }
                 try {
                     if (flag) argv.push(object.parseSync(object.fsReadSync(null, path.join(arguments[i], 'src/test/resources'))));
-                } catch(e) {
+                } catch (e) {
 
                 }
             }

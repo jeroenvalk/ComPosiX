@@ -8,6 +8,9 @@
     "url": "https://github.com/jeroenvalk/ComPosiX"
   },
   "license": "LGPL-3.0",
+  "bin": {
+    "cpx": "src/bin/cpx.js"
+  },
   "main": "src/main/javascript/index.js",
   "scripts": {
     "start": "node -i -e \"require('.').boot()\"",
