@@ -38,7 +38,7 @@ describe('streams', _.globals(function (use) {
                     writable: function (x, data) {
                         x.readable.write(data);
                     },
-                    readable: []
+                    readable: [1, true]
                 }
             }), '$');
             _.echo().readable.on('data', function (data) {
@@ -54,7 +54,7 @@ describe('streams', _.globals(function (use) {
         it("direct", function () {
             var flag = false;
             const y = {
-                readable: [""]
+                readable: [0, false]
             };
             const x = _.wiring(y);
             x.readable.on("data", function (data) {
@@ -69,7 +69,7 @@ describe('streams', _.globals(function (use) {
         it("inverse", function() {
             var flag = false;
             const y = {
-                writable: ["", null]
+                writable: [1, false]
             };
             const x = _.wiring(y);
             y.writable.on("data", function (data) {
@@ -87,7 +87,7 @@ describe('streams', _.globals(function (use) {
                 writable: function (y, data) {
                     y.readable.write(data);
                 },
-                readable: []
+                readable: [0, true]
             });
             x.readable.on("data", function (data) {
                 flag = true;
@@ -210,7 +210,7 @@ describe('streams', _.globals(function (use) {
         });
     });
 
-    it("request", function (done) {
+    xit("request", function (done) {
         const x = [], writable = new stream.PassThrough({objectMode: true});
         _(x).writable(writable).then(function () {
             expect(x[0].statusCode).to.equal(200);

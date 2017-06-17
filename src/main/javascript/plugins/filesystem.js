@@ -55,7 +55,7 @@ module.exports = function(_) {
             })
         };
         const y = {
-            chain: []
+            chain: [0, true]
         }
         x.readable.write(_.wiring(y));
         writer.call(null, y);
@@ -63,7 +63,7 @@ module.exports = function(_) {
 
     const modules = _.wiring({
         writable: writeModule,
-        readable: []
+        readable: [1, true]
     });
 
     _.mainstream('$mixin', {

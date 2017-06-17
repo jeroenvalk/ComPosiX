@@ -21,8 +21,15 @@ module.exports = function (_) {
     const stream = require('stream');
     const Readable = stream.Readable, PassThrough = stream.PassThrough;
 
-    class Channel {
+    class Channel { 
         constructor() {
+            const array = _.flatten(arguments);
+            if (typeof array[0] !== 'number') {
+                throw new Error();
+            }
+            if (typeof array[1] !== 'boolean') {
+                throw new Error();
+            }
             this.passthrough = new PassThrough({objectMode: true});
         }
 
@@ -193,9 +200,13 @@ module.exports = function (_) {
             // TODO: accept JSON schema as second argument for type-safe streaming
             const connectReadable = function(readable, fn) {
                 readable.on('data', function(data) {
-                    fn(stream, data);
+                    if (data) {
+                        fn(stream, data);
+                    }
                 });
-                // TODO: close all writables on EOF
+                readable.on('end', function() {
+                    fn(stream, null);
+                })
             };
             const todo = [];
             const result = _.mapValues(stream, function (value, key) {
@@ -203,7 +214,7 @@ module.exports = function (_) {
                 switch(Object.getPrototypeOf(value)) {
                     case Function.prototype:
                         delete stream[key];
-                        channel = new Channel();
+                        channel = new Channel(0, true);
                         endpoint = channel.getReadable();
                         if (!endpoint) throw new Error();
                         _.set(stream, key, endpoint);
@@ -211,7 +222,7 @@ module.exports = function (_) {
                         return channel.getWritable();
                     case Array.prototype:
                         delete stream[key];
-                        channel = new Channel();
+                        channel = new Channel(value);
                         _.set(stream, key, channel.getWritable());
                         return channel.getReadable();
                     default:
