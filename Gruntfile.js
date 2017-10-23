@@ -12,6 +12,14 @@ module.exports = function (grunt) {
                     "expand": false,
                     "src": ["src/main/javascript/plugins/validator.js"],
                     "dest": "target/dist/validator.min.js"
+                }, {
+                    "expand": false,
+                    "src": ["src/main/javascript/api/composix.js"],
+                    "dest": "target/dist/composix.min.js"
+                }, {
+	                "expand": false,
+	                "src": ["src/main/javascript/api/afterEvent.js"],
+	                "dest": "target/dist/afterEvent.min.js"
                 }]
             }
         },
