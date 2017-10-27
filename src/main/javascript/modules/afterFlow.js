@@ -15,8 +15,6 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-context.getVariable("cpx").module(function(cpx) {
-	cpx.emit({
-		name: "after" + context.flow
-	});
+_.module(function() {
+	_.emitter().emit("flow", "after" + context.flow);
 });
