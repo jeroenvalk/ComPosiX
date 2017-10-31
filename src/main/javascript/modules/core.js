@@ -15,29 +15,36 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-const _ = {};
+_.module(function() {
+	const slice = Array.prototype.slice;
+	const each = Array.prototype.forEach;
 
-(function () {
-	context && context.setVariable("underscore", _);
-
-	_.extend = function cpx$extend(a) {
-		var b = arguments.length;
-		if (b < 2 || null === a) return a;
-		for (var c = 1; c < b; c++) for (var d = arguments[c], e = d instanceof Object ? Object.keys(d) : [], f = e.length, g = 0; g < f; g++) {
-			var h = e[g];
-			a[h] = d[h];
-		}
-		return a;
-	};
-
-	_.mixin = function cpx$mixin(a) {
-		_.extend(_, a);
-	};
-
-	// module (basic version)
 	_.mixin({
-		module: function (func) {
-			func();
+		concat: function cpx$concat() {
+			var i, j, result = [];
+			for (i = 0; i < arguments.length; ++i) {
+				if (arguments[i] instanceof Array) {
+					for (j = 0; j < arguments[i].length; ++j) {
+						result.push(arguments[i][j]);
+					}
+				} else {
+					result.push(arguments[i]);
+				}
+			}
+			return result;
+		},
+		constant: function cpx$constant(value) {
+			return function() {
+				return value;
+			};
+		},
+		each: function cpx$each(array, iteratee) {
+			for (var i = 0; i < array.length; ++i) {
+				iteratee(array[i]);
+			}
+		},
+		tail: function cpx$tail(array) {
+			return slice.call(array, 1);
 		}
 	});
-})();
+});

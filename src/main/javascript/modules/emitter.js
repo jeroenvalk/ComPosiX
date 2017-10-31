@@ -15,29 +15,25 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-const _ = {};
+// emitter (basic version)
+_.module(function () {
+	const listeners = {};
 
-(function () {
-	context && context.setVariable("underscore", _);
+	const emit = function emitter$emit(event) {
+		const argv = _.tail(arguments);
+		_.each(listeners[event], function (listener) {
+			listener.apply(null, argv);
+		});
+	}
 
-	_.extend = function cpx$extend(a) {
-		var b = arguments.length;
-		if (b < 2 || null === a) return a;
-		for (var c = 1; c < b; c++) for (var d = arguments[c], e = d instanceof Object ? Object.keys(d) : [], f = e.length, g = 0; g < f; g++) {
-			var h = e[g];
-			a[h] = d[h];
-		}
-		return a;
+	const addListener = function emitter$addListener(eventName, listener) {
+		listeners[eventName] = _.concat(listeners[eventName] || [], listener);
 	};
 
-	_.mixin = function cpx$mixin(a) {
-		_.extend(_, a);
-	};
-
-	// module (basic version)
 	_.mixin({
-		module: function (func) {
-			func();
-		}
+		emitter: _.constant({
+			emit: emit,
+			addListener: addListener
+		})
 	});
-})();
+});

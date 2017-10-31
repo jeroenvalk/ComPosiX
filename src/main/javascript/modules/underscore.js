@@ -15,29 +15,4 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-const _ = {};
-
-(function () {
-	context && context.setVariable("underscore", _);
-
-	_.extend = function cpx$extend(a) {
-		var b = arguments.length;
-		if (b < 2 || null === a) return a;
-		for (var c = 1; c < b; c++) for (var d = arguments[c], e = d instanceof Object ? Object.keys(d) : [], f = e.length, g = 0; g < f; g++) {
-			var h = e[g];
-			a[h] = d[h];
-		}
-		return a;
-	};
-
-	_.mixin = function cpx$mixin(a) {
-		_.extend(_, a);
-	};
-
-	// module (basic version)
-	_.mixin({
-		module: function (func) {
-			func();
-		}
-	});
-})();
+const _ = context.getVariable("underscore");
