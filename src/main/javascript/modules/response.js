@@ -15,37 +15,25 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-const _ = {};
+_.module(function() {
+	const x = _.ComPosiX();
 
-(function () {
-	context && context.setVariable("underscore", _);
-
-	_.extend = function cpx$extend(a) {
-		var b = arguments.length;
-		if (b < 2 || null === a) return a;
-		for (var c = 1; c < b; c++) for (var d = arguments[c], e = d instanceof Object ? Object.keys(d) : [], f = e.length, g = 0; g < f; g++) {
-			var h = e[g];
-			a[h] = d[h];
-		}
-		return a;
+	const response = function cpx$response(response) {
+		x.response = response;
+		throw new Error();
 	};
 
-	_.mixin = function cpx$mixin(a) {
-		_.extend(_, a);
-	};
-
-	const constant = function cpx$constant(value) {
-		return function() {
-			return value;
-		};
-	};
-
-	// module (basic version)
-	_.mixin({
-		ComPosiX: constant({}),
-		constant: constant,
-		module: function (func) {
-			func();
+	_.emitter().addListener("flow", function(event) {
+		if (x.response) {
+			switch(event) {
+				case "afterERROR":
+					context.setVariable("error.content", JSON.stringify(x.response.body));
+					break;
+			}
 		}
 	});
-})();
+
+	_.mixin({
+		response: response
+	});
+});

@@ -33,15 +33,22 @@ _.module(function() {
 			}
 			return result;
 		},
-		constant: function cpx$constant(value) {
-			return function() {
-				return value;
-			};
-		},
 		each: function cpx$each(array, iteratee) {
-			for (var i = 0; i < array.length; ++i) {
-				iteratee(array[i]);
+			if (array) {
+				for (var i = 0; i < array.length; ++i) {
+					iteratee(array[i]);
+				}
 			}
+		},
+		find: function cpx$find(array, predicate) {
+			for (var i = 0; i < array.length; ++i) {
+				if (predicate(array[i])) {
+					return array[i];
+				}
+			}
+		},
+		keys: function cpx$keys(object) {
+			return Object.keys(object);
 		},
 		tail: function cpx$tail(array) {
 			return slice.call(array, 1);

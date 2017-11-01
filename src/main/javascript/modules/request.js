@@ -15,37 +15,36 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-const _ = {};
+_.module(function() {
+	const request = function cpx$request(req) {
+		const asJSON = req.headers && req.headers.accept === "application/json";
+		const exchange = httpClient.send(new Request(req.url, req.method || "GET", req.headers || {}, req.body || ""));
 
-(function () {
-	context && context.setVariable("underscore", _);
-
-	_.extend = function cpx$extend(a) {
-		var b = arguments.length;
-		if (b < 2 || null === a) return a;
-		for (var c = 1; c < b; c++) for (var d = arguments[c], e = d instanceof Object ? Object.keys(d) : [], f = e.length, g = 0; g < f; g++) {
-			var h = e[g];
-			a[h] = d[h];
+		function then(fn) {
+			exchange.waitForComplete();
+			if (!exchange.isSuccess()) {
+				if (exchange.isError()) {
+					throw new Error(exchange.getError());
+				}
+				throw new Error('unknown error');
+			}
+			const res = exchange.getResponse(), headers = {};
+			for (var name in res.headers) {
+				headers[name] = res.headers[name];
+			}
+			fn({
+				status: res.status,
+				headers: headers,
+				body: asJSON ? JSON.parse(res.content) : res.content
+			});
 		}
-		return a;
-	};
 
-	_.mixin = function cpx$mixin(a) {
-		_.extend(_, a);
-	};
-
-	const constant = function cpx$constant(value) {
-		return function() {
-			return value;
+		return {
+			then: then
 		};
 	};
 
-	// module (basic version)
 	_.mixin({
-		ComPosiX: constant({}),
-		constant: constant,
-		module: function (func) {
-			func();
-		}
+		request: request
 	});
-})();
+});
