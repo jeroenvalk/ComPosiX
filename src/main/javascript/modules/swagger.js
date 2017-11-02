@@ -31,6 +31,8 @@ _.module(function() {
 			}
 		}).then(function (response) {
 			x.swagger = response.body;
+			x.swagger.host = context.getVariable("request.header.host");
+			x.swagger.basePath = context.getVariable("proxy.basepath");
 		});
 	}
 });
@@ -42,6 +44,9 @@ _.module(function () {
 	const validate = _.validator(x.swagger);
 
 	emitter.addListener("request", function (request) {
+		if (!request.pathname.startsWith(x.swagger.basePath)) {
+			throw new Error();
+		}
 		var operation = validate(request);
 		if (!operation) {
 			if (request.method === "GET" && request.pathname.endsWith("/swagger.json")) {
@@ -71,7 +76,7 @@ _.module(function () {
 								headers: {
 									"Access-Control-Allow-Origin": "*",
 									"Access-Control-Allow-Methods": "GET,POST",
-									"Access-Control-Allow-Headers": "Authorization",
+									"Access-Control-Allow-Headers": "Content-Type,Authorization",
 									"Access-Control-Max-Age": "3628800"
 								}
 							});

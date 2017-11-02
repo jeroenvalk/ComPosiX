@@ -34,9 +34,17 @@ _.module(function() {
 			return result;
 		},
 		each: function cpx$each(array, iteratee) {
-			if (array) {
+			if (array instanceof Array) {
 				for (var i = 0; i < array.length; ++i) {
-					iteratee(array[i]);
+					iteratee(array[i], i);
+				}
+			} else {
+				if (array instanceof Object) {
+					for (var key in array) {
+						if (array.hasOwnProperty(key)) {
+							iteratee(array[key], key);
+						}
+					}
 				}
 			}
 		},

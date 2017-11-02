@@ -27,7 +27,11 @@ _.module(function() {
 		if (x.response) {
 			switch(event) {
 				case "afterERROR":
-					context.setVariable("error.content", JSON.stringify(x.response.body));
+					context.setVariable("error.status.code", x.response.statusCode);
+					_.each(x.response.headers, function(value, key) {
+						context.setVariable("error.header." + key, value);
+					});
+					context.setVariable("error.content", x.response.body ? JSON.stringify(x.response.body) : "");
 					break;
 			}
 		}

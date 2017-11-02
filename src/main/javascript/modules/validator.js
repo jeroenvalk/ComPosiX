@@ -32,10 +32,11 @@ _.module(function () {
 	};
 
 	const validatorSwagger = function cpx$validatorSwagger(swagger) {
+		const base = swagger.basePath.split("/");
 		return function cpx$validateSwagger(request) {
-			const pattern = _.find(_.keys(swagger.paths), swaggerPredicate(request.pathname.split("/").slice(1)));
+			const pattern = _.find(_.keys(swagger.paths), swaggerPredicate(request.pathname.split("/").slice(base.length)));
 			if (pattern) {
-				return swagger[pattern][request.method.toLowerCase()] || swagger[pattern];
+				return swagger.paths[pattern][request.method.toLowerCase()] || swagger.paths[pattern];
 			}
 		};
 	};
