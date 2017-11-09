@@ -86,6 +86,7 @@ const _ = {};
 			_.each(entity, function(value, key) {
 				result[value + ''] = key;
 			});
+			return result;
 		},
 		isArray: function cpx$isArray(value) {
 			return value instanceof Array;
@@ -99,11 +100,11 @@ const _ = {};
 		keys: function cpx$keys(object) {
 			return Object.keys(object);
 		},
-		map: function cpx$map(array, iteratee) {
-			const result = new Array(array.length);
-			for (var i = 0; i < array.length; ++i) {
-				result[i] = iteratee(array[i]);
-			}
+		map: function cpx$map(entity, iteratee) {
+			const result = [];
+			_.each(entity, function(value, key) {
+				result.push(iteratee(value, key));
+			});
 			return result;
 		},
 		property: function cpx$property(key) {
