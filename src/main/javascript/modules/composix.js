@@ -37,19 +37,6 @@ const _ = {};
 	};
 
 	mixin({
-		concat: function cpx$concat() {
-			var i, j, result = [];
-			for (i = 0; i < arguments.length; ++i) {
-				if (arguments[i] instanceof Array) {
-					for (j = 0; j < arguments[i].length; ++j) {
-						result.push(arguments[i][j]);
-					}
-				} else {
-					result.push(arguments[i]);
-				}
-			}
-			return result;
-		},
 		each: function cpx$each(array, iteratee) {
 			if (array instanceof Array) {
 				for (var i = 0; i < array.length; ++i) {
@@ -72,6 +59,33 @@ const _ = {};
 					return array[i];
 				}
 			}
+		},
+		flatten: function cpx$flatten(array) {
+			var i, j, k = 0;
+			for (i = 0; i < array.length; ++i) {
+				if (array instanceof Array) {
+					k += array[i].length
+				} else {
+					++k;
+				}
+			}
+			const result = new Array(k); k = 0;
+			for (i = 0; i < array.length; ++i) {
+				if (array instanceof Array) {
+					for (j = 0; j < array[i].length; ++j) {
+						result[k++] = array[i][j];
+					}
+				} else {
+					result[k++] = array[i];
+				}
+			}
+			return result;
+		},
+		invert: function cpx$invert(entity) {
+			const result = {};
+			_.each(entity, function(value, key) {
+				result[value + ''] = key;
+			});
 		},
 		isArray: function cpx$isArray(value) {
 			return value instanceof Array;
@@ -105,6 +119,16 @@ const _ = {};
 		mixin: mixin,
 		tail: function cpx$tail(array) {
 			return slice.call(array, 1);
+		},
+		uniq: function cpx$uniq(entity) {
+			return _.keys(_.invert(entity));
+		},
+		zipObject: function cpx$zipObject(keys, values) {
+			const result = {};
+			for (var i = 0; i < keys.length; ++i) {
+				result[keys[i] + ''] = values[i];
+			}
+			return result;
 		}
 	});
 })();

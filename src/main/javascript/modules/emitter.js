@@ -27,7 +27,10 @@ _.module("emitter", function () {
 	};
 
 	const addListener = function emitter$addListener(eventName, listener) {
-		listeners[eventName] = _.concat(listeners[eventName] || [], listener);
+		if (!listeners[eventName]) {
+			listeners[eventName] = [];
+		}
+		listeners[eventName].push(listener);
 	};
 
 	return {

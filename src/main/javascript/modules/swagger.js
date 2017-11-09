@@ -45,7 +45,7 @@ _.module(["emitter", "validator", "request", "response"], function (emitter, val
 	};
 
 	const getSwagger = function (swagger) {
-		const opKeys = _.unique(_.flatten(_.map(swagger.paths, function (value) {
+		const opKeys = _.uniq(_.flatten(_.map(swagger.paths, function (value) {
 			return _.map(value, _.property("operationId"));
 		})));
 		const opValues = _.map(_.map(opKeys, function (operationId) {
@@ -57,7 +57,7 @@ _.module(["emitter", "validator", "request", "response"], function (emitter, val
 				}
 			});
 		}), resolve);
-		const paramKeys = _.unique(_.flatten(_.map(operations, _.property("params"))));
+		const paramKeys = _.uniq(_.flatten(_.map(operations, _.property("params"))));
 		const paramValues = _.map(_.map(paramKeys, function (param) {
 			return request({
 				method: "GET",

@@ -15,8 +15,17 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module(["emitter"], function(emitter) {
+_.module(["emitter"], function (emitter) {
 	const event = "before" + context.flow;
 	context.setVariable("event", event);
-	emitter.emit("flow", event);
+	emitter.addListener("modules", function (modules) {
+		context.setVariable("modules", JSON.stringify(modules));
+	});
+	switch (context.flow) {
+		case "PROXY_REQ_FLOW":
+			emitter.emit("ready");
+		/* falls through */
+		default:
+			emitter.emit("flow", event);
+	}
 });

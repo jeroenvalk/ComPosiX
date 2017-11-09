@@ -17,6 +17,7 @@
 
 (function () {
 	const x = {}, lib = {};
+	var emitter;
 
 	const module = function cpx$module() {
 		var name = null, deps = [], func = null;
@@ -33,7 +34,19 @@
 		}
 		const res = func.apply(x, _.map(deps, _.propertyOf(lib)));
 		if (name) {
-			lib[name] = res;
+			if (emitter) {
+				lib[name] = res;
+				emitter.emit("load", name);
+			} else {
+				if (name !== "emitter") {
+					throw new Error("event emitter must be loaded first");
+				}
+				emitter = lib.emitter = res;
+				emitter.emit("load", name);
+				emitter.addListener("ready", function() {
+					emitter.emit("modules", _.keys(lib));
+				});
+			}
 		}
 	};
 

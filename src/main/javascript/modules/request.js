@@ -35,7 +35,7 @@ _.module("request", function() {
 			fn({
 				status: res.status,
 				headers: headers,
-				body: asJSON ? JSON.parse(res.content) : res.content
+				body: asJSON && res.status == 200 ? JSON.parse(res.content) : res.content
 			});
 		}
 
