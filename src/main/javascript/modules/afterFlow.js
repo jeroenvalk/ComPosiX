@@ -15,6 +15,6 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module(function() {
-	_.emitter().emit("flow", "after" + context.flow);
+_.module(["emitter"], function(emitter) {
+	emitter.emit("flow", "after" + context.flow);
 });

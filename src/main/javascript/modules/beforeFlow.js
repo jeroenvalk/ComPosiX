@@ -15,25 +15,8 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module("response", ["emitter"], function(emitter) {
-	const x = this;
-
-	emitter.addListener("flow", function(event) {
-		if (x.response) {
-			switch(event) {
-				case "afterERROR":
-					context.setVariable("error.status.code", x.response.statusCode);
-					_.each(x.response.headers, function(value, key) {
-						context.setVariable("error.header." + key, value);
-					});
-					context.setVariable("error.content", x.response.body ? JSON.stringify(x.response.body) : "");
-					break;
-			}
-		}
-	});
-
-	return function cpx$response(response) {
-		x.response = response;
-		throw new Error();
-	};
+_.module(["emitter"], function(emitter) {
+	const event = "before" + context.flow;
+	context.setVariable("event", event);
+	emitter.emit("flow", event);
 });

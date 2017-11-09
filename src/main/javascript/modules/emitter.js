@@ -16,7 +16,7 @@
  */
 
 // emitter (basic version)
-_.module(function () {
+_.module("emitter", function () {
 	const listeners = {};
 
 	const emit = function emitter$emit(event) {
@@ -24,16 +24,14 @@ _.module(function () {
 		_.each(listeners[event], function (listener) {
 			listener.apply(null, argv);
 		});
-	}
+	};
 
 	const addListener = function emitter$addListener(eventName, listener) {
 		listeners[eventName] = _.concat(listeners[eventName] || [], listener);
 	};
 
-	_.mixin({
-		emitter: _.constant({
-			emit: emit,
-			addListener: addListener
-		})
-	});
+	return {
+		emit: emit,
+		addListener: addListener
+	};
 });

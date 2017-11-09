@@ -15,25 +15,21 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module("response", ["emitter"], function(emitter) {
-	const x = this;
-
-	emitter.addListener("flow", function(event) {
-		if (x.response) {
-			switch(event) {
-				case "afterERROR":
-					context.setVariable("error.status.code", x.response.statusCode);
-					_.each(x.response.headers, function(value, key) {
-						context.setVariable("error.header." + key, value);
-					});
-					context.setVariable("error.content", x.response.body ? JSON.stringify(x.response.body) : "");
-					break;
-			}
+_.module(function() {
+	_.extend(this, {
+		swagger: {
+			swagger: "2.0",
+			info: {
+				title: "Swagger",
+				version: "v1",
+				contact: {
+					name: "ComPosiX"
+				}
+			},
+			schemes: ["https"],
+			host: context.getVariable("request.header.host"),
+			basePath: context.getVariable("proxy.basepath"),
+			paths: {}
 		}
 	});
-
-	return function cpx$response(response) {
-		x.response = response;
-		throw new Error();
-	};
 });

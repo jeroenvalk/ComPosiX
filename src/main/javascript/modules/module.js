@@ -15,25 +15,29 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module("response", ["emitter"], function(emitter) {
-	const x = this;
+(function () {
+	const x = {}, lib = {};
 
-	emitter.addListener("flow", function(event) {
-		if (x.response) {
-			switch(event) {
-				case "afterERROR":
-					context.setVariable("error.status.code", x.response.statusCode);
-					_.each(x.response.headers, function(value, key) {
-						context.setVariable("error.header." + key, value);
-					});
-					context.setVariable("error.content", x.response.body ? JSON.stringify(x.response.body) : "");
-					break;
+	const module = function cpx$module() {
+		var name = null, deps = [], func = null;
+		for (var i = 0; i < arguments.length; ++i) {
+			if (_.isString(arguments[i])) {
+				name = arguments[i];
+			}
+			if (_.isArray(arguments[i])) {
+				deps = arguments[i];
+			}
+			if (_.isFunction(arguments[i])) {
+				func = arguments[i];
 			}
 		}
-	});
-
-	return function cpx$response(response) {
-		x.response = response;
-		throw new Error();
+		const res = func.apply(x, _.map(deps, _.propertyOf(lib)));
+		if (name) {
+			lib[name] = res;
+		}
 	};
-});
+
+	_.mixin({
+		module: module
+	});
+})();

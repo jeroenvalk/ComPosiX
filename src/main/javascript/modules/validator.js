@@ -15,7 +15,7 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module(function () {
+_.module("validator", function () {
 	const swaggerPredicate = function (pathname) {
 		return function (pattern) {
 			pattern = pattern.split("/").slice(1);
@@ -41,13 +41,9 @@ _.module(function () {
 		};
 	};
 
-	const validator = function cpx$validator(schema) {
+	return function cpx$validator(schema) {
 		if (schema.swagger === "2.0") {
 			return validatorSwagger(schema);
 		}
 	};
-
-	_.mixin({
-		validator: validator
-	});
 });

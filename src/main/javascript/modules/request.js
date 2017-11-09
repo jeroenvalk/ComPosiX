@@ -15,8 +15,8 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module(function() {
-	const request = function cpx$request(req) {
+_.module("request", function() {
+	return function cpx$request(req) {
 		const asJSON = req.headers && req.headers.accept === "application/json";
 		const exchange = httpClient.send(new Request(req.url, req.method || "GET", req.headers || {}, req.body || ""));
 
@@ -43,8 +43,4 @@ _.module(function() {
 			then: then
 		};
 	};
-
-	_.mixin({
-		request: request
-	});
 });
