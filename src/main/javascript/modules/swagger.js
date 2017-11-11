@@ -22,7 +22,7 @@ _.module(["emitter", "validator", "request", "response"], function (emitter, val
 	const org = x.swagger.info.contact.name;
 	const reqSwagger = {
 		method: "GET",
-		url: [auth, org, x.swagger.info.title + ".json"].join("/"),
+		url: [auth, "swagger", org, x.swagger.info.title + ".json"].join("/"),
 		headers: {
 			accept: "application/json"
 		}
@@ -45,36 +45,85 @@ _.module(["emitter", "validator", "request", "response"], function (emitter, val
 	};
 
 	const getSwagger = function (swagger) {
-		const opKeys = _.uniq(_.flatten(_.map(swagger.paths, function (value) {
-			return _.map(value, _.property("operationId"));
-		})));
-		const opValues = _.map(_.map(opKeys, function (operationId) {
-			return request({
-				method: "GET",
-				url: [auth, "operations", org, operation.operationId + ".json"].join("/"),
-				headers: {
-					accept: "application/json"
-				}
-			});
-		}), resolve);
-		const paramKeys = _.uniq(_.flatten(_.map(operations, _.property("params"))));
-		const paramValues = _.map(_.map(paramKeys, function (param) {
-			return request({
-				method: "GET",
-				url: [auth, "parameters", org, param + ".json"].join("/"),
-				headers: {
-					accept: "application/json"
-				}
-			})
-		}), resolve);
-		const op = _.zipObject(opKeys, opValues);
-		const param = _.zipObject(paramKeys, paramValues);
-		_.each(swagger.paths, function (value) {
-			_.each(value, function (operation) {
-				_.extend(operation, op[operation.operationId]);
-				operation.params = _.map(operation.params, _.propertyOf(param));
+		const todo = {
+			operations: {},
+			params: {},
+			definitions: {}
+		};
+		// resolve operations
+		_.each(swagger.paths, function(operations) {
+			_.each(operations, function(operation) {
+				todo.operations[operation.operationId] = [operation, request({
+					method: "GET",
+					url: [auth, "operations", org, operation.operationId + ".json"].join("/"),
+					headers: {
+						accept: "application/json"
+					}
+				})];
 			});
 		});
+		_.each(todo.operations, function(operation) {
+			_.extend(operation[0], resolve(operation[1]));
+		});
+		// resolve params
+		_.each(swagger.paths, function(operations) {
+			_.each(operations, function(operation) {
+				const params = operation.parameters;
+				for (var i = 0; i < params.length; ++i) {
+					if (_.isString(params[i])) {
+						if (!todo.params[params[i]]) {
+							todo.params[params[i]] = request({
+								method: "GET",
+								url: [auth, "parameters", org, param[i] + ".json"].join("/"),
+								headers: {
+									accept: "application/json"
+								}
+							});
+						}
+						params[i] = {
+							"$ref": "#/parameters/" + params[i]
+						};
+					}
+				}
+			});
+		});
+		if (!swagger.parameters) {
+			swagger.parameters = {};
+		}
+		_.each(todo.params, function(param, name) {
+			swagger.parameters[name] = resolve(param);
+		});
+		// resolve definitions
+		_.each(swagger.paths, function(operations) {
+			_.each(operations, function(operation) {
+				const resolveDefinition = function(object) {
+					const type = object.schema;
+					if (_.isString(type)) {
+						if (!todo.definitions[type]) {
+							todo.definitions[type] = request({
+								method: "GET",
+								url: [auth, "definitions", org, type + ".json"].join("/"),
+								headers: {
+									accept: "application/json"
+								}
+							});
+						}
+						object.schema = {
+							"$ref": "#/definitions/" + type
+						};
+					}
+				};
+				_.each(operation.params, resolveDefinition);
+				_.each(operation.responses, resolveDefinition);
+			});
+		});
+		if (!swagger.definitions) {
+			swagger.definitions = {};
+		}
+		_.each(todo.definitions, function(definition, type) {
+			swagger.definitions[type] = resolve(definition);
+		});
+		return swagger;
 	};
 
 	const getOperation = function (swagger) {
