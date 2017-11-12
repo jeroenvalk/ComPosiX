@@ -51,8 +51,8 @@ _.module(["emitter", "validator", "request", "response"], function (emitter, val
 			definitions: {}
 		};
 		// resolve operations
-		_.each(swagger.paths, function(operations) {
-			_.each(operations, function(operation) {
+		_.each(swagger.paths, function (operations) {
+			_.each(operations, function (operation) {
 				todo.operations[operation.operationId] = [operation, request({
 					method: "GET",
 					url: [auth, "operations", org, operation.operationId + ".json"].join("/"),
@@ -62,12 +62,12 @@ _.module(["emitter", "validator", "request", "response"], function (emitter, val
 				})];
 			});
 		});
-		_.each(todo.operations, function(operation) {
+		_.each(todo.operations, function (operation) {
 			_.extend(operation[0], resolve(operation[1]));
 		});
 		// resolve params
-		_.each(swagger.paths, function(operations) {
-			_.each(operations, function(operation) {
+		_.each(swagger.paths, function (operations) {
+			_.each(operations, function (operation) {
 				const params = operation.parameters;
 				for (var i = 0; i < params.length; ++i) {
 					if (_.isString(params[i])) {
@@ -90,16 +90,16 @@ _.module(["emitter", "validator", "request", "response"], function (emitter, val
 		if (!swagger.parameters) {
 			swagger.parameters = {};
 		}
-		_.each(todo.params, function(param, name) {
+		_.each(todo.params, function (param, name) {
 			swagger.parameters[name] = resolve(param);
 		});
 		// resolve definitions
-		_.each(swagger.paths, function(operations) {
-			_.each(operations, function(operation) {
-				const resolveDefinition = function(object) {
-					const type = object.schema;
+		const resolveDefinition = function (key) {
+			return function (object) {
+				const type = object[key];
+				if (type) {
 					if (_.isString(type)) {
-						if (!todo.definitions[type]) {
+						if (!todo.definitions.hasOwnProperty(type)) {
 							todo.definitions[type] = request({
 								method: "GET",
 								url: [auth, "definitions", org, type + ".json"].join("/"),
@@ -108,21 +108,51 @@ _.module(["emitter", "validator", "request", "response"], function (emitter, val
 								}
 							});
 						}
-						object.schema = {
+						object[key] = {
 							"$ref": "#/definitions/" + type
 						};
+					} else {
+						recurse(type);
 					}
-				};
-				_.each(operation.params, resolveDefinition);
-				_.each(operation.responses, resolveDefinition);
+				}
+			};
+		};
+
+		const recurse = function (def) {
+			switch (def.type) {
+				case "object":
+					_.each(_.keys(def.properties), function (key) {
+						resolveDefinition(key)(def.properties);
+					});
+					break;
+				case "array":
+					resolveDefinition("items")(def);
+					break;
+			}
+		};
+
+		_.each(swagger.paths, function (operations) {
+			_.each(operations, function (operation) {
+				_.each(operation.params, resolveDefinition("schema"));
+				_.each(operation.responses, resolveDefinition("schema"));
 			});
 		});
 		if (!swagger.definitions) {
 			swagger.definitions = {};
 		}
-		_.each(todo.definitions, function(definition, type) {
-			swagger.definitions[type] = resolve(definition);
-		});
+		var done = false;
+		while (!done) {
+			done = true;
+			_.each(todo.definitions, function (definition, type) {
+				if (definition) {
+					const def = resolve(definition);
+					swagger.definitions[type] = def;
+					todo.definitions[type] = null;
+					recurse(def);
+					done = false;
+				}
+			});
+		}
 		return swagger;
 	};
 
