@@ -79,7 +79,7 @@ _.module(["emitter", "validator", "request", "response"], function (emitter, val
 						if (!todo.params[params[i]]) {
 							todo.params[params[i]] = request({
 								method: "GET",
-								url: [auth, "parameters", org, param[i] + ".json"].join("/"),
+								url: [auth, "parameters", org, params[i] + ".json"].join("/"),
 								headers: {
 									accept: "application/json"
 								}
