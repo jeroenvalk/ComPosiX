@@ -186,6 +186,7 @@ _.module(["emitter", "validator", "request", "response"], function (emitter, val
 						response({
 							statusCode: 200,
 							headers: {
+								"Content-Type": "application/json",
 								"Access-Control-Allow-Origin": "*"
 							},
 							body: [_.extend(x.swagger, getSwagger(resolve(request(reqSwagger))))]
