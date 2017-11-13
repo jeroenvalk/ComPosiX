@@ -15,18 +15,24 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module("response", ["emitter"], function(emitter) {
+_.module("response", ["emitter"], function (emitter) {
 	const x = this;
 
-	emitter.addListener("flow", function(event) {
+	emitter.addListener("flow", function (event) {
 		if (x.response) {
-			switch(event) {
+			switch (event) {
 				case "afterERROR":
-					context.setVariable("error.status.code", x.response.statusCode);
-					_.each(x.response.headers, function(value, key) {
-						context.setVariable("error.header." + key, value);
-					});
-					context.setVariable("error.content", x.response.body ? JSON.stringify(x.response.body) : "");
+					if (x.response.statusCode) {
+						context.setVariable("error.status.code", x.response.statusCode);
+					}
+					if (x.response.headers) {
+						_.each(x.response.headers, function (value, key) {
+							context.setVariable("error.header." + key, value);
+						});
+					}
+					if (_.isArray(x.response.body)) {
+						context.setVariable("error.content", x.response.body[0] ? JSON.stringify(x.response.body[0]) : "");
+					}
 					break;
 			}
 		}
@@ -34,6 +40,8 @@ _.module("response", ["emitter"], function(emitter) {
 
 	return function cpx$response(response) {
 		x.response = response;
-		throw new Error();
+		if (response.statusCode) {
+			throw new Error();
+		}
 	};
 });

@@ -178,6 +178,7 @@ _.module(["emitter", "validator", "request", "response"], function (emitter, val
 	};
 
 	const cors = function (operation) {
+		var method;
 		if (operation) {
 			if (operation.operationId) {
 				switch (operation.operationId) {
@@ -185,47 +186,59 @@ _.module(["emitter", "validator", "request", "response"], function (emitter, val
 						response({
 							statusCode: 200,
 							headers: {
-								"Access-Control-Allow-Origin": "*",
-								"Access-Control-Allow-Methods": "GET",
-								"Access-Control-Max-Age": "3628800"
+								"Access-Control-Allow-Origin": "*"
 							},
-							body: _.extend(x.swagger, getSwagger(resolve(request(reqSwagger))))
+							body: [_.extend(x.swagger, getSwagger(resolve(request(reqSwagger))))]
 						});
 						break;
+					default:
+						response({
+							headers: {
+								"Access-Control-Allow-Origin": "*"
+							}
+						});
 				}
 			} else {
 				switch (incoming.method) {
 					case "OPTIONS":
-						if (operation[incoming.headers["Access-Control-Request-Method"].toLowerCase()]) {
+						method = incoming.headers["Access-Control-Request-Method"];
+						if (method) {
+							if (operation[method.toLowerCase()]) {
+								response({
+									statusCode: 200,
+									headers: {
+										"Access-Control-Allow-Origin": "*",
+										"Access-Control-Allow-Methods": _.keys(operation).join(",").toUpperCase(),
+										"Access-Control-Allow-Headers": incoming.headers["Access-Control-Request-Headers"],
+										"Access-Control-Max-Age": "86400"
+									},
+									body: []
+								});
+							} else {
+								response({
+									statusCode: 405,
+									body: []
+								});
+							}
+						} else {
 							response({
-								statusCode: 200,
-								headers: {
-									"Access-Control-Allow-Origin": "*",
-									"Access-Control-Allow-Methods": _.keys(operation).join(",").toUpperCase(),
-									"Access-Control-Max-Age": "3628800"
-								}
+								statusCode: 400,
+								body: []
 							});
 						}
 						break;
 					default:
 						response({
 							statusCode: 405,
-							headers: {
-								"Access-Control-Allow-Origin": "*",
-								"Access-Control-Allow-Methods": _.keys(operation).join(",").toUpperCase(),
-								"Access-Control-Max-Age": "3628800"
-							}
+							body: []
 						});
 						break;
 				}
 			}
 		} else {
 			response({
-				statusCode: 400,
-				headers: {
-					"Access-Control-Allow-Origin": "*",
-					"Access-Control-Max-Age": "3628800"
-				}
+				statusCode: 404,
+				body: []
 			});
 		}
 	};
