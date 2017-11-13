@@ -28,12 +28,17 @@ _.module(["emitter", "validator", "request", "response"], function (emitter, val
 		}
 	};
 
+	const headers = {};
+	for (var name in context.proxyRequest.headers) {
+		headers[name] = context.proxyRequest.headers[name];
+	}
 	const incoming = {
 		protocol: context.getVariable("client.scheme") + ":",
 		method: context.getVariable("request.verb"),
 		hostname: context.getVariable("request.header.host"),
 		path: context.getVariable("request.uri"),
-		pathname: context.getVariable("request.path")
+		pathname: context.getVariable("request.path"),
+		headers: headers
 	};
 
 	const resolve = function (promise) {
@@ -189,17 +194,18 @@ _.module(["emitter", "validator", "request", "response"], function (emitter, val
 						break;
 				}
 			} else {
-				switch (request.method) {
+				switch (incoming.method) {
 					case "OPTIONS":
-						response({
-							statusCode: 200,
-							headers: {
-								"Access-Control-Allow-Origin": "*",
-								"Access-Control-Allow-Methods": _.keys(operation).join(",").toUpperCase(),
-								"Access-Control-Allow-Headers": "Content-Type,Authorization",
-								"Access-Control-Max-Age": "3628800"
-							}
-						});
+						if (operation[incoming.headers["Access-Control-Request-Method"].toLowerCase()]) {
+							response({
+								statusCode: 200,
+								headers: {
+									"Access-Control-Allow-Origin": "*",
+									"Access-Control-Allow-Methods": _.keys(operation).join(",").toUpperCase(),
+									"Access-Control-Max-Age": "3628800"
+								}
+							});
+						}
 						break;
 					default:
 						response({
