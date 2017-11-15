@@ -1,25 +1,25 @@
 {
-  "name": "composix",
-  "version": "0.1.1-SNAPSHOT",
-  "repository": "git@github.com:jeroenvalk/ComPosiX.git",
-  "author": {
-    "name": "dr. ir. Jeroen M. Valk",
-    "email": "jeroen@composix.org",
-    "url": "https://github.com/jeroenvalk/ComPosiX"
-  },
-  "license": "LGPL-3.0",
-  "bin": {
-    "cpx": "src/bin/cpx.js"
-  },
-  "main": "src/main/javascript/index.js",
-  "scripts": {
-    "start": "node -i -e \"require('.').boot()\"",
-    "test": "mocha --require src/test/global.js src/test/specs/*.spec.js src/test/specs/plugins/*.spec.js"
-  },
-  "devDependencies": {
-    "chai": "^3.5.0",
-    "grunt-babel": "^6.0.0",
-    "grunt-text-replace": "^0.4.0",
-    "lodash": "~4.17.2"
-  }
+	"name": "composix",
+	"version": "0.1.1-SNAPSHOT",
+	"repository": "git@github.com:jeroenvalk/ComPosiX.git",
+	"author": {
+		"name": "dr. ir. Jeroen M. Valk",
+		"email": "jeroen@composix.org",
+		"url": "https://github.com/jeroenvalk/ComPosiX"
+	},
+	"license": "LGPL-3.0",
+	"bin": {
+		"cpx": "src/bin/cpx.js"
+	},
+	"main": "src/main/javascript/index.js",
+	"scripts": {
+		"start": "node -i -e \"require('.').boot()\"",
+		"test": "mocha --require src/test/global.js src/test/specs/*.spec.js src/test/specs/plugins/*.spec.js"
+	},
+	"devDependencies": {
+		"chai": "^3.5.0",
+		"grunt": "^1.0.1",
+		"lodash": "~4.17.2",
+		"uglify-es": "^3.1.9"
+	}
 }
