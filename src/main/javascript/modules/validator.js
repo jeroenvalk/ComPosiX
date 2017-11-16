@@ -18,14 +18,15 @@
 _.module("validator", function () {
 	const swaggerPredicate = function (pathname) {
 		return function (pattern) {
-			pattern = pattern.split("/").slice(1);
+			pattern = pattern.length > 1 ? pattern.split("/").slice(1) : [];
 			if (pattern.length !== pathname.length) {
 				return false;
 			}
 			for (var i = 0; i < pattern.length; ++i) {
-				if (pattern[i].charAt(0) !== "{" && pattern[i] !== pathname[i]) {
-					return false;
+				if (pattern[i].charAt(0) === "{") {
+					return pathname[i] !== "";
 				}
+				return pattern[i] !== pathname[i];
 			}
 			return true;
 		}
