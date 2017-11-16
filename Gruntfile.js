@@ -41,6 +41,17 @@ module.exports = function (grunt) {
 					src: ['src/main/javascript/modules/underscore.js'],
 					dest: "target/dist/underscore-debug.js"
 				}]
+			},
+			all: {
+				files: [{
+					src: [
+						'target/dist/composix-debug.js',
+						'src/main/javascript/modules/config.js',
+						'target/dist/swagger-debug.js',
+						'target/dist/beforeFlow-debug.js'
+					],
+					dest: "target/dist/all.js"
+				}]
 			}
 		},
 		uglify: {

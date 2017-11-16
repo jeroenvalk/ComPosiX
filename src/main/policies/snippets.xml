@@ -1,0 +1,5 @@
+<DefaultFaultRule name="defaultfaultRule">
+    <Step>
+        <Name>afterFlow</Name>
+    </Step>
+</DefaultFaultRule>

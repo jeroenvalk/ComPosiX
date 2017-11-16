@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Javascript async="false" continueOnError="false" enabled="true" timeLimit="9999" name="proxyPreFlow">
+    <IncludeURL>jsc://composix-release.js</IncludeURL>
+    <IncludeURL>jsc://config.js</IncludeURL>
+    <IncludeURL>jsc://swagger-release.js</IncludeURL>
+    <ResourceURL>jsc://beforeFlow-release.js</ResourceURL>
+</Javascript>
