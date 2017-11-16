@@ -166,13 +166,14 @@ _.module(["emitter", "validator", "request", "response"], function (emitter, val
 		if (!incoming.pathname.startsWith(x.swagger.basePath)) {
 			throw new Error();
 		}
-		var operation = validate(incoming);
-		if (!operation) {
-			if (incoming.method === "GET" && incoming.pathname.endsWith("/swagger.json")) {
-				operation = {
-					operationId: "SWAGGER"
-				};
+		var operation;
+		if (incoming.method === "GET" && incoming.pathname.endsWith("/swagger.json")) {
+			operation = {
+				operationId: "SWAGGER"
 			}
+		}
+		if (!operation) {
+			operation = validate(incoming);
 		}
 		return operation;
 	};
