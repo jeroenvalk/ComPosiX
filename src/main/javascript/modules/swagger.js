@@ -28,19 +28,6 @@ _.module(["emitter", "validator", "request", "response"], function (emitter, val
 		}
 	};
 
-	const headers = {};
-	for (var name in context.proxyRequest.headers) {
-		headers[name] = context.proxyRequest.headers[name];
-	}
-	const incoming = {
-		protocol: context.getVariable("client.scheme") + ":",
-		method: context.getVariable("request.verb"),
-		hostname: context.getVariable("request.header.host"),
-		path: context.getVariable("request.uri"),
-		pathname: context.getVariable("request.path"),
-		headers: headers
-	};
-
 	const resolve = function (promise) {
 		var result;
 		promise.then(function (res) {
@@ -161,6 +148,28 @@ _.module(["emitter", "validator", "request", "response"], function (emitter, val
 		return swagger;
 	};
 
+	const swagger = {
+		refreshPaths: function() {
+			return _.extend(x.swagger, resolve(request(reqSwagger)));
+		},
+		refresh: function() {
+			return _.extend(x.swagger, getSwagger(resolve(request(reqSwagger))));
+		}
+	}
+
+	const headers = {};
+	for (var name in context.proxyRequest.headers) {
+		headers[name] = context.proxyRequest.headers[name];
+	}
+	const incoming = {
+		protocol: context.getVariable("client.scheme") + ":",
+		method: context.getVariable("request.verb"),
+		hostname: context.getVariable("request.header.host"),
+		path: context.getVariable("request.uri"),
+		pathname: context.getVariable("request.path"),
+		headers: headers
+	};
+
 	const getOperation = function (swagger) {
 		const validate = validator(swagger);
 		if (!incoming.pathname.startsWith(x.swagger.basePath)) {
@@ -190,7 +199,7 @@ _.module(["emitter", "validator", "request", "response"], function (emitter, val
 								"Content-Type": "application/json",
 								"Access-Control-Allow-Origin": "*"
 							},
-							body: [_.extend(x.swagger, getSwagger(resolve(request(reqSwagger))))]
+							body: [swagger.refresh()]
 						});
 						break;
 					default:
@@ -250,7 +259,7 @@ _.module(["emitter", "validator", "request", "response"], function (emitter, val
 		switch (event) {
 			case "beforePROXY_REQ_FLOW":
 				if (!x.swagger.paths) {
-					_.extend(x.swagger, resolve(request(reqSwagger)));
+					swagger.refreshPaths();
 				}
 				operation = getOperation(x.swagger);
 				context.setVariable("operation", JSON.stringify(operation));
