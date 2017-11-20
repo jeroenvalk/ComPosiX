@@ -41,11 +41,21 @@ module.exports = function ($) {
         expect: $.expect || require('chai').expect
     };
 
+    var mocha;
+    require("./plugins/module")($._);
+    _.module(["mocha"], function(module) {
+        mocha = module;
+    });
+
     globals._.mixin({
         describe: function globals$describe(name, fn) {
-            describe(name, function() {
-                fn.call(null, globals);
-            })
+            if (name instanceof Object) {
+                mocha.describe(name);
+            } else {
+	            describe(name, function() {
+		            fn.call(null, globals);
+	            });
+            }
         },
         globals: function globals$globals(fn) {
             return function () {
