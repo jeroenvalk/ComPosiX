@@ -16,11 +16,22 @@
  */
 
 (function () {
-	const x = {}, lib = {};
+	const x = {}, lib = {}, constr = {};
 	var emitter;
 
+	const emitModules = function cpx$emitModules() {
+		emitter.emit("modules", _.keys(lib));
+	};
+
 	const module = function cpx$module() {
-		var name = null, deps = [], func = null;
+		var name = null, deps = [], func = null, res;
+
+		const Constructor = function() {
+			argv.push(this);
+			res = func.apply(x, argv);
+			argv.pop();
+		};
+
 		for (var i = 0; i < arguments.length; ++i) {
 			if (_.isString(arguments[i])) {
 				name = arguments[i];
@@ -32,21 +43,26 @@
 				func = arguments[i];
 			}
 		}
-		const res = func.apply(x, _.map(deps, _.propertyOf(lib)));
+		const argv = _.map(deps, _.propertyOf(lib)), y = new Constructor();
 		if (name) {
+			const nameA = name.charAt(0), nameB = nameA.toUpperCase();
+			if (nameA === nameB) {
+				throw new Error("module names must start lowercase");
+			}
+			if (!res) {
+				lib[nameB + name.substr(1)] = Constructor;
+				res = y;
+			}
 			if (emitter) {
 				lib[name] = res;
-				emitter.emit("load", name);
 			} else {
 				if (name !== "emitter") {
 					throw new Error("event emitter must be loaded first");
 				}
 				emitter = lib.emitter = res;
-				emitter.emit("load", name);
-				emitter.addListener("ready", function() {
-					emitter.emit("modules", _.keys(lib));
-				});
+				emitter.addListener("ready", emitModules);
 			}
+			emitter.emit("load", name);
 		}
 	};
 

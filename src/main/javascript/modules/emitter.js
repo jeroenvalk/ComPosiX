@@ -16,25 +16,20 @@
  */
 
 // emitter (basic version)
-_.module("emitter", function () {
+_.module("emitter", function Emitter(x) {
 	const listeners = {};
 
-	const emit = function emitter$emit(event) {
+	x.emit = function emitter$emit(event) {
 		const argv = _.tail(arguments);
 		_.each(listeners[event], function (listener) {
 			listener.apply(null, argv);
 		});
 	};
 
-	const addListener = function emitter$addListener(eventName, listener) {
+	x.addListener = function emitter$addListener(eventName, listener) {
 		if (!listeners[eventName]) {
 			listeners[eventName] = [];
 		}
 		listeners[eventName].push(listener);
-	};
-
-	return {
-		emit: emit,
-		addListener: addListener
 	};
 });
