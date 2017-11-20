@@ -19,7 +19,8 @@ module.exports = function (grunt) {
 				files: [{
 					src: [
 						'src/main/javascript/modules/validator.js',
-						'src/main/javascript/modules/swagger.js'
+						'src/main/javascript/modules/swagger.js',
+						'src/main/javascript/modules/cors.js'
 					],
 					dest: "target/dist/swagger-debug.js"
 				}]

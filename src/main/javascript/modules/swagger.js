@@ -15,7 +15,7 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module(["emitter", "validator", "request", "response"], function (emitter, validator, request, response) {
+_.module("swagger", ["request"], function (request) {
 	const x = this;
 
 	const auth = "https://raw.githubusercontent.com/jeroenvalk/swagger/master/src";
@@ -148,126 +148,12 @@ _.module(["emitter", "validator", "request", "response"], function (emitter, val
 		return swagger;
 	};
 
-	const swagger = {
+	return {
 		refreshPaths: function() {
 			return _.extend(x.swagger, resolve(request(reqSwagger)));
 		},
 		refresh: function() {
 			return _.extend(x.swagger, getSwagger(resolve(request(reqSwagger))));
 		}
-	}
-
-	const headers = {};
-	for (var name in context.proxyRequest.headers) {
-		headers[name] = context.proxyRequest.headers[name];
-	}
-	const incoming = {
-		protocol: context.getVariable("client.scheme") + ":",
-		method: context.getVariable("request.verb"),
-		hostname: context.getVariable("request.header.host"),
-		path: context.getVariable("request.uri"),
-		pathname: context.getVariable("request.path"),
-		headers: headers
 	};
-
-	const getOperation = function (swagger) {
-		const validate = validator(swagger);
-		if (!incoming.pathname.startsWith(x.swagger.basePath)) {
-			throw new Error();
-		}
-		var operation;
-		if (incoming.method === "GET" && incoming.pathname.endsWith("/swagger.json")) {
-			operation = {
-				operationId: "SWAGGER"
-			}
-		}
-		if (!operation) {
-			operation = validate(incoming);
-		}
-		return operation;
-	};
-
-	const cors = function (operation) {
-		var method;
-		if (operation) {
-			if (operation.operationId) {
-				switch (operation.operationId) {
-					case "SWAGGER":
-						response({
-							statusCode: 200,
-							headers: {
-								"Content-Type": "application/json",
-								"Access-Control-Allow-Origin": "*"
-							},
-							body: [swagger.refresh()]
-						});
-						break;
-					default:
-						response({
-							headers: {
-								"Access-Control-Allow-Origin": "*"
-							}
-						});
-				}
-			} else {
-				switch (incoming.method) {
-					case "OPTIONS":
-						method = incoming.headers["Access-Control-Request-Method"];
-						if (method) {
-							if (operation[method.toLowerCase()]) {
-								response({
-									statusCode: 200,
-									headers: {
-										"Access-Control-Allow-Origin": "*",
-										"Access-Control-Allow-Methods": _.keys(operation).join(",").toUpperCase(),
-										"Access-Control-Allow-Headers": incoming.headers["Access-Control-Request-Headers"],
-										"Access-Control-Max-Age": "86400"
-									},
-									body: []
-								});
-							} else {
-								response({
-									statusCode: 405,
-									body: []
-								});
-							}
-						} else {
-							response({
-								statusCode: 400,
-								body: []
-							});
-						}
-						break;
-					default:
-						response({
-							statusCode: 405,
-							body: []
-						});
-						break;
-				}
-			}
-		} else {
-			response({
-				statusCode: 404,
-				body: []
-			});
-		}
-	};
-
-	emitter.addListener("flow", function (event) {
-		var operation;
-		switch (event) {
-			case "beforePROXY_REQ_FLOW":
-				if (!x.swagger.paths) {
-					swagger.refreshPaths();
-				}
-				operation = getOperation(x.swagger);
-				context.setVariable("operation", JSON.stringify(operation));
-				cors(operation);
-				if (operation.operationId) {
-					context.setVariable("operationId", operation.operationId);
-				}
-				break;
-		}
-	});
 });
