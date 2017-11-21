@@ -36,7 +36,7 @@ _.module("channel", ["emitter"], function (emitter, x) {
 					if (buf.length + value.length < amount) {
 						push.apply(buf, value);
 					} else {
-						value = _.flatten(buf, value.slice(0, amount - buf.length));
+						value = _.flatten([buf, value.slice(0, amount - buf.length)]);
 						buf = null;
 						callback(value);
 					}
@@ -68,8 +68,9 @@ _.module("channel", ["emitter"], function (emitter, x) {
 				if (paused) {
 					paused.push(null);
 				} else {
-					emitter.emit(null);
+					emitter.emit(fd, null);
 					emitter.removeAllListeners();
+					state[fd][0] = [];
 				}
 			} else {
 				for (i = 1; i < array.length; ++i) {
@@ -82,7 +83,7 @@ _.module("channel", ["emitter"], function (emitter, x) {
 						paused.push(array[i]);
 					}
 				} else {
-					emitter.emit(fd, array);
+					emitter.emit(fd, array.slice(1));
 				}
 			}
 		} else {
@@ -93,19 +94,28 @@ _.module("channel", ["emitter"], function (emitter, x) {
 	x.read = function cpx$channel$read(fd, amount, callback) {
 		fd = -fd;
 		if (fd > 0) {
-			var i, data, buf = state[fd][0];
+			var i, data, buf = state[fd][0], aux;
 			if (buf) {
 				for (i = 0; i < buf.length; ++i) {
 					if (!buf[i]) break;
 				}
 				if (i < buf.length) {
+					var msg = JSON.stringify(buf) + amount + " " + i;
 					if (amount < i) {
 						data = buf.splice(0, amount);
-						buf.splice(0, i - amount);
+						aux = buf.length;
+						callback && callback(data);
+						if (aux === buf.length) {
+							buf.splice(0, i - amount + 1);
+						}
 					} else {
 						data = buf.splice(0, i);
+						aux = buf.length;
+						callback && callback(data);
+						if (aux === buf.length) {
+							buf.shift();
+						}
 					}
-					callback && callback(data);
 					return data;
 				}
 				if (i < amount) {
