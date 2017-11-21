@@ -18,31 +18,14 @@
 /* global _ */
 
 _.describe({
-	name: "compare",
+	name: "channel",
 	it: {
-		simple: function(expect) {
-			expect(_.compare({
-				x: 1,
-				y: {
-					e: 1
-				}
-			}, {
-				x: {},
-				y: {
-					f: 1
-				},
-				z: 1
-			})).to.deep.equal({
-				number: {
-					x: 1,
-					z: 2
-				},
-				object: {
-					y: 3,
-					x: 2,
-					"x.": {}
-				}
-			});
+		simple: function(expect, channel) {
+			const ch = channel.create(true), rd = ch.rd, wr = ch.wr;
+			channel.write(wr, {a: 1});
+			channel.write(wr, [{b: 2}, {c: 3}]);
+			channel.write(wr, null);
+			expect(channel.read(rd, Infinity)).to.deep.equal([{a: 1}, {b: 2}, {c: 3}]);
 		}
 	}
 });
