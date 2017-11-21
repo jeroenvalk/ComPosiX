@@ -30,7 +30,14 @@ module.exports = function(_) {
 	};
 
 	const module = function cpx$module() {
-		var name = null, deps = [], func = null;
+		var name = null, deps = [], func = null, res, nameA, nameB;
+
+		const Constructor = function() {
+			argv.push(this);
+			res = func.apply(x, argv);
+			argv.pop();
+		};
+
 		for (var i = 0; i < arguments.length; ++i) {
 			if (_.isString(arguments[i])) {
 				name = arguments[i];
@@ -42,9 +49,9 @@ module.exports = function(_) {
 				func = arguments[i];
 			}
 		}
-		const res = func.apply(x, _.map(deps, propertyOfLib));
+		const argv = _.map(deps, propertyOfLib), y = new Constructor();
 		if (name) {
-			lib[name] = res || true;
+			lib[name] = res || y;
 		}
 	};
 
