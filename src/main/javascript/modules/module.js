@@ -24,7 +24,7 @@
 	};
 
 	const module = function cpx$module() {
-		var name = null, deps = [], func = null, res;
+		var name = null, deps = [], func = null, res, nameA, nameB;
 
 		const Constructor = function() {
 			argv.push(this);
@@ -45,7 +45,7 @@
 		}
 		const argv = _.map(deps, _.propertyOf(lib)), y = new Constructor();
 		if (name) {
-			const nameA = name.charAt(0), nameB = nameA.toUpperCase();
+			nameA = name.charAt(0); nameB = nameA.toUpperCase();
 			if (nameA === nameB) {
 				throw new Error("module names must start lowercase");
 			}

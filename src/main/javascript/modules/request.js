@@ -15,8 +15,10 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module("request", function() {
-	return function cpx$request(req) {
+_.module("request", ["channel"], function(channel) {
+	const i = channel.create(), o = channel.create(), rd = i.rd, wr = o.wr;
+
+	const result = function cpx$request(req) {
 		const asJSON = req.headers && req.headers.accept === "application/json";
 		const exchange = httpClient.send(new Request(req.url, req.method || "GET", req.headers || {}, req.body || ""));
 
@@ -43,4 +45,12 @@ _.module("request", function() {
 			then: then
 		};
 	};
+
+	channel.read(rd, function(value) {
+		channel.write(wr, result(value));
+	});
+
+	result.rd = o.rd;
+	result.wr = i.wr;
+	return result;
 });

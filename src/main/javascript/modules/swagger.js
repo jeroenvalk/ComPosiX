@@ -15,7 +15,7 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module("swagger", ["request"], function (request) {
+_.module("swagger", ["channel", "request"], function (channel, request) {
 	const x = this;
 
 	const auth = "https://raw.githubusercontent.com/jeroenvalk/swagger/master/src";
@@ -38,24 +38,32 @@ _.module("swagger", ["request"], function (request) {
 
 	const getSwagger = function (swagger) {
 		const todo = {
-			operations: {},
+			operations: {
+				source: [],
+				target: []
+			},
 			params: {},
 			definitions: {}
 		};
 		// resolve operations
 		_.each(swagger.paths, function (operations) {
 			_.each(operations, function (operation) {
-				todo.operations[operation.operationId] = [operation, request({
+				todo.operations.source.push(operation);
+				todo.operations.target.push({
 					method: "GET",
 					url: [auth, "operations", org, operation.operationId + ".json"].join("/"),
 					headers: {
 						accept: "application/json"
 					}
-				})];
+				});
 			});
 		});
-		_.each(todo.operations, function (operation) {
-			_.extend(operation[0], resolve(operation[1]));
+		// TODO: make first resolve async
+		todo.operations.target = _.map(todo.operations.target, function(value) {
+			return resolve(request(value));
+		});
+		_.each(todo.operations.source, function (operation, index) {
+			_.extend(operation, todo.operations.target[index]);
 		});
 		// resolve params
 		_.each(swagger.paths, function (operations) {
@@ -64,13 +72,13 @@ _.module("swagger", ["request"], function (request) {
 				for (var i = 0; i < params.length; ++i) {
 					if (_.isString(params[i])) {
 						if (!todo.params[params[i]]) {
-							todo.params[params[i]] = request({
+							todo.params[params[i]] = {
 								method: "GET",
 								url: [auth, "parameters", org, params[i] + ".json"].join("/"),
 								headers: {
 									accept: "application/json"
 								}
-							});
+							};
 						}
 						params[i] = {
 							"$ref": "#/parameters/" + params[i]
@@ -82,8 +90,9 @@ _.module("swagger", ["request"], function (request) {
 		if (!swagger.parameters) {
 			swagger.parameters = {};
 		}
-		_.each(todo.params, function (param, name) {
-			swagger.parameters[name] = resolve(param);
+		// TODO: make second resolve async
+		_.each(todo.params, function (value, key) {
+			swagger.parameters[key] = resolve(request(value));
 		});
 		// resolve definitions
 		const resolveDefinition = function (key) {
@@ -92,13 +101,13 @@ _.module("swagger", ["request"], function (request) {
 				if (type) {
 					if (_.isString(type)) {
 						if (!todo.definitions.hasOwnProperty(type)) {
-							todo.definitions[type] = request({
+							todo.definitions[type] = {
 								method: "GET",
 								url: [auth, "definitions", org, type + ".json"].join("/"),
 								headers: {
 									accept: "application/json"
 								}
-							});
+							};
 						}
 						object[key] = {
 							"$ref": "#/definitions/" + type
@@ -137,7 +146,8 @@ _.module("swagger", ["request"], function (request) {
 			done = true;
 			_.each(todo.definitions, function (definition, type) {
 				if (definition) {
-					const def = resolve(definition);
+					// TODO: make third resolve async
+					const def = resolve(request(definition));
 					swagger.definitions[type] = def;
 					todo.definitions[type] = null;
 					recurse(def);

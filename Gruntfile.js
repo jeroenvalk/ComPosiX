@@ -9,6 +9,7 @@ module.exports = function (grunt) {
 						'src/main/javascript/modules/composix.js',
 						'src/main/javascript/modules/module.js',
 						'src/main/javascript/modules/emitter.js',
+						'src/main/javascript/modules/channel.js',
 						'src/main/javascript/modules/request.js',
 						'src/main/javascript/modules/response.js'
 					],
