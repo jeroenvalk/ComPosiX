@@ -16,7 +16,7 @@
  */
 
 _.module("swagger", ["channel", "request"], function (channel, request) {
-	const x = this;
+	const x = this, ch = channel.create(true), rd = ch.rd, wr = ch.wr;
 
 	const auth = "https://raw.githubusercontent.com/jeroenvalk/swagger/master/src";
 	const org = x.swagger.info.contact.name;
@@ -49,7 +49,7 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 		_.each(swagger.paths, function (operations) {
 			_.each(operations, function (operation) {
 				todo.operations.source.push(operation);
-				todo.operations.target.push({
+				channel.write(wr, {
 					method: "GET",
 					url: [auth, "operations", org, operation.operationId + ".json"].join("/"),
 					headers: {
@@ -58,10 +58,14 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 				});
 			});
 		});
+		channel.write(wr, null);
 		// TODO: make first resolve async
-		todo.operations.target = _.map(todo.operations.target, function(value) {
+		todo.operations.target = _.map(channel.read(rd, Infinity), function(value) {
 			return resolve(request(value));
 		});
+		if (todo.operations.source.length !== todo.operations.target.length) {
+			throw new Error("source target " + todo.operation.source.length + " " + todo.operation.target.length);
+		}
 		_.each(todo.operations.source, function (operation, index) {
 			_.extend(operation, todo.operations.target[index]);
 		});

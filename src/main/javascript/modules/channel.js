@@ -15,41 +15,109 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module("channel", ["emitter"], function(emitter, x) {
-	const paused = {};
-	var current = 1;
+_.module("channel", ["emitter"], function (emitter, x) {
+	const state = {}, push = Array.prototype.push;
+	var current = 0;
 
-	x.create = function cpx$channel$create() {
-		paused[current] = [];
+	const onError = function (errno) {
+		var msg;
+		if (errno) {
+			msg = "channel accept raw buffers only";
+		} else {
+			msg = "channel accepts plain objects only";
+		}
+		throw new Error(msg);
+	};
+
+	const continuation = function (buf, fd, amount, callback) {
+		const listener = function (value) {
+			if (buf) {
+				if (value) {
+					if (buf.length + value.length < amount) {
+						push.apply(buf, value);
+					} else {
+						value = _.flatten(buf, value.slice(0, amount - buf.length));
+						buf = null;
+						callback(value);
+					}
+				} else {
+					value = buf;
+					buf = null;
+					callback(value);
+				}
+			}
+		};
+		emitter.addListener(fd, listener);
+	};
+
+	x.create = function cpx$channel$create(mode) {
+		const fd = ++current;
+		state[fd] = [[], mode || false];
 		return {
-			rd: -current,
-			wr: current++
+			rd: -fd,
+			wr: fd
 		};
 	};
 
-	x.write = function cpx$channel$write(fd, data) {
+	x.write = function cpx$channel$write(fd) {
+		var i;
 		if (fd > 0) {
-			if (paused[fd]) {
-				paused[fd].push(data);
+			const array = _.flatten(arguments), paused = state[fd][0], objectMode = state[fd][1],
+				typeCheck = objectMode ? _.isPlainObject : _.isBuffer;
+			if (array[1] === null) {
+				if (paused) {
+					paused.push(null);
+				} else {
+					emitter.emit(null);
+					emitter.removeAllListeners();
+				}
 			} else {
-				emitter.emit(fd, data);
+				for (i = 1; i < array.length; ++i) {
+					if (array[i] !== null && !_.isPlainObject(array[i])) {
+						onError(objectMode);
+					}
+				}
+				if (paused) {
+					for (i = 1; i < array.length; ++i) {
+						paused.push(array[i]);
+					}
+				} else {
+					emitter.emit(fd, array);
+				}
 			}
 		} else {
 			throw new Error("writing to readable endpoint");
 		}
 	};
 
-	x.read = function cpx$channel$read(fd, listener) {
+	x.read = function cpx$channel$read(fd, amount, callback) {
 		fd = -fd;
 		if (fd > 0) {
-			var i = 0;
-			emitter.addListener(fd, listener);
-			while (i < paused[fd].length) {
-				emitter.emit(fd, paused[fd][i++]);
+			var i, data, buf = state[fd][0];
+			if (buf) {
+				for (i = 0; i < buf.length; ++i) {
+					if (!buf[i]) break;
+				}
+				if (i < buf.length) {
+					if (amount < i) {
+						data = buf.splice(0, amount);
+						buf.splice(0, i - amount);
+					} else {
+						data = buf.splice(0, i);
+					}
+					callback && callback(data);
+					return data;
+				}
+				if (i < amount) {
+					state[fd][0] = null;
+					return continuation(buf, fd, amount, callback);
+				}
+				data = buf.splice(0, amount);
+				callback && callback(data);
+				return data;
 			}
-			delete paused[fd];
-		} else {
-			throw new Error("reading from writable endpoint");
+			return continuation([], fd, amount, callback);
 		}
+		throw new Error("reading from writable endpoint");
 	};
 });

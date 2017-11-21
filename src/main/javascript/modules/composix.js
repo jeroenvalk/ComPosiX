@@ -94,6 +94,9 @@ const _ = {};
 		isFunction: function cpx$isFunction(value) {
 			return value instanceof Function;
 		},
+		isPlainObject: function cpx$isPlainObject(value) {
+			return value instanceof Object;
+		},
 		isString: function cpx$isString(value) {
 			return typeof value === "string";
 		},

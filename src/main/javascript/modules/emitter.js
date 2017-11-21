@@ -32,4 +32,8 @@ _.module("emitter", function Emitter(x) {
 		}
 		listeners[eventName].push(listener);
 	};
+
+	x.removeAllListeners = function emitter$removeAllListeners(eventName) {
+		delete listeners[eventName];
+	};
 });

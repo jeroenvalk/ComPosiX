@@ -16,7 +16,7 @@
  */
 
 _.module("request", ["channel"], function(channel) {
-	const i = channel.create(), o = channel.create(), rd = i.rd, wr = o.wr;
+	const i = channel.create(true), o = channel.create(true), rd = i.rd, wr = o.wr;
 
 	const result = function cpx$request(req) {
 		const asJSON = req.headers && req.headers.accept === "application/json";
@@ -46,8 +46,8 @@ _.module("request", ["channel"], function(channel) {
 		};
 	};
 
-	channel.read(rd, function(value) {
-		channel.write(wr, result(value));
+	channel.read(rd, Infinity, function(array) {
+		channel.write(wr, _.map(array, result));
 	});
 
 	result.rd = o.rd;
