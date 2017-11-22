@@ -20,7 +20,7 @@
 _.describe({
 	name: "channel",
 	it: {
-		simple: function(expect, channel) {
+		simple: function (expect, channel) {
 			const ch = channel.create(true), rd = ch.rd, wr = ch.wr;
 			expect(channel.read(rd, 0)).to.deep.equal([]);
 
@@ -33,13 +33,13 @@ _.describe({
 
 			expect(channel.read(rd, 1)).to.deep.equal([{a: 1}]);
 
-			expect(channel.read(rd, 1, function(array) {
+			expect(channel.read(rd, 1, function (array) {
 				expect(array).to.deep.equal([{c: 3}]);
 				expect(channel.read(rd, Infinity)).to.deep.equal([{d: 4}, {e: 5}]);
 			})).to.deep.equal([{c: 3}]);
 
 			var flag = false;
-			expect(channel.read(rd, Infinity, function(array) {
+			expect(channel.read(rd, Infinity, function (array) {
 				flag = true;
 				expect(array).to.deep.equal([{a: 1}]);
 			})).to.equal(undefined);
@@ -49,12 +49,12 @@ _.describe({
 			channel.write(wr, null);
 			expect(flag).to.equal(true);
 		},
-		reverse: function(expect, channel) {
+		reverse: function (expect, channel) {
 			const ch = channel.create(true), rd = ch.rd, wr = ch.wr;
 			expect(channel.read(rd, 0)).to.deep.equal([]);
 
 			var flag = false;
-			const callback = function(array) {
+			const callback = function (array) {
 				flag = true;
 				expect(array).to.deep.equal([{a: 1}]);
 			}
@@ -76,9 +76,9 @@ _.describe({
 
 			channel.write(wr, [{c: 3}, {d: 4}]);
 			var flagB = false;
-			expect(channel.read(rd, 1, function(array) {
+			expect(channel.read(rd, 1, function (array) {
 				expect(array).to.deep.equal([{c: 3}]);
-				expect(channel.read(rd, 2, function(array) {
+				expect(channel.read(rd, 2, function (array) {
 					flagB = true;
 				})).to.equal(undefined);
 			}));
@@ -88,7 +88,7 @@ _.describe({
 			flagB = false;
 
 			var flagC = false;
-			channel.read(rd, Infinity, function(array) {
+			channel.read(rd, Infinity, function (array) {
 				flagC = true;
 			});
 			expect(flagC).to.equal(false);
@@ -97,6 +97,37 @@ _.describe({
 
 			expect(flag).to.equal(false);
 			expect(flagB).to.equal(false);
+		},
+		forward: function (expect, channel) {
+			const i = channel.create(true), o = channel.create(true);
+
+			var depth = 0;
+			const recurse = function () {
+				++depth;
+				channel.read(i.rd, Infinity, function (array) {
+					expect(array[0].a).to.equal(depth);
+					channel.write(o.wr, array);
+					channel.write(o.wr, null);
+					recurse();
+				});
+			};
+			recurse();
+
+			channel.write(i.wr, {a: 1});
+			expect(depth).to.equal(1);
+			channel.write(i.wr, null);
+			expect(depth).to.equal(2);
+			channel.write(i.wr, {a: 2});
+			expect(depth).to.equal(2);
+			channel.write(i.wr, null);
+			expect(depth).to.equal(3);
+			channel.write(i.wr, {a: 3});
+			expect(depth).to.equal(3);
+			channel.write(i.wr, null);
+			expect(depth).to.equal(4);
+
+			expect(channel.read(o.rd, Infinity)).to.deep.equal([{a: 1}]);
+
 		}
 	}
 });

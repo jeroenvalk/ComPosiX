@@ -49,7 +49,7 @@ _.module("request", ["channel"], function(channel) {
 		};
 	};
 
-	const recurse = function() {
+	const recurse = function(depth) {
 		channel.read(rd, Infinity, function(array) {
 			var i;
 			for (i = 0; i < array.length; ++i) {
@@ -60,10 +60,11 @@ _.module("request", ["channel"], function(channel) {
 			}
 			channel.write(wr, array);
 			channel.write(wr, null);
+			if (--depth > 0) recurse(depth);
 		});
 	};
 
-	recurse();
+	recurse(Infinity);
 
 	result.rd = o.rd;
 	result.wr = i.wr;

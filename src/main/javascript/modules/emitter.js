@@ -18,10 +18,15 @@
 // emitter (basic version)
 _.module("emitter", function Emitter(x) {
 	const listeners = {};
+	var delay = null;
 
-	x.emit = function emitter$emit(event) {
-		const argv = _.tail(arguments);
-		_.each(listeners[event], function (listener) {
+	x.emit = function emitter$emit(eventName) {
+		const argv = _.tail(arguments), aux = listeners[eventName];
+		if (delay === eventName) {
+			delete listeners[eventName];
+			delay = null;
+		}
+		_.each(aux, function (listener) {
 			listener.apply(null, argv);
 		});
 	};
@@ -33,7 +38,11 @@ _.module("emitter", function Emitter(x) {
 		listeners[eventName].push(listener);
 	};
 
-	x.removeAllListeners = function emitter$removeAllListeners(eventName) {
-		delete listeners[eventName];
+	x.removeAllListeners = function emitter$removeAllListeners(eventName, delayed) {
+		if (delayed) {
+			delay = eventName;
+		} else {
+			delete listeners[eventName];
+		}
 	};
 });

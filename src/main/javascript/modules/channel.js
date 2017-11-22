@@ -68,9 +68,9 @@ _.module("channel", ["emitter"], function (emitter, x) {
 				if (paused) {
 					paused.push(null);
 				} else {
-					emitter.emit(fd, null);
-					emitter.removeAllListeners();
 					state[fd][0] = [];
+					emitter.removeAllListeners(fd, true);
+					emitter.emit(fd, null);
 				}
 			} else {
 				for (i = 1; i < array.length; ++i) {

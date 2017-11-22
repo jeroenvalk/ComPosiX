@@ -199,7 +199,9 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 
 	return {
 		refreshPaths: function() {
-			return _.extend(x.swagger, resolve(request(reqSwagger)));
+			channel.write(wr, reqSwagger);
+			channel.write(wr, null);
+			_.extend(x.swagger, bodyOf(channel.read(rd, Infinity)[0]));
 		},
 		refresh: function () {
 			return _.extend(x.swagger, getSwagger(resolve(request(reqSwagger))));
