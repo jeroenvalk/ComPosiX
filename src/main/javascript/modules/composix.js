@@ -20,7 +20,7 @@ const _ = {};
 (function () {
 	context && context.setVariable("underscore", _);
 
-	const slice = Array.prototype.slice;
+	const slice = Array.prototype.slice, MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER;
 
 	const extend = function cpx$extend(a) {
 		var b = arguments.length;
@@ -36,9 +36,43 @@ const _ = {};
 		extend(_, a);
 	};
 
+	const constant = function cpx$constant() {
+			return function() {
+				return value;
+			};
+		},
+		isArray = function cpx$isArray(value) {
+			return value instanceof Array;
+		},
+		isArrayLikeObject = function cpx$isArrayLikeObject(value) {
+			if (value instanceof Object) {
+				const size = value.length;
+				return 0 <= size && size <= MAX_SAFE_INTEGER;
+			}
+			return false;
+		},
+		isFunction = function cpx$isFunction(value) {
+			return value instanceof Function;
+		},
+		isPlainObject = function cpx$isPlainObject(value) {
+			return value.constructor === Object;
+		},
+		isString = function cpx$isString(value) {
+			return typeof value === "string";
+		},
+		toPath = function cpx$toPath(value) {
+			if (isString(value)) {
+				return value.split(".");
+			}
+			if (isArrayLikeObject(value)) {
+				return value;
+			}
+			return [];
+		};
+
 	mixin({
 		each: function cpx$each(array, iteratee) {
-			if (array instanceof Array) {
+			if (isArray(array)) {
 				for (var i = 0; i < array.length; ++i) {
 					iteratee(array[i], i);
 				}
@@ -52,6 +86,7 @@ const _ = {};
 				}
 			}
 		},
+		constant: constant,
 		extend: extend,
 		find: function cpx$find(array, predicate) {
 			for (var i = 0; i < array.length; ++i) {
@@ -62,61 +97,65 @@ const _ = {};
 		},
 		flatten: function cpx$flatten(array) {
 			var i, j, k = 0;
-			for (i = 0; i < array.length; ++i) {
-				if (array[i] instanceof Array) {
-					k += array[i].length
-				} else {
-					++k;
-				}
-			}
-			const result = new Array(k); k = 0;
-			for (i = 0; i < array.length; ++i) {
-				if (array[i] instanceof Array) {
-					for (j = 0; j < array[i].length; ++j) {
-						result[k++] = array[i][j];
+			if (isArrayLikeObject(array)) {
+				for (i = 0; i < array.length; ++i) {
+					if (isArray(array[i])) {
+						k += array[i].length
+					} else {
+						++k;
 					}
-				} else {
-					result[k++] = array[i];
 				}
+				const result = new Array(k);
+				k = 0;
+				for (i = 0; i < array.length; ++i) {
+					if (isArray(array[i])) {
+						for (j = 0; j < array[i].length; ++j) {
+							result[k++] = array[i][j];
+						}
+					} else {
+						result[k++] = array[i];
+					}
+				}
+				return result;
 			}
-			return result;
+			return [];
 		},
 		invert: function cpx$invert(entity) {
 			const result = {};
-			_.each(entity, function(value, key) {
+			_.each(entity, function (value, key) {
 				result[value + ''] = key;
 			});
 			return result;
 		},
-		isArray: function cpx$isArray(value) {
-			return value instanceof Array;
-		},
-		isFunction: function cpx$isFunction(value) {
-			return value instanceof Function;
-		},
-		isPlainObject: function cpx$isPlainObject(value) {
-			return value.constructor === Object;
-		},
-		isString: function cpx$isString(value) {
-			return typeof value === "string";
-		},
+		isArray: isArray,
+		isArrayLikeObject: isArrayLikeObject,
+		isFunction: isFunction,
+		isPlainObject: isPlainObject,
+		isString: isString,
 		keys: function cpx$keys(object) {
 			return Object.keys(object);
 		},
 		map: function cpx$map(entity, iteratee) {
 			const result = [];
-			_.each(entity, function(value, key) {
+			_.each(entity, function (value, key) {
 				result.push(iteratee(value, key));
 			});
 			return result;
 		},
-		property: function cpx$property(key) {
-			return function(object) {
-				return object[key];
-			}
+		property: function cpx$property(path) {
+			path = toPath(path);
+			const n = path.length;
+			return n > 0 ? function (object) {
+				for (var i = 0; i < n; ++i) {
+					if (object) {
+						object = object[path[i]];
+					}
+				}
+				return object;
+			} : constant();
 		},
 		propertyOf: function cpx$propertyOf(object) {
-			return function(key) {
+			return function (key) {
 				return object[key];
 			}
 		},
