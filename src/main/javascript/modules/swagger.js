@@ -16,7 +16,7 @@
  */
 
 _.module("swagger", ["channel", "request"], function (channel, request) {
-	const x = this, ch = channel.create(true), rd = ch.rd, wr = ch.wr;
+	const x = this, rd = request.rd, wr = request.wr;
 
 	const auth = "https://raw.githubusercontent.com/jeroenvalk/swagger/master/src";
 	const org = x.swagger.info.contact.name;
@@ -61,7 +61,7 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 		channel.write(wr, null);
 		// TODO: make first resolve async
 		todo.operations.target = _.map(channel.read(rd, Infinity), function(value) {
-			return resolve(request(value));
+			return resolve(value);
 		});
 		if (todo.operations.source.length !== todo.operations.target.length) {
 			throw new Error("source target " + todo.operation.source.length + " " + todo.operation.target.length);

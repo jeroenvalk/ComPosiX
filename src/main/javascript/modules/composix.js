@@ -63,7 +63,7 @@ const _ = {};
 		flatten: function cpx$flatten(array) {
 			var i, j, k = 0;
 			for (i = 0; i < array.length; ++i) {
-				if (array instanceof Array) {
+				if (array[i] instanceof Array) {
 					k += array[i].length
 				} else {
 					++k;
@@ -71,7 +71,7 @@ const _ = {};
 			}
 			const result = new Array(k); k = 0;
 			for (i = 0; i < array.length; ++i) {
-				if (array instanceof Array) {
+				if (array[i] instanceof Array) {
 					for (j = 0; j < array[i].length; ++j) {
 						result[k++] = array[i][j];
 					}
@@ -95,7 +95,7 @@ const _ = {};
 			return value instanceof Function;
 		},
 		isPlainObject: function cpx$isPlainObject(value) {
-			return value instanceof Object;
+			return value.constructor === Object;
 		},
 		isString: function cpx$isString(value) {
 			return typeof value === "string";

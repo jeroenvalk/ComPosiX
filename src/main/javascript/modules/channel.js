@@ -19,12 +19,12 @@ _.module("channel", ["emitter"], function (emitter, x) {
 	const state = {}, push = Array.prototype.push;
 	var current = 0;
 
-	const onError = function (errno) {
+	const onError = function (errno, value) {
 		var msg;
 		if (errno) {
-			msg = "channel accept raw buffers only";
+			msg = "expected object but got: " + JSON.stringify(value);
 		} else {
-			msg = "channel accepts plain objects only";
+			msg = "expected buffer but got: " + JSON.stringify(value);
 		}
 		throw new Error(msg);
 	};
@@ -74,8 +74,8 @@ _.module("channel", ["emitter"], function (emitter, x) {
 				}
 			} else {
 				for (i = 1; i < array.length; ++i) {
-					if (array[i] !== null && !_.isPlainObject(array[i])) {
-						onError(objectMode);
+					if (!typeCheck(array[i])) {
+						onError(objectMode, array[i]);
 					}
 				}
 				if (paused) {

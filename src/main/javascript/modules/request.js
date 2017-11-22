@@ -48,6 +48,7 @@ _.module("request", ["channel"], function(channel) {
 
 	channel.read(rd, Infinity, function(array) {
 		channel.write(wr, _.map(array, result));
+		channel.write(wr, null);
 	});
 
 	result.rd = o.rd;
