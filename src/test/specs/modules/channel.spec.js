@@ -127,7 +127,19 @@ _.describe({
 			expect(depth).to.equal(4);
 
 			expect(channel.read(o.rd, Infinity)).to.deep.equal([{a: 1}]);
+			expect(channel.read(o.rd, Infinity)).to.deep.equal([{a: 2}]);
 
+			channel.read(o.rd, Infinity, function(array) {
+				expect(array).to.deep.equal([{a: 3}]);
+				channel.write(i.wr, {a: 4});
+				expect(depth).to.equal(4);
+				channel.write(i.wr, null);
+				expect(depth).to.equal(5);
+
+				expect(channel.read(o.rd, Infinity)).to.deep.equal([]);
+			});
+
+			expect(channel.read(o.rd, Infinity)).to.deep.equal([{a: 4}]);
 		}
 	}
 });

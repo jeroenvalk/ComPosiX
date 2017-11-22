@@ -39,6 +39,7 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 	};
 
 	const getSwagger = function (swagger) {
+		const self = this;
 		const todo = {
 			operations: {
 				source: [],
@@ -164,18 +165,18 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 		return swagger;
 	};
 
-	const rch = channel.create(true);
-
 	const result = function (node) {
+		const rch = channel.create(true);
+		result.write = function () {
+			channel.write(rch.wr, _.flatten(arguments));
+		};
 		return function () {
 			node.apply(result, arguments);
-			channel.write(rch.wr, null);
 			return rch.rd;
 		}
 	};
-	result.write = function () {
-		channel.write(rch.wr, _.flatten(arguments));
-	};
+
+	const readSwagger = result(getSwagger);
 
 	const refreshPaths = result(function () {
 		const self = this;
@@ -198,11 +199,7 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 	});
 
 	return {
-		refreshPaths: function() {
-			channel.write(wr, reqSwagger);
-			channel.write(wr, null);
-			_.extend(x.swagger, bodyOf(channel.read(rd, Infinity)[0]));
-		},
+		refreshPaths: refreshPaths,
 		refresh: function () {
 			return _.extend(x.swagger, getSwagger(resolve(request(reqSwagger))));
 		}

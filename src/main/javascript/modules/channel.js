@@ -52,7 +52,7 @@ _.module("channel", ["emitter"], function (emitter, x) {
 
 	x.create = function cpx$channel$create(mode) {
 		const fd = ++current;
-		state[fd] = [[], mode || false];
+		state[fd] = [[], mode || false, false];
 		return {
 			rd: -fd,
 			wr: fd
@@ -94,27 +94,19 @@ _.module("channel", ["emitter"], function (emitter, x) {
 	x.read = function cpx$channel$read(fd, amount, callback) {
 		fd = -fd;
 		if (fd > 0) {
-			var i, data, buf = state[fd][0], aux;
+			var i, data, buf = state[fd][0];
 			if (buf) {
 				for (i = 0; i < buf.length; ++i) {
 					if (!buf[i]) break;
 				}
 				if (i < buf.length) {
-					var msg = JSON.stringify(buf) + amount + " " + i;
-					if (amount < i) {
-						data = buf.splice(0, amount);
-						aux = buf.length;
-						callback && callback(data);
-						if (aux === buf.length) {
-							buf.splice(0, i - amount + 1);
-						}
-					} else {
-						data = buf.splice(0, i);
-						aux = buf.length;
-						callback && callback(data);
-						if (aux === buf.length) {
-							buf.shift();
-						}
+					amount = Math.min(amount, i);
+					data = buf.splice(0, amount);
+					state[fd][2] = true;
+					callback && callback(data);
+					if (state[fd][2]) {
+						buf.splice(0, i - amount + 1);
+						state[fd][2] = false;
 					}
 					return data;
 				}
