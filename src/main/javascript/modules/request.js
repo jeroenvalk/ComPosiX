@@ -34,11 +34,14 @@ _.module("request", ["channel"], function(channel) {
 			for (var name in res.headers) {
 				headers[name] = res.headers[name];
 			}
-			fn({
+			const result = {
 				status: res.status,
 				headers: headers,
 				body: asJSON && res.status == 200 ? JSON.parse(res.content) : res.content
-			});
+			};
+			fn && fn(result);
+			result.body = [result.body];
+			return result;
 		}
 
 		return {
@@ -46,10 +49,21 @@ _.module("request", ["channel"], function(channel) {
 		};
 	};
 
-	channel.read(rd, Infinity, function(array) {
-		channel.write(wr, _.map(array, result));
-		channel.write(wr, null);
-	});
+	const recurse = function() {
+		channel.read(rd, Infinity, function(array) {
+			var i;
+			for (i = 0; i < array.length; ++i) {
+				array[i] = result(array[i]);
+			}
+			for (i = 0; i < array.length; ++i) {
+				array[i] = array[i].then();
+			}
+			channel.write(wr, array);
+			channel.write(wr, null);
+		});
+	};
+
+	recurse();
 
 	result.rd = o.rd;
 	result.wr = i.wr;

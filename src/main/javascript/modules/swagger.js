@@ -28,6 +28,8 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 		}
 	};
 
+	const bodyOf = _.property("body.0");
+
 	const resolve = function (promise) {
 		var result;
 		promise.then(function (res) {
@@ -45,60 +47,7 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 			params: {},
 			definitions: {}
 		};
-		// resolve operations
-		_.each(swagger.paths, function (operations) {
-			_.each(operations, function (operation) {
-				todo.operations.source.push(operation);
-				channel.write(wr, {
-					method: "GET",
-					url: [auth, "operations", org, operation.operationId + ".json"].join("/"),
-					headers: {
-						accept: "application/json"
-					}
-				});
-			});
-		});
-		channel.write(wr, null);
-		// TODO: make first resolve async
-		todo.operations.target = _.map(channel.read(rd, Infinity), function(value) {
-			return resolve(value);
-		});
-		if (todo.operations.source.length !== todo.operations.target.length) {
-			throw new Error("source target " + todo.operation.source.length + " " + todo.operation.target.length);
-		}
-		_.each(todo.operations.source, function (operation, index) {
-			_.extend(operation, todo.operations.target[index]);
-		});
-		// resolve params
-		_.each(swagger.paths, function (operations) {
-			_.each(operations, function (operation) {
-				const params = operation.parameters;
-				for (var i = 0; i < params.length; ++i) {
-					if (_.isString(params[i])) {
-						if (!todo.params[params[i]]) {
-							todo.params[params[i]] = {
-								method: "GET",
-								url: [auth, "parameters", org, params[i] + ".json"].join("/"),
-								headers: {
-									accept: "application/json"
-								}
-							};
-						}
-						params[i] = {
-							"$ref": "#/parameters/" + params[i]
-						};
-					}
-				}
-			});
-		});
-		if (!swagger.parameters) {
-			swagger.parameters = {};
-		}
-		// TODO: make second resolve async
-		_.each(todo.params, function (value, key) {
-			swagger.parameters[key] = resolve(request(value));
-		});
-		// resolve definitions
+
 		const resolveDefinition = function (key) {
 			return function (object) {
 				const type = object[key];
@@ -136,6 +85,59 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 			}
 		};
 
+		// resolve operations
+		_.each(swagger.paths, function (operations) {
+			_.each(operations, function (operation) {
+				todo.operations.source.push(operation);
+				channel.write(wr, {
+					method: "GET",
+					url: [auth, "operations", org, operation.operationId + ".json"].join("/"),
+					headers: {
+						accept: "application/json"
+					}
+				});
+			});
+		});
+		channel.write(wr, null);
+		// TODO: make first resolve async
+		todo.operations.target = _.map(channel.read(rd, Infinity), bodyOf);
+		if (todo.operations.source.length !== todo.operations.target.length) {
+			throw new Error("source target " + todo.operation.source.length + " " + todo.operation.target.length);
+		}
+		_.each(todo.operations.source, function (operation, index) {
+			_.extend(operation, todo.operations.target[index]);
+		});
+		// resolve params
+		_.each(swagger.paths, function (operations) {
+			_.each(operations, function (operation) {
+				const params = operation.parameters;
+				for (var i = 0; i < params.length; ++i) {
+					if (_.isString(params[i])) {
+						if (!todo.params[params[i]]) {
+							todo.params[params[i]] = {
+								method: "GET",
+								url: [auth, "parameters", org, params[i] + ".json"].join("/"),
+								headers: {
+									accept: "application/json"
+								}
+							};
+						}
+						params[i] = {
+							"$ref": "#/parameters/" + params[i]
+						};
+					}
+				}
+			});
+		});
+		if (!swagger.parameters) {
+			swagger.parameters = {};
+		}
+		// TODO: make second resolve async
+		_.each(todo.params, function (value, key) {
+			swagger.parameters[key] = resolve(request(value));
+		});
+
+		// resolve definitions
 		_.each(swagger.paths, function (operations) {
 			_.each(operations, function (operation) {
 				_.each(operation.params, resolveDefinition("schema"));
@@ -162,11 +164,44 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 		return swagger;
 	};
 
+	const rch = channel.create(true);
+
+	const result = function (node) {
+		return function () {
+			node.apply(result, arguments);
+			channel.write(rch.wr, null);
+			return rch.rd;
+		}
+	};
+	result.write = function () {
+		channel.write(rch.wr, _.flatten(arguments));
+	};
+
+	const refreshPaths = result(function () {
+		const self = this;
+		channel.write(wr, reqSwagger);
+		channel.write(wr, null);
+		channel.read(rd, Infinity, function(array) {
+			self.write(_.extend(x.swagger, bodyOf(array[0])));
+			self.write(null);
+		});
+	});
+
+	const refresh = result(function() {
+		const self = this;
+		channel.write(wr, reqSwagger);
+		channel.write(wr, null);
+		channel.read(rd, Infinity, function(array) {
+			self.write(_.extend(x.swagger, getSwagger(bodyOf(array[0]))));
+			self.write(null);
+		});
+	});
+
 	return {
 		refreshPaths: function() {
 			return _.extend(x.swagger, resolve(request(reqSwagger)));
 		},
-		refresh: function() {
+		refresh: function () {
 			return _.extend(x.swagger, getSwagger(resolve(request(reqSwagger))));
 		}
 	};
