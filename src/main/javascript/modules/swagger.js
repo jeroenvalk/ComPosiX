@@ -16,22 +16,23 @@
  */
 
 _.module("swagger", ["channel", "request"], function (channel, request) {
-	const x = this, rd = request.rd, wr = request.wr;
+	const rd = request.rd, wr = request.wr;
 
 	const auth = "https://raw.githubusercontent.com/jeroenvalk/swagger/master/src";
 	const bodyOf = _.property("body.0");
 	var org;
 
-	const resolve = function (promise) {
-		var result;
-		promise.then(function (res) {
-			result = res.body;
+	const resolveAll = function (collection) {
+		const values = [];
+		_.each(collection, function(value) {
+			values.push(value);
 		});
-		return result;
+		channel.write(wr, values);
+		channel.write(wr, null);
+		return _.zipObject(_.keys(collection), channel.read(rd, Infinity));
 	};
 
-	const getSwagger = function (swagger) {
-		const self = this;
+	const getSwagger = channel.create(true, function (swagger) {
 		const todo = {
 			operations: {
 				source: [],
@@ -126,8 +127,8 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 			swagger.parameters = {};
 		}
 		// TODO: make second resolve async
-		_.each(todo.params, function (value, key) {
-			swagger.parameters[key] = resolve(request(value));
+		_.each(resolveAll(todo.params), function (value, key) {
+			swagger.parameters[key] = bodyOf(value);
 		});
 
 		// resolve definitions
@@ -140,24 +141,31 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 		if (!swagger.definitions) {
 			swagger.definitions = {};
 		}
-		var done = false;
+		var done = false, keys, values;
 		while (!done) {
+			keys = [];
+			values = [];
 			done = true;
 			_.each(todo.definitions, function (definition, type) {
 				if (definition) {
-					// TODO: make third resolve async
-					const def = resolve(request(definition));
-					swagger.definitions[type] = def;
+					keys.push(type);
+					values.push(definition);
 					todo.definitions[type] = null;
-					recurse(def);
 					done = false;
 				}
 			});
+			channel.write(wr, values);
+			channel.write(wr, null);
+			values = _.map(channel.read(rd, Infinity), bodyOf);
+			_.each(values, recurse);
+			_.each(keys, function (key, i) {
+				swagger.definitions[key] = values[i];
+			});
 		}
 		return swagger;
-	};
+	});
 
-	const loadSwagger = channel.create(true, function(swagger) {
+	const loadSwagger = channel.create(true, function (swagger) {
 		org = swagger.info.contact.name;
 		channel.write(wr, {
 			method: "GET",
@@ -171,11 +179,11 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 	});
 
 	return {
-		refreshPaths: function(swagger) {
+		refreshPaths: channel.create(true, function (swagger) {
 			return _.extend(swagger, channel.read(loadSwagger(swagger), Infinity)[0]);
-		},
-		refresh: function (swagger) {
-			return _.extend(swagger, getSwagger(channel.read(loadSwagger(swagger), Infinity)[0]));
-		}
+		}),
+		refresh: channel.create(true, function (swagger) {
+			return _.extend(swagger, channel.read(getSwagger(channel.read(loadSwagger(swagger), Infinity)[0]), Infinity)[0]);
+		})
 	};
 });

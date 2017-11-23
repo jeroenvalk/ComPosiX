@@ -31,9 +31,9 @@ _.module(["emitter", "validator", "swagger", "response", "channel"], function (e
 		headers: headers
 	};
 
-	const getOperation = function (xSwagger) {
+	const getOperation = channel.create(true, function (xSwagger) {
 		if (!swagger.paths) {
-			swagger.refreshPaths(xSwagger);
+			channel.read(swagger.refreshPaths(xSwagger), Infinity)[0];
 		}
 		const validate = validator(xSwagger);
 		if (!incoming.pathname.startsWith(xSwagger.basePath)) {
@@ -49,7 +49,7 @@ _.module(["emitter", "validator", "swagger", "response", "channel"], function (e
 			operation = validate(incoming);
 		}
 		return operation;
-	};
+	});
 
 	const cors = function (operation) {
 		var method;
@@ -63,7 +63,7 @@ _.module(["emitter", "validator", "swagger", "response", "channel"], function (e
 								"Content-Type": "application/json",
 								"Access-Control-Allow-Origin": "*"
 							},
-							body: [swagger.refresh(x.swagger)]
+							body: [channel.read(swagger.refresh(x.swagger), Infinity)[0]]
 						});
 						break;
 					default:
@@ -122,7 +122,7 @@ _.module(["emitter", "validator", "swagger", "response", "channel"], function (e
 		var operation;
 		switch (event) {
 			case "beforePROXY_REQ_FLOW":
-				operation = getOperation(x.swagger);
+				operation = channel.read(getOperation(x.swagger), Infinity)[0];
 				if (operation.operationId) {
 					context.setVariable("operationId", operation.operationId);
 				}
