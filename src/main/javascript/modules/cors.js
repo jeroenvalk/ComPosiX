@@ -15,7 +15,7 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module(["emitter", "validator", "swagger", "response"], function (emitter, validator, swagger, response) {
+_.module(["emitter", "validator", "swagger", "response", "channel"], function (emitter, validator, swagger, response, channel) {
 	const x = this;
 
 	const headers = {};
@@ -31,9 +31,12 @@ _.module(["emitter", "validator", "swagger", "response"], function (emitter, val
 		headers: headers
 	};
 
-	const getOperation = function (swagger) {
-		const validate = validator(swagger);
-		if (!incoming.pathname.startsWith(x.swagger.basePath)) {
+	const getOperation = function (xSwagger) {
+		if (!swagger.paths) {
+			swagger.refreshPaths(xSwagger);
+		}
+		const validate = validator(xSwagger);
+		if (!incoming.pathname.startsWith(xSwagger.basePath)) {
 			throw new Error();
 		}
 		var operation;
@@ -60,7 +63,7 @@ _.module(["emitter", "validator", "swagger", "response"], function (emitter, val
 								"Content-Type": "application/json",
 								"Access-Control-Allow-Origin": "*"
 							},
-							body: [swagger.refresh()]
+							body: [swagger.refresh(x.swagger)]
 						});
 						break;
 					default:
@@ -119,15 +122,11 @@ _.module(["emitter", "validator", "swagger", "response"], function (emitter, val
 		var operation;
 		switch (event) {
 			case "beforePROXY_REQ_FLOW":
-				if (!x.swagger.paths) {
-					swagger.refreshPaths();
-				}
 				operation = getOperation(x.swagger);
-				context.setVariable("operation", JSON.stringify(operation));
-				cors(operation);
 				if (operation.operationId) {
 					context.setVariable("operationId", operation.operationId);
 				}
+				cors(operation);
 				break;
 		}
 	});

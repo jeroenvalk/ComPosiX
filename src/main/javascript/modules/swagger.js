@@ -19,16 +19,8 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 	const x = this, rd = request.rd, wr = request.wr;
 
 	const auth = "https://raw.githubusercontent.com/jeroenvalk/swagger/master/src";
-	const org = x.swagger.info.contact.name;
-	const reqSwagger = {
-		method: "GET",
-		url: [auth, "swagger", org, x.swagger.info.title + ".json"].join("/"),
-		headers: {
-			accept: "application/json"
-		}
-	};
-
 	const bodyOf = _.property("body.0");
+	var org;
 
 	const resolve = function (promise) {
 		var result;
@@ -165,43 +157,25 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 		return swagger;
 	};
 
-	const result = function (node) {
-		const rch = channel.create(true);
-		result.write = function () {
-			channel.write(rch.wr, _.flatten(arguments));
-		};
-		return function () {
-			node.apply(result, arguments);
-			return rch.rd;
-		}
-	};
-
-	const readSwagger = result(getSwagger);
-
-	const refreshPaths = result(function () {
-		const self = this;
-		channel.write(wr, reqSwagger);
-		channel.write(wr, null);
-		channel.read(rd, Infinity, function(array) {
-			self.write(_.extend(x.swagger, bodyOf(array[0])));
-			self.write(null);
+	const loadSwagger = channel.create(true, function(swagger) {
+		org = swagger.info.contact.name;
+		channel.write(wr, {
+			method: "GET",
+			url: [auth, "swagger", org, swagger.info.title + ".json"].join("/"),
+			headers: {
+				accept: "application/json"
+			}
 		});
-	});
-
-	const refresh = result(function() {
-		const self = this;
-		channel.write(wr, reqSwagger);
 		channel.write(wr, null);
-		channel.read(rd, Infinity, function(array) {
-			self.write(_.extend(x.swagger, getSwagger(bodyOf(array[0]))));
-			self.write(null);
-		});
+		return bodyOf(channel.read(rd, Infinity)[0]);
 	});
 
 	return {
-		refreshPaths: refreshPaths,
-		refresh: function () {
-			return _.extend(x.swagger, getSwagger(resolve(request(reqSwagger))));
+		refreshPaths: function(swagger) {
+			return _.extend(swagger, channel.read(loadSwagger(swagger), Infinity)[0]);
+		},
+		refresh: function (swagger) {
+			return _.extend(swagger, getSwagger(channel.read(loadSwagger(swagger), Infinity)[0]));
 		}
 	};
 });

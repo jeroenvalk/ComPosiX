@@ -50,12 +50,31 @@ _.module("channel", ["emitter"], function (emitter, x) {
 		emitter.addListener(fd, listener);
 	};
 
-	x.create = function cpx$channel$create(mode) {
+	const write = function cpx$write(fd) {
+		return function cpx$result$write() {
+			x.write(fd, _.flatten(arguments));
+		};
+	};
+
+	x.create = function cpx$channel$create(mode, func) {
 		const fd = ++current;
 		state[fd] = [[], mode || false, false];
-		return {
-			rd: -fd,
-			wr: fd
+		if (!func) {
+			return {
+				rd: -fd,
+				wr: fd
+			};
+		}
+		const self = {
+			write: write(fd)
+		};
+		return function() {
+			const result = func.apply(self, arguments);
+			if (result) {
+				x.write(fd, result);
+				x.write(fd, null);
+			}
+			return -fd;
 		};
 	};
 
