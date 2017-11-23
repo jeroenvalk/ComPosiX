@@ -17,7 +17,7 @@
 
 /* globals describe, xdescribe, it */
 
-_.module("mocha", function () {
+_.module("mocha", ["channel"], function (channel) {
 	const x = {
 		node: {
 			chai: require("chai")
@@ -58,8 +58,14 @@ _.module("mocha", function () {
 					_(object.it).each(function (value, key) {
 						it(key, function (done) {
 							try {
-								value.apply(_.clone(x), argv);
-								done();
+								const rd = value.apply(_.clone(x), argv);
+								if (isNaN(rd)) {
+									done();
+									return;
+								}
+								channel.read(rd, Infinity, function() {
+									done();
+								});
 							} catch(e) {
 								done(e);
 							}

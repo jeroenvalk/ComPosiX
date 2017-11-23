@@ -16,9 +16,40 @@
  */
 
 module.exports = function(_) {
-	_.module("request", function() {
-		return function(options) {
-			http.request(options, readable)
+	const https = require("https"), url = require("url");
+
+	_.module("request", ["channel"], function(channel) {
+		const i = channel.create(true), o = channel.create(true);
+		const func = channel.create(true, function() {
+			const self = this;
+			_.map(arguments, function(options) {
+				_.extend(options, url.parse(options.url));
+				https.request(options, function(res) {
+					const result = [];
+					res.on("data", function(chunk) {
+						result.push(chunk);
+					})
+					res.on("end", function() {
+						const buffer = Buffer.concat(result);
+						self.write({body: [JSON.parse(buffer.toString())]});
+						self.write(null);
+					});
+				}).end();
+			});
+		});
+		const recurse = function(depth) {
+			channel.read(i.rd, Infinity, function(array) {
+				channel.read(func.apply(null, array), Infinity, function(array) {
+					channel.write(o.wr, array);
+					channel.write(o.wr, null);
+					if (--depth > 0) recurse(depth);
+				});
+			});
 		};
-	})
+		recurse(Infinity);
+		return {
+			rd: o.rd,
+			wr: i.wr
+		};
+	});
 };

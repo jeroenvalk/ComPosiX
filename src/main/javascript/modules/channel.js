@@ -106,6 +106,9 @@ _.module("channel", ["emitter"], function (emitter, x) {
 				}
 			}
 		} else {
+			if (isNaN(fd)) {
+				throw new Error("channel descriptor must be a number");
+			}
 			throw new Error("writing to readable endpoint");
 		}
 	};

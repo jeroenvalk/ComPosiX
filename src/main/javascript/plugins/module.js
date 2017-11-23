@@ -15,13 +15,22 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-module.exports = function(_) {
+module.exports = function (_) {
 	global._ = _;
 	const x = {}, lib = {};
 
 	const propertyOfLib = function (dep) {
 		if (!lib[dep]) {
-			require("../modules/" + dep);
+			var exists = false;
+			try {
+				require.resolve("../plugins/" + dep);
+				exists = true;
+			} catch (e) {
+				require("../modules/" + dep);
+			}
+			if (exists) {
+				require("../plugins/" + dep)(_);
+			}
 		}
 		if (!lib[dep]) {
 			throw new Error(dep + ": module name mismatch");
@@ -32,7 +41,7 @@ module.exports = function(_) {
 	const module = function cpx$module() {
 		var name = null, deps = [], func = null, res, nameA, nameB;
 
-		const Constructor = function() {
+		const Constructor = function () {
 			argv.push(this);
 			res = func.apply(x, argv);
 			argv.pop();

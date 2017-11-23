@@ -166,6 +166,7 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 	});
 
 	const loadSwagger = channel.create(true, function (swagger) {
+		const self = this;
 		org = swagger.info.contact.name;
 		channel.write(wr, {
 			method: "GET",
@@ -175,12 +176,19 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 			}
 		});
 		channel.write(wr, null);
-		return bodyOf(channel.read(rd, Infinity)[0]);
+		channel.read(rd, Infinity, function(array) {
+			self.write(_.map(array, bodyOf));
+			self.write(null);
+		});
 	});
 
 	return {
 		refreshPaths: channel.create(true, function (swagger) {
-			return _.extend(swagger, channel.read(loadSwagger(swagger), Infinity)[0]);
+			const self = this;
+			channel.read(loadSwagger(swagger), Infinity, function(array) {
+				self.write(_.extend(swagger, array[0]));
+				self.write(null);
+			});
 		}),
 		refresh: channel.create(true, function (swagger) {
 			return _.extend(swagger, channel.read(getSwagger(channel.read(loadSwagger(swagger), Infinity)[0]), Infinity)[0]);

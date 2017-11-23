@@ -19,27 +19,52 @@
 
 _.describe({
 	name: "swagger",
-	modules: [["config", function () {
-		_.extend(this, {
-			swagger: {
-				swagger: "2.0",
-				info: {
-					title: "Swagger",
-					version: "v1",
-					contact: {
-						name: "ComPosiX"
-					}
-				},
-				schemes: ["https"],
-				host: "localhost",
-				basePath: "/",
-				paths: {}
-			}
-		});
-	}], "swagger"],
+	modules: ["swagger", "channel"],
+	before: function() {
+		return [this.node.chai.expect, this.modules.swagger, this.modules.channel];
+	},
 	it: {
-		swagger: function (expect, swagger) {
-			swagger.refresh();
+		refreshPaths: function (expect, swagger, channel) {
+			return channel.create(true, function() {
+				const self = this;
+				channel.read(swagger.refreshPaths({
+					swagger: "2.0",
+					info: {
+						title: "Petstore",
+						version: "v1",
+						contact: {
+							name: "Nutreco"
+						}
+					},
+					schemes: ["https"],
+					host: "localhost",
+					basePath: "/",
+					paths: {}
+				}), Infinity, function(array) {
+					expect(array[0].paths).to.deep.equal({
+						"/pet": {
+							"post": {
+								"operationId": "addPet"
+							},
+							"put": {
+								"operationId": "updatePet"
+							}
+						},
+						"/pet/{petId}": {
+							"get": {
+								"operationId": "getPetById"
+							},
+							"post": {
+								"operationId": "updatePetWithForm"
+							},
+							"delete": {
+								"operationId": "deletePet"
+							}
+						}
+					});
+					self.write(null);
+				});
+			})();
 		}
 	}
 });
