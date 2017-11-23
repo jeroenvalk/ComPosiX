@@ -117,29 +117,38 @@ _.describe({
 			expect(depth).to.equal(1);
 			channel.write(i.wr, null);
 			expect(depth).to.equal(2);
+
 			channel.write(i.wr, {a: 2});
 			expect(depth).to.equal(2);
 			channel.write(i.wr, null);
 			expect(depth).to.equal(3);
+
 			channel.write(i.wr, {a: 3});
 			expect(depth).to.equal(3);
 			channel.write(i.wr, null);
 			expect(depth).to.equal(4);
 
-			expect(channel.read(o.rd, Infinity)).to.deep.equal([{a: 1}]);
-			expect(channel.read(o.rd, Infinity)).to.deep.equal([{a: 2}]);
+			expect(channel.read(o.rd, 1, function (array) {
+				expect(array).to.deep.equal([{a: 1}]);
+				expect(channel.read(o.rd, 1)).to.deep.equal([]);
 
-			channel.read(o.rd, Infinity, function(array) {
-				expect(array).to.deep.equal([{a: 3}]);
+				expect(channel.read(o.rd, Infinity, function (array) {
+					expect(array).to.deep.equal([{a: 2}]);
+					expect(channel.read(o.rd, 1)).to.deep.equal([{a: 3}]);
+					// note that returning closes the channel after {a: 3}
+					// this clears the last EOF from the buffer
+				})).to.deep.equal([{a: 2}]);
+			})).to.deep.equal([{a: 1}]);
+
+			expect(channel.read(o.rd, Infinity, function (array) {
+				expect(array).to.deep.equal([]);
 				channel.write(i.wr, {a: 4});
 				expect(depth).to.equal(4);
 				channel.write(i.wr, null);
 				expect(depth).to.equal(5);
 
-				expect(channel.read(o.rd, Infinity)).to.deep.equal([]);
-			});
-
-			expect(channel.read(o.rd, Infinity)).to.deep.equal([{a: 4}]);
+				expect(channel.read(o.rd, Infinity)).to.deep.equal([{a: 4}]);
+			})).to.deep.equal(undefined);
 		}
 	}
 });

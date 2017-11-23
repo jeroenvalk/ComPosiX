@@ -100,13 +100,21 @@ _.module("channel", ["emitter"], function (emitter, x) {
 					if (!buf[i]) break;
 				}
 				if (i < buf.length) {
-					amount = Math.min(amount, i);
-					data = buf.splice(0, amount);
-					state[fd][2] = true;
-					callback && callback(data);
-					if (state[fd][2]) {
-						buf.splice(0, i - amount + 1);
+					if (i < amount) {
+						data = buf.splice(0, i + 1);
+						if (data.pop()) {
+							throw new Error("internal error");
+						}
+						callback && callback(data);
 						state[fd][2] = false;
+					} else {
+						data = buf.splice(0, amount);
+						state[fd][2] = true;
+						callback && callback(data);
+						if (state[fd][2]) {
+							buf.splice(0, i - amount + 1);
+							state[fd][2] = false;
+						}
 					}
 					return data;
 				}
