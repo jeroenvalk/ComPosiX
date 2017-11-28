@@ -19,52 +19,44 @@
 
 _.describe({
 	name: "swagger",
-	modules: ["swagger", "channel"],
-	before: function() {
-		return [this.node.chai.expect, this.modules.swagger, this.modules.channel];
+	use: {
+		NodeJS: ['chai.expect'],
+		ComPosiX: ['swagger', 'channel', 'request']
 	},
 	it: {
 		refreshPaths: function (expect, swagger, channel) {
-			return channel.create(true, function() {
-				const self = this;
-				channel.read(swagger.refreshPaths({
-					swagger: "2.0",
-					info: {
-						title: "Petstore",
-						version: "v1",
-						contact: {
-							name: "Nutreco"
+			const self = this;
+			channel.read(swagger.refreshPaths({
+				swagger: "2.0",
+				info: {
+					title: "Identity",
+					version: "v1",
+					contact: {
+						name: "ComPosiX"
+					}
+				},
+				schemes: ["https"],
+				host: "localhost",
+				basePath: "/",
+				paths: {}
+			}), Infinity, function (array) {
+				expect(array[0].paths).to.deep.equal({
+					"/identity/{uid}/at/{entity}" : {
+						"get" : {
+							"operationId": "computeUUIDv5"
 						}
 					},
-					schemes: ["https"],
-					host: "localhost",
-					basePath: "/",
-					paths: {}
-				}), Infinity, function(array) {
-					expect(array[0].paths).to.deep.equal({
-						"/pet": {
-							"post": {
-								"operationId": "addPet"
-							},
-							"put": {
-								"operationId": "updatePet"
-							}
+					"/identity/uuid/{uuid}" : {
+						"get" : {
+							"operationId": "getUUIDv5"
 						},
-						"/pet/{petId}": {
-							"get": {
-								"operationId": "getPetById"
-							},
-							"post": {
-								"operationId": "updatePetWithForm"
-							},
-							"delete": {
-								"operationId": "deletePet"
-							}
+						"put" : {
+							"operationId": "putUUIDv5"
 						}
-					});
-					self.write(null);
+					}
 				});
-			})();
+				self.write(null);
+			});
 		}
 	}
 });
