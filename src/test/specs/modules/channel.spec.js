@@ -48,6 +48,7 @@ _.describe({
 			expect(flag).to.equal(false);
 			channel.write(wr, null);
 			expect(flag).to.equal(true);
+			return true;
 		},
 		reverse: function (expect, channel) {
 			const ch = channel.create(true), rd = ch.rd, wr = ch.wr;
@@ -97,6 +98,7 @@ _.describe({
 
 			expect(flag).to.equal(false);
 			expect(flagB).to.equal(false);
+			return true;
 		},
 		forward: function (expect, channel) {
 			const i = channel.create(true), o = channel.create(true);
@@ -149,6 +151,7 @@ _.describe({
 
 				expect(channel.read(o.rd, Infinity)).to.deep.equal([{a: 4}]);
 			})).to.deep.equal(undefined);
+			return true;
 		}
 	}
 });

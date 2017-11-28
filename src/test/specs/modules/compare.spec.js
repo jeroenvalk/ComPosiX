@@ -43,6 +43,7 @@ _.describe({
 					"x.": {}
 				}
 			});
+			return true;
 		}
 	}
 });

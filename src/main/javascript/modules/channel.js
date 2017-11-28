@@ -71,7 +71,9 @@ _.module("channel", ["emitter"], function (emitter, x) {
 		return function() {
 			const result = func.apply(self, arguments);
 			if (result) {
-				x.write(fd, result);
+				if (result instanceof Object) {
+					x.write(fd, result);
+				}
 				x.write(fd, null);
 			}
 			return -fd;
