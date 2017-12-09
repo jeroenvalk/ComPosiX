@@ -28,7 +28,7 @@ _.module("path", function () {
 		if (pathname instanceof Array) {
 			const result = [], isAbsolute = (pathname[0] === "");
 			for (var i = 0; i < pathname.length; ++i) {
-				switch(pathname[i]) {
+				switch (pathname[i]) {
 					case "":
 					case ".":
 						break;
@@ -49,10 +49,32 @@ _.module("path", function () {
 		return normalize(pathname, asArray);
 	};
 
+	const toPath = function path$toPath(value) {
+		var pathname = ".";
+		if (value instanceof $) {
+			value = value.closest("*[data-cpx");
+			while (value.length) {
+				pathname = join(value.attr("data-cpx"), pathname);
+				if (isAbsolute(pathname)) {
+					return toPath(pathname);
+				}
+				value = value.parent().closest("*[data-cpx]");
+			}
+			return;
+		} else if (_.isString(value)) {
+			if (value.charAt(0) === '/') {
+				return resolve(value, true);
+			}
+		} else {
+			return _.toPath(value);
+		}
+	};
+
 	return {
 		isAbsolute: isAbsolute,
 		join: join,
 		normalize: normalize,
-		resolve: resolve
+		resolve: resolve,
+		toPath: toPath
 	};
 });
