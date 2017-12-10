@@ -15,13 +15,28 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module("recurse", function () {
-	var result = [];
+_.module("recurse", ["channel"], function (channel) {
+	var wr = 0, result = [];
 
 	const reset = function recurse$reset() {
 		const res = result;
 		result = [];
 		return res;
+	};
+
+	const wiring = function recurse$wiring(fd) {
+		if (isFinite(fd)) {
+			if (!fd) {
+				return wr = 0;
+			}
+			if (fd < 0) {
+				const ch = channel.create(true);
+				wr = ch.wr;
+				return ch.rd;
+			}
+			throw new Error("invalid wiring");
+		}
+		throw new Error("invalid channel endpoint");
 	};
 
 	const Value = function Value(args, value, key, parent, stack) {
@@ -30,7 +45,47 @@ _.module("recurse", function () {
 		this.key = key;
 		this.parent = parent;
 		this.stack = stack;
-		this.result = value.apply(this, argv);
+	};
+
+	Value.prototype.wiring = function Value$wiring() {
+		const current = this.result, size = current.length;
+		const ch = channel.create(true);
+
+		if (!size) {
+			return new Error("node without arguments");
+		}
+
+		const recurse = function() {
+			channel.read(ch.rd, size, function(argv) {
+				if (argv.length > 0) {
+					current.apply(null, argv);
+				}
+				if (array.length < size) {
+					throw new Error("not implemented");
+				}
+				recurse(current);
+			});
+			// TODO: implement catching up after closing stream
+		};
+
+		recurse();
+
+		return {"#": ch.wr};
+	};
+
+	Value.prototype.compute = function Value$compute() {
+		const i = result.length;
+		result.push(this);
+		this.result = this.value.apply(this, this.argv);
+		if (_.isFunction(this.result)) {
+			this.result = this.wiring();
+		}
+		return this;
+	};
+
+	Value.prototype.recurse = function Value$recurse() {
+		this.result = cloneDeep.apply(null, _.flatten([[this.result], this.argv]));
+		return this;
 	};
 
 	const cloneDeep = function recurse$cloneDeep(root) {
@@ -38,13 +93,8 @@ _.module("recurse", function () {
 
 		const customizer = function recurse$cloneDeep$customizer(value, key, parent, stack) {
 			if (_.isFunction(value)) {
-				const i = result.length;
 				value = new Value(args, value, key, parent, stack);
-				result.push(value);
-				if (_.isFunction(value.result)) {
-					return {"#": i};
-				}
-				return cloneDeep.apply(null, _.flatten([[value.result], value.argv]));
+				return value.compute().recurse().result;
 			}
 		};
 
