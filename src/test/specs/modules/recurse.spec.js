@@ -34,7 +34,7 @@ _.describe({
 		ComPosiX: ['channel', 'recurse']
 	},
 	it: {
-		create: function (expect, channel, recurse) {
+		simple: function (expect, channel, recurse) {
 			expect(recurse.create({
 				a: 1,
 				b: _.identity
@@ -58,6 +58,30 @@ _.describe({
 					d: 4
 				}
 			});
+
+			return true;
+		},
+		streams: function (expect, channel, recurse) {
+			const result = [];
+
+			const fd = channel.create().wr;
+
+			const stream = recurse.create({
+				a: _.constant(function (value) {
+					expect(this.key).to.equal("a");
+					expect(this.argv).to.deep.equal([1]);
+					result.push(value);
+				})
+			}, 1);
+
+			expect(stream).to.deep.equal({
+				a: {"#": fd + 1}
+			});
+
+			channel.write(stream.a["#"], {Hello: "World"});
+			channel.write(stream.a["#"], {Bye: "World"});
+
+			expect(result).to.deep.equal([{Hello: "World"}, {Bye: "World"}]);
 
 			return true;
 		},

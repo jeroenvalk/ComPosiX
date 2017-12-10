@@ -43,7 +43,7 @@ _.module("recurse", ["channel"], function (channel) {
 	};
 
 	Value.prototype.wiring = function Value$wiring() {
-		const current = this.result, size = current.length;
+		const self = this, current = this.result, size = current.length;
 		const ch = channel.create(true);
 
 		if (!size) {
@@ -53,12 +53,12 @@ _.module("recurse", ["channel"], function (channel) {
 		const recurse = function() {
 			channel.read(ch.rd, size, function(argv) {
 				if (argv.length > 0) {
-					current.apply(null, argv);
+					current.apply(self, argv);
 				}
-				if (array.length < size) {
+				if (argv.length < size) {
 					throw new Error("not implemented");
 				}
-				recurse(current);
+				recurse();
 			});
 			// TODO: implement catching up after closing stream
 		};
