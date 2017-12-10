@@ -16,18 +16,24 @@
  */
 
 _.module("recurse", function() {
-	const cloneDeep = function recurse$cloneDeep(value, result) {
-		const customizer = function recurse$cloneDeep$customizer(value) {
+	const Self = function Self(value, key, parent, stack) {
+		this.value = value;
+		this.key = key;
+		this.parent = parent;
+		this.stack = stack;
+	};
+	const cloneDeep = function recurse$cloneDeep(root, result) {
+		const customizer = function recurse$cloneDeep$customizer(value, key, parent, stack) {
 			var i;
 			if (_.isFunction(value)) {
-				i = _.findIndex(result, function(func) {
-					return func === value;
+				i = _.findIndex(result, function(cache) {
+					return cache[0] === value;
 				});
 				if (i < 0) {
 					i = result.length;
-					result.push(value);
+					result.push([value]);
 				}
-				return i;
+				return {$: [i]};
 			}
 		};
 
@@ -35,10 +41,10 @@ _.module("recurse", function() {
 			result = [];
 		}
 
-		return _.cloneDeepWith(value, customizer);
+		return _.cloneDeepWith(root, customizer);
 	};
 
 	return {
 		cloneDeep: cloneDeep
-	}
+	};
 });

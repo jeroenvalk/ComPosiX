@@ -37,9 +37,13 @@ _.describe({
 			const a = recurse.cloneDeep(__, result), b = a._;
 			delete a._;
 			expect(a).to.deep.equal(b);
-			expect(a).to.deep.equal(_.mapValues(_.invert(_.keys(underscore)), parseInt));
+			expect(a).to.deep.equal(_.mapValues(_.invert(_.keys(underscore)), function(value) {
+				return {$: [parseInt(value, 10)]};
+			}));
 			delete __._;
-			expect(result).to.deep.equal(_.values(__));
+			expect(result).to.deep.equal(_.map(_.values(__), function(value) {
+				return [value];
+			}));
 			return true;
 		}
 	}
