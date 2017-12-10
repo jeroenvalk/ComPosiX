@@ -43,23 +43,21 @@ _.module("recurse", ["channel"], function (channel) {
 	};
 
 	Value.prototype.wiring = function Value$wiring() {
-		const self = this, current = this.result, size = current.length;
+		const self = this, current = this.result, size = current.length || 1;
 		const ch = channel.create(true);
 
-		if (!size) {
-			return new Error("node without arguments");
-		}
+		const read = function(argv) {
+			if (argv.length > 0) {
+				current.apply(self, argv);
+			}
+			if (argv.length < size) {
+				throw new Error("not implemented");
+			}
+			recurse();
+		};
 
 		const recurse = function() {
-			channel.read(ch.rd, size, function(argv) {
-				if (argv.length > 0) {
-					current.apply(self, argv);
-				}
-				if (argv.length < size) {
-					throw new Error("not implemented");
-				}
-				recurse();
-			});
+			channel.read(ch.rd, size, read);
 			// TODO: implement catching up after closing stream
 		};
 
