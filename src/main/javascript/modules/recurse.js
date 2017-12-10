@@ -16,24 +16,25 @@
  */
 
 _.module("recurse", function() {
-	const Self = function Self(value, key, parent, stack) {
+	const Value = function Value(args, value, key, parent, stack) {
+		const argv = this.argv = _.slice(args, 2);
 		this.value = value;
 		this.key = key;
 		this.parent = parent;
 		this.stack = stack;
+		this.result = value.apply(this, argv);
 	};
 	const cloneDeep = function recurse$cloneDeep(root, result) {
+		const args = arguments;
 		const customizer = function recurse$cloneDeep$customizer(value, key, parent, stack) {
-			var i;
 			if (_.isFunction(value)) {
-				i = _.findIndex(result, function(cache) {
-					return cache[0] === value;
-				});
-				if (i < 0) {
-					i = result.length;
-					result.push([value]);
+				const i = result.length;
+				value = new Value(args, value, key, parent, stack);
+				result.push(value);
+				if (_.isFunction(value.result)) {
+					return {"#": i};
 				}
-				return {$: [i]};
+				return cloneDeep.apply(null, _.flatten([[value.result, result], value.argv]));
 			}
 		};
 

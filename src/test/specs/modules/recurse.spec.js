@@ -30,20 +30,30 @@ require("../../../main/javascript/modules/composix.js");
 _.describe({
 	name: "recurse",
 	it: {
-		cloneDeep: function(expect, recurse) {
+		cloneDeepOnLodash: function(expect, recurse) {
+			delete underscore.mixin;
 			const __ = _.pick(_, _.keys(underscore));
 			__._ = _.clone(__);
 			const result = [];
 			const a = recurse.cloneDeep(__, result), b = a._;
 			delete a._;
-			expect(a).to.deep.equal(b);
-			expect(a).to.deep.equal(_.mapValues(_.invert(_.keys(underscore)), function(value) {
-				return {$: [parseInt(value, 10)]};
+			expect(_.keys(a)).to.deep.equal(_.keys(underscore));
+			expect(_.keys(b)).to.deep.equal(_.keys(underscore));
+
+			const unsafe = ["each", "find"];
+			_.each(_.keys(underscore), function(key) {
+				if (isNaN(a[key]["#"])) {
+					expect(a[key]).to.deep.equal(b[key]);
+				} else {
+					unsafe.push(key);
+					expect(a[key]).to.deep.equal({"#": a[key]["#"]});
+					expect(b[key]).to.deep.equal({"#": a[key]["#"] + 18});
+				}
+			});
+			expect(_.omit(a, unsafe)).to.deep.equal(_.mapValues(_.omit(__._, unsafe), function(value) {
+				return value.apply({}, []);
 			}));
-			delete __._;
-			expect(result).to.deep.equal(_.map(_.values(__), function(value) {
-				return [value];
-			}));
+			expect(_.map(result, _.property("value"))).to.deep.equal(_.flatten([_.values(__._), _.values(__._)]));
 			return true;
 		}
 	}
