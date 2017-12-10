@@ -16,15 +16,10 @@
  */
 
 _.module("recurse", ["channel"], function (channel) {
-	var wr = 0, result = [];
-
-	const reset = function recurse$reset() {
-		const res = result;
-		result = [];
-		return res;
-	};
+	var wr = 0;
 
 	const wiring = function recurse$wiring(fd) {
+		channel.write(wr, null);
 		if (isFinite(fd)) {
 			if (!fd) {
 				return wr = 0;
@@ -74,8 +69,7 @@ _.module("recurse", ["channel"], function (channel) {
 	};
 
 	Value.prototype.compute = function Value$compute() {
-		const i = result.length;
-		result.push(this);
+		channel.write(wr, {value: this.value});
 		this.result = this.value.apply(this, this.argv);
 		if (_.isFunction(this.result)) {
 			this.result = this.wiring();
@@ -102,7 +96,7 @@ _.module("recurse", ["channel"], function (channel) {
 	};
 
 	return {
-		reset: reset,
+		wiring: wiring,
 		create: cloneDeep
 	};
 });

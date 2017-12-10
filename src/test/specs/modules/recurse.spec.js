@@ -29,8 +29,12 @@ require("../../../main/javascript/modules/composix.js");
 
 _.describe({
 	name: "recurse",
+	use: {
+		NodeJS: ['chai.expect'],
+		ComPosiX: ['channel', 'recurse']
+	},
 	it: {
-		create: function (expect, recurse) {
+		create: function (expect, channel, recurse) {
 			expect(recurse.create({
 				a: 1,
 				b: _.identity
@@ -57,12 +61,13 @@ _.describe({
 
 			return true;
 		},
-		cloneDeepOnLodash: function (expect, recurse) {
+		cloneDeepOnLodash: function (expect, channel, recurse) {
 			delete underscore.mixin;
 			const __ = _.pick(_, _.keys(underscore));
 			__._ = _.clone(__);
-			recurse.reset();
+			const rd = recurse.wiring(-1);
 			const a = recurse.create(__), b = a._;
+			recurse.wiring(0);
 			delete a._;
 			expect(_.keys(a)).to.deep.equal(_.keys(underscore));
 			expect(_.keys(b)).to.deep.equal(_.keys(underscore));
@@ -80,7 +85,7 @@ _.describe({
 			expect(_.omit(a, unsafe)).to.deep.equal(_.mapValues(_.omit(__._, unsafe), function (value) {
 				return value.apply({}, []);
 			}));
-			expect(_.map(recurse.reset(), _.property("value"))).to.deep.equal(_.flatten([_.values(__._), _.values(__._)]));
+			expect(_.map(channel.read(rd, Infinity), _.property("value"))).to.deep.equal(_.flatten([_.values(__._), _.values(__._)]));
 			return true;
 		}
 	}

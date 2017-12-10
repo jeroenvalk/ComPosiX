@@ -16,7 +16,7 @@
  */
 
 _.module("channel", ["emitter"], function (emitter, x) {
-	const state = {}, push = Array.prototype.push;
+	const state = {0: [{push: _.identity}, true]}, push = Array.prototype.push;
 	var current = 0;
 
 	const onError = function (errno, value) {
@@ -68,7 +68,7 @@ _.module("channel", ["emitter"], function (emitter, x) {
 		const self = {
 			write: write(fd)
 		};
-		return function() {
+		return function () {
 			const result = func.apply(self, arguments);
 			if (result) {
 				if (result instanceof Object) {
@@ -82,36 +82,35 @@ _.module("channel", ["emitter"], function (emitter, x) {
 
 	x.write = function cpx$channel$write(fd) {
 		var i;
-		if (fd > 0) {
-			const array = _.flatten(arguments), paused = state[fd][0], objectMode = state[fd][1],
-				typeCheck = objectMode ? _.isPlainObject : _.isBuffer;
-			if (array[1] === null) {
-				if (paused) {
-					paused.push(null);
-				} else {
-					state[fd][0] = [];
-					emitter.removeAllListeners(fd, true);
-					emitter.emit(fd, null);
-				}
-			} else {
-				for (i = 1; i < array.length; ++i) {
-					if (!typeCheck(array[i])) {
-						onError(objectMode, array[i]);
-					}
-				}
-				if (paused) {
-					for (i = 1; i < array.length; ++i) {
-						paused.push(array[i]);
-					}
-				} else {
-					emitter.emit(fd, array.slice(1));
-				}
-			}
-		} else {
+		if (fd < 0) {
 			if (isNaN(fd)) {
 				throw new Error("channel descriptor must be a number");
 			}
 			throw new Error("writing to readable endpoint");
+		}
+		const array = _.flatten(arguments), paused = state[fd][0], objectMode = state[fd][1],
+			typeCheck = objectMode ? _.isPlainObject : _.isBuffer;
+		if (array[1] === null) {
+			if (paused) {
+				paused.push(null);
+			} else {
+				state[fd][0] = [];
+				emitter.removeAllListeners(fd, true);
+				emitter.emit(fd, null);
+			}
+		} else {
+			for (i = 1; i < array.length; ++i) {
+				if (!typeCheck(array[i])) {
+					onError(objectMode, array[i]);
+				}
+			}
+			if (paused) {
+				for (i = 1; i < array.length; ++i) {
+					paused.push(array[i]);
+				}
+			} else {
+				emitter.emit(fd, array.slice(1));
+			}
 		}
 	};
 
