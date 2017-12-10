@@ -15,17 +15,27 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module("recurse", function() {
+_.module("recurse", function () {
+	var result = [];
+
+	const reset = function recurse$reset() {
+		const res = result;
+		result = [];
+		return res;
+	};
+
 	const Value = function Value(args, value, key, parent, stack) {
-		const argv = this.argv = _.slice(args, 2);
+		const argv = this.argv = _.slice(args, 1);
 		this.value = value;
 		this.key = key;
 		this.parent = parent;
 		this.stack = stack;
 		this.result = value.apply(this, argv);
 	};
-	const cloneDeep = function recurse$cloneDeep(root, result) {
+
+	const cloneDeep = function recurse$cloneDeep(root) {
 		const args = arguments;
+
 		const customizer = function recurse$cloneDeep$customizer(value, key, parent, stack) {
 			if (_.isFunction(value)) {
 				const i = result.length;
@@ -34,18 +44,15 @@ _.module("recurse", function() {
 				if (_.isFunction(value.result)) {
 					return {"#": i};
 				}
-				return cloneDeep.apply(null, _.flatten([[value.result, result], value.argv]));
+				return cloneDeep.apply(null, _.flatten([[value.result], value.argv]));
 			}
 		};
-
-		if (!_.isArray(result)) {
-			result = [];
-		}
 
 		return _.cloneDeepWith(root, customizer);
 	};
 
 	return {
-		cloneDeep: cloneDeep
+		reset: reset,
+		create: cloneDeep
 	};
 });
