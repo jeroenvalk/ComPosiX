@@ -34,8 +34,9 @@ _.module("recurse", ["channel"], function (channel) {
 		throw new Error("invalid channel endpoint");
 	};
 
-	const Value = function Value(args, value, key, parent, stack) {
+	const Value = function Value(args, root, value, key, parent, stack) {
 		const argv = this.argv = _.slice(args, 1);
+		this.root = root;
 		this.value = value;
 		this.key = key;
 		this.parent = parent;
@@ -85,7 +86,7 @@ _.module("recurse", ["channel"], function (channel) {
 
 		const customizer = function recurse$cloneDeep$customizer(value, key, parent, stack) {
 			if (_.isFunction(value)) {
-				value = new Value(args, value, key, parent, stack);
+				value = new Value(args, root, value, key, parent, stack);
 				return value.compute().recurse().result;
 			}
 		};
