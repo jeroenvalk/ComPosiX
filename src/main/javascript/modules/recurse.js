@@ -82,12 +82,14 @@ _.module("recurse", ["channel"], function (channel) {
 	};
 
 	const cloneDeep = function recurse$cloneDeep(root) {
-		const args = arguments;
+		const args = arguments, array = [];
 
 		const customizer = function recurse$cloneDeep$customizer(value, key, parent, stack) {
 			if (_.isFunction(value)) {
 				value = new Value(args, root, value, key, parent, stack);
 				return value.compute().recurse().result;
+			} else if (_.isObject(value)) {
+				array.push([value, key, parent]);
 			}
 		};
 
