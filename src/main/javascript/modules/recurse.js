@@ -34,13 +34,11 @@ _.module("recurse", ["channel"], function (channel) {
 		throw new Error("invalid channel endpoint");
 	};
 
-	const Value = function Value(args, root, value, key, parent, stack) {
+	const Value = function Value(args, value, key, parent) {
 		const argv = this.argv = _.slice(args, 1);
-		this.root = root;
 		this.value = value;
 		this.key = key;
 		this.parent = parent;
-		this.stack = stack;
 	};
 
 	Value.prototype.wiring = function Value$wiring() {
@@ -73,6 +71,9 @@ _.module("recurse", ["channel"], function (channel) {
 		if (_.isFunction(this.result)) {
 			this.result = this.wiring();
 		}
+		if (this.result === undefined) {
+			this.result = null;
+		}
 		return this;
 	};
 
@@ -82,18 +83,35 @@ _.module("recurse", ["channel"], function (channel) {
 	};
 
 	const cloneDeep = function recurse$cloneDeep(root) {
-		const args = arguments, array = [];
+		const args = arguments;
+		var todo = null;
 
 		const customizer = function recurse$cloneDeep$customizer(value, key, parent, stack) {
+			if (todo) {
+				const array = stack.__data__.__data__;
+				const index = _.findLastIndex(_.map(array, _.property(0)), _.curry(_.isEqual)(todo[0]));
+				if (index >= 0) {
+					todo[1].value = array[index][1];
+				}
+				todo[0]['^'] = todo[1];
+				todo = null;
+			}
 			if (_.isFunction(value)) {
-				value = new Value(args, root, value, key, parent, stack);
+				value = new Value(args, value, key, parent);
 				return value.compute().recurse().result;
 			} else if (_.isObject(value)) {
-				array.push([value, key, parent]);
+				todo = [value, key ? {
+					key: key,
+					parent: parent
+				} : {}];
 			}
 		};
 
-		return _.cloneDeepWith(root, customizer);
+		const result = _.cloneDeepWith(root, customizer);
+		if (todo) {
+			todo[0]['^'] = todo[1];
+		}
+		return result;
 	};
 
 	return {

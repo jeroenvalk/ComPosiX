@@ -35,6 +35,10 @@ _.describe({
 	},
 	it: {
 		simple: function (expect, channel, recurse) {
+			expect(recurse.create(_.constant(undefined))).to.equal(null);
+			expect(recurse.create(_.constant(null))).to.equal(null);
+			expect(recurse.create(_.constant(true))).to.equal(true);
+
 			expect(recurse.create({
 				a: 1,
 				b: _.identity
@@ -57,6 +61,75 @@ _.describe({
 					c: 3,
 					d: 4
 				}
+			});
+
+			return true;
+		},
+		decoration: function (expect, channel, recurse) {
+			var y, x = {
+				a: {
+					x: 1,
+					$one: function () {
+						expect(this.value).to.equal(x.a.$one);
+						expect(this.key).to.equal("$one");
+						expect(this.parent).to.equal(x.a);
+
+						expect(this.parent['^'].value).to.deep.equal({x: 1});
+						expect(this.parent['^'].key).to.equal("a");
+						expect(this.parent['^'].parent).to.equal(x);
+
+						expect(x['^']).to.deep.equal({value: {}});
+
+						return 1;
+					}
+				}, b: {
+					y: 2,
+					$two: function () {
+						expect(this.value).to.equal(x.b.$two);
+						expect(this.key).to.equal("$two");
+						expect(this.parent).to.equal(x.b);
+
+						expect(this.parent['^'].value).to.deep.equal({y: 2});
+						expect(this.parent['^'].key).to.equal("b");
+						expect(this.parent['^'].parent).to.equal(x);
+
+						expect(x['^']).to.deep.equal({value: {
+							a: {
+								$one: 1,
+								x: 1
+							}
+						}});
+
+						return 2;
+					}
+				}
+			};
+
+			y = recurse.create(x);
+
+			expect(y).to.deep.equal({
+				a: {
+					x: 1,
+					$one: 1
+				},
+				b: {
+					y: 2,
+					$two: 2
+				}
+			});
+
+			expect(x['^']).to.deep.equal({
+				value: y
+			});
+			expect(x.a['^']).to.deep.equal({
+				value: y.a,
+				key: 'a',
+				parent: x
+			});
+			expect(x.b['^']).to.deep.equal({
+				value: y.b,
+				key: 'b',
+				parent: x
 			});
 
 			return true;
@@ -98,7 +171,7 @@ _.describe({
 
 			const unsafe = ["each", "find", "constant"];
 			_.each(_.keys(underscore), function (key) {
-				if (isNaN(a[key]["#"])) {
+				if (!a[key] || isNaN(a[key]["#"])) {
 					expect(a[key]).to.deep.equal(b[key]);
 				} else {
 					unsafe.push(key);
@@ -106,10 +179,10 @@ _.describe({
 					expect(b[key]).to.deep.equal({"#": b[key]["#"]});
 				}
 			});
-			expect(_.omit(a, unsafe)).to.deep.equal(_.mapValues(_.omit(__._, unsafe), function (value) {
+			expect(_.omit(a, unsafe)).to.deep.equal(_.mapValues(_.omit(__._, unsafe, '^'), function (value) {
 				return value.apply({}, []);
 			}));
-			expect(_.map(channel.read(rd, Infinity), _.property("value"))).to.deep.equal(_.flatten([_.values(__._), _.values(__._)]));
+			expect(_.map(channel.read(rd, Infinity), _.property("value"))).to.deep.equal(_.flatten([_.values(_.omit(__._, '^')), _.values(_.omit(__._, '^'))]));
 			return true;
 		}
 	}
