@@ -16,19 +16,24 @@
  */
 
 _.module("clicks", ["path", "channel"], function (path, channel) {
+	const execute = function clicks$execute(value) {
+		_.each(value, function (value, key, object) {
+			switch (key.charAt(0)) {
+				case '$':
+					console.log(key, value);
+					channel.write(value['#'] || value.$['#'], object);
+					break;
+			}
+		});
+	};
+
 	const recurse = function clicks$wiring(value, context) {
 		_.each(value, function (value, key) {
 			switch (key.charAt(0)) {
 				case '$':
 					context.on(key.substr(1), function (event) {
 						const pathname = path.toPath($(event.target));
-						_.each(_.get(value, pathname, value), function (value, key, object) {
-							switch (key.charAt(0)) {
-								case '$':
-									channel.write(value['#'] || value.$['#'], object);
-									break;
-							}
-						});
+						execute(_.get(value, pathname, value));
 					});
 					break;
 				default:
@@ -64,6 +69,7 @@ _.module("clicks", ["path", "channel"], function (path, channel) {
 
 	return {
 		wiring: wiring,
+		execute: execute,
 		clear: clear,
 		handlebars: handlebars
 	};
