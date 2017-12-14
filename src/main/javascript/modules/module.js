@@ -66,7 +66,14 @@
 		}
 	};
 
+	const throwError = function module$throw(errno, param) {
+		if (isFinite(errno) && errno > 0) {
+			throw new Error(JSON.stringify(param) + " (errno=" + errno + ")");
+		}
+	};
+
 	_.mixin({
-		module: module
+		module: module,
+		throw: throwError
 	});
 })();

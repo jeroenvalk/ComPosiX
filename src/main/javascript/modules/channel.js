@@ -19,16 +19,6 @@ _.module("channel", ["emitter"], function (emitter, x) {
 	const state = {0: [{push: _.identity}, true]}, push = Array.prototype.push;
 	var current = 0;
 
-	const onError = function (errno, value) {
-		var msg;
-		if (errno) {
-			msg = "expected object but got: " + JSON.stringify(value);
-		} else {
-			msg = "expected buffer but got: " + JSON.stringify(value);
-		}
-		throw new Error(msg);
-	};
-
 	const continuation = function (buf, fd, amount, callback) {
 		const listener = function (value) {
 			if (buf) {
@@ -82,36 +72,38 @@ _.module("channel", ["emitter"], function (emitter, x) {
 
 	x.write = function cpx$channel$write(fd) {
 		var i;
-		if (fd < 0) {
-			if (isNaN(fd)) {
-				throw new Error("channel descriptor must be a number");
-			}
-			throw new Error("writing to readable endpoint");
-		}
-		const array = _.flatten(arguments), paused = state[fd][0], objectMode = state[fd][1],
-			typeCheck = objectMode ? _.isPlainObject : _.isBuffer;
-		if (array[1] === null) {
-			if (paused) {
-				paused.push(null);
-			} else {
-				state[fd][0] = [];
-				emitter.removeAllListeners(fd, true);
-				emitter.emit(fd, null);
-			}
-		} else {
+		if (fd > 0) {
+			const array = _.flatten(arguments), paused = state[fd][0], objectMode = state[fd][1],
+				typeCheck = objectMode ? _.isPlainObject : _.isBuffer;
 			for (i = 1; i < array.length; ++i) {
-				if (!typeCheck(array[i])) {
-					onError(objectMode, array[i]);
+				if (array[i] !== null && !typeCheck(array[i])) {
+					_.throw(objectMode ? 10 : 11, array[i]);
 				}
 			}
+
+			// paused stream; data will be buffered
 			if (paused) {
 				for (i = 1; i < array.length; ++i) {
 					paused.push(array[i]);
 				}
+				return paused.length;
+			}
+
+			// data is forwarded immediately
+			if (array[1] === null) {
+				state[fd][0] = [];
+				emitter.removeAllListeners(fd, true);
+				emitter.emit(fd, null);
+				if (array.length > 2) {
+					_.throw(1);
+				}
 			} else {
 				emitter.emit(fd, array.slice(1));
 			}
+
+			return 0;
 		}
+		_.throw(isNaN(fd) ? 12 : (fd < 0 ? 13 : 0));
 	};
 
 	x.read = function cpx$channel$read(fd, amount, callback) {
@@ -126,7 +118,7 @@ _.module("channel", ["emitter"], function (emitter, x) {
 					if (i < amount) {
 						data = buf.splice(0, i + 1);
 						if (data.pop()) {
-							throw new Error("internal error");
+							_.throw(2);
 						}
 						callback && callback(data);
 						state[fd][2] = false;
@@ -151,6 +143,6 @@ _.module("channel", ["emitter"], function (emitter, x) {
 			}
 			return continuation([], fd, amount, callback);
 		}
-		throw new Error("reading from writable endpoint");
+		_.throw(14);
 	};
 });
