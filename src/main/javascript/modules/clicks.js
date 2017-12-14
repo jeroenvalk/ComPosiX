@@ -16,13 +16,11 @@
  */
 
 _.module("clicks", ["path", "channel"], function (path, channel) {
-	const recurse = function clicks$wiring(value, element) {
-		_.each(value, function (value, event) {
-			switch (event.charAt(0)) {
-				case '#':
-					break;
+	const recurse = function clicks$wiring(value, context, selector) {
+		_.each(value, function (value, key) {
+			switch (key.charAt(0)) {
 				case '$':
-					$(element || document).on(event.substr(1), function (event) {
+					$(selector, context).on(key.substr(1), function (event) {
 						const pathname = path.toPath($(event.target));
 						_.each(_.get(value, pathname), function (value, key, object) {
 							switch (key.charAt(0)) {
@@ -34,7 +32,7 @@ _.module("clicks", ["path", "channel"], function (path, channel) {
 					});
 					break;
 				default:
-					recurse(value, event);
+					recurse(value, $(selector, context), key);
 					break;
 			}
 		});
@@ -42,7 +40,7 @@ _.module("clicks", ["path", "channel"], function (path, channel) {
 
 	const wiring = function clicks$wiring(value) {
 		window.viewmodel = value;
-		recurse(value);
+		recurse(value, window.document);
 	};
 
 	const clear = function clicks$clear() {
