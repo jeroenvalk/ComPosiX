@@ -22,7 +22,7 @@ _.module("clicks", ["path", "channel"], function (path, channel) {
 				case '$':
 					context.on(key.substr(1), function (event) {
 						const pathname = path.toPath($(event.target));
-						_.each(_.get(value, pathname), function (value, key, object) {
+						_.each(_.get(value, pathname, value), function (value, key, object) {
 							switch (key.charAt(0)) {
 								case '$':
 									channel.write(value['#'] || value.$['#'], object);
