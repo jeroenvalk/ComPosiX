@@ -100,7 +100,7 @@ _.module("recurse", ["channel"], function (channel) {
 		});
 	};
 
-	const cloneDeep = function recurse$cloneDeep(root) {
+	const cloneDeep = function recurse$cloneDeep(root, cpx) {
 		const args = arguments;
 		var todo = null;
 
@@ -121,7 +121,9 @@ _.module("recurse", ["channel"], function (channel) {
 				todo = [value, key ? {
 					key: key,
 					parent: parent
-				} : {}];
+				} : {
+					object: cpx
+				}];
 			}
 		};
 
