@@ -79,6 +79,7 @@ _.module("clicks", ["path", "channel"], function (path, channel) {
 
 	return {
 		wiring: wiring,
+		plugins: plugins,
 		execute: execute,
 		clear: plugin.clear,
 		handlebars: plugin.handlebars
