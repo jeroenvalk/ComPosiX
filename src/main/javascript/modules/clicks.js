@@ -43,34 +43,44 @@ _.module("clicks", ["path", "channel"], function (path, channel) {
 		});
 	};
 
-	const wiring = function clicks$wiring(value) {
-		window.viewmodel = value;
-		recurse(value, $(window.document));
+	const wiring = function clicks$wiring(value, context) {
+		recurse(value, $(context));
 	};
 
-	const clear = function clicks$clear() {
-		const parent = this.parent['^'].value;
-		return function () {
-			$(parent.at).html("");
+	const plugins = function(window) {
+		const cpx = window.ComPosiX || window;
+
+		const clear = function clicks$clear() {
+			const parent = this.parent['^'].value;
+			return function () {
+				$(parent.at, cpx.document).html("");
+			};
+		};
+
+		const handlebars = function clicks$handlebars() {
+			const parent = this.parent['^'].value, context = this.parent['^'].parent['^'].value;
+			const template = $(parent.view, cpx.document).html();
+			if (!template) throw new Error();
+			const func = Handlebars.compile(template);
+			return function () {
+				const model = parent.model || context;
+				const str = func(model);
+				$(parent.at, cpx.document).html(str);
+			};
+		};
+
+		return {
+			clear: clear,
+			handlebars: handlebars
 		};
 	};
 
-	const handlebars = function clicks$handlebars() {
-		const parent = this.parent['^'].value, context = this.parent['^'].parent['^'].value;
-		const template = $(parent.view).html();
-		if (!template) throw new Error();
-		const func = Handlebars.compile(template);
-		return function () {
-			const model = parent.model || context;
-			const str = func(model);
-			$(parent.at).html(str);
-		};
-	};
+	const plugin = plugins(window);
 
 	return {
 		wiring: wiring,
 		execute: execute,
-		clear: clear,
-		handlebars: handlebars
+		clear: plugin.clear,
+		handlebars: plugin.handlebars
 	};
 });
