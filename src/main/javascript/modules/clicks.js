@@ -37,7 +37,9 @@ _.module("clicks", ["path", "channel"], function (path, channel) {
 					});
 					break;
 				default:
-					recurse(value, $(key, context));
+					if (_.isObject(value)) {
+						recurse(value, $(key, context));
+					}
 					break;
 			}
 		});
