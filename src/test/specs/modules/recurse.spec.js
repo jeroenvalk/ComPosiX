@@ -93,12 +93,14 @@ _.describe({
 						expect(this.parent['^'].key).to.equal("b");
 						expect(this.parent['^'].parent).to.equal(x);
 
-						expect(x['^']).to.deep.equal({value: {
-							a: {
-								$one: 1,
-								x: 1
+						expect(x['^']).to.deep.equal({
+							value: {
+								a: {
+									$one: 1,
+									x: 1
+								}
 							}
-						}});
+						});
 
 						return 2;
 					}
@@ -134,6 +136,56 @@ _.describe({
 
 			return true;
 		},
+		introspection: function (expect, channel, recurse) {
+			const forward = function (closure) {
+				return function (stream) {
+					return function (stream) {
+						var result = closure.apply(stream.self, stream.argv);
+						if (result === undefined) {
+							result = null;
+						}
+						if (_.isFunction(result)) {
+							channel.write(stream['#wr'], {});
+							const recurse = function () {
+								channel.read(stream['#rd'], 1, function (array) {
+									if (array.length < 1) {
+										channel.write(stream['#wr'], null);
+									} else {
+										result.apply(null, array);
+										recurse();
+									}
+								});
+							};
+							recurse();
+						} else {
+							channel.write(stream['#wr'], {result: result});
+							channel.write(stream['#wr'], null);
+						}
+					};
+				};
+			};
+
+			const x = {
+				a: 1,
+				$: "one"
+			};
+
+			const y = recurse.wiring(recurse.create({
+				one: forward(function () {
+					expect(this.value).to.equal("one");
+					expect(this.key).to.equal("$");
+					expect(this.parent).to.equal(x);
+
+					return true;
+				})
+			}));
+
+			const ch = channel.create(true);
+			channel.write(y.one['#'], {self: {value: x.$, key: "$", parent: x}, argv: [], "#wr": ch.wr});
+			expect(channel.read(ch.rd, Infinity)).to.deep.equal([{result: true}]);
+
+			return true;
+		},
 		streams: function (expect, channel, recurse) {
 			const result = [];
 
@@ -162,9 +214,10 @@ _.describe({
 			delete underscore.mixin;
 			const __ = _.pick(_, _.keys(underscore));
 			__._ = _.clone(__);
-			const rd = recurse.wiring(-1);
+			const ch = channel.create(true);
+			recurse.wiring({'#': ch.wr});
 			const a = recurse.create(__), b = a._;
-			recurse.wiring(0);
+			recurse.wiring({'#': 0});
 			delete a._;
 			expect(_.keys(a)).to.deep.equal(_.keys(underscore));
 			expect(_.keys(b)).to.deep.equal(_.keys(underscore));
@@ -182,8 +235,9 @@ _.describe({
 			expect(_.omit(a, unsafe)).to.deep.equal(_.mapValues(_.omit(__._, unsafe, '^'), function (value) {
 				return value.apply({}, []);
 			}));
-			expect(_.map(channel.read(rd, Infinity), _.property("value"))).to.deep.equal(_.flatten([_.values(_.omit(__._, '^')), _.values(_.omit(__._, '^'))]));
+			expect(_.map(channel.read(ch.rd, Infinity), _.property("value"))).to.deep.equal(_.flatten([_.values(_.omit(__._, '^')), _.values(_.omit(__._, '^'))]));
 			return true;
 		}
 	}
-});
+})
+;

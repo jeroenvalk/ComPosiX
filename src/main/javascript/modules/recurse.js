@@ -16,22 +16,8 @@
  */
 
 _.module("recurse", ["channel"], function (channel) {
-	var wr = 0;
-
-	const wiring = function recurse$wiring(fd) {
-		channel.write(wr, null);
-		if (isFinite(fd)) {
-			if (!fd) {
-				return wr = 0;
-			}
-			if (fd < 0) {
-				const ch = channel.create(true);
-				wr = ch.wr;
-				return ch.rd;
-			}
-			throw new Error("invalid wiring");
-		}
-		throw new Error("invalid channel endpoint");
+	var stream = {
+		'#': 0
 	};
 
 	const Value = function Value(args, value, key, parent) {
@@ -66,7 +52,7 @@ _.module("recurse", ["channel"], function (channel) {
 	};
 
 	Value.prototype.compute = function Value$compute() {
-		channel.write(wr, {value: this.value});
+		channel.write(stream['#'], {value: this.value});
 		this.result = this.value.apply(this, this.argv);
 		if (_.isFunction(this.result)) {
 			this.result = this.wiring();
@@ -115,7 +101,15 @@ _.module("recurse", ["channel"], function (channel) {
 	};
 
 	return {
-		wiring: wiring,
+		wiring: _.curry(_.rearg(_.mergeWith, [0, 2, 1]), 3)(stream, function(objValue, srcValue, key) {
+			switch(key) {
+				case '#':
+					if (objValue && srcValue !== objValue) {
+						channel.write(objValue, null);
+					}
+					break;
+			}
+		}),
 		create: cloneDeep
 	};
 });
