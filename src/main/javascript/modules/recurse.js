@@ -75,8 +75,7 @@ _.module("recurse", ["channel"], function (channel) {
 			paths = value.path ? _.extend({"": value.path}, value.paths) : value.paths;
 		}
 		return _.map(paths, function (path) {
-			var i, ctx = context, cpx;
-			const n = path[0];
+			var i, n = path[0], ctx = context, cpx;
 			if (isNaN(n)) {
 				n = 0;
 			} else {
@@ -86,9 +85,9 @@ _.module("recurse", ["channel"], function (channel) {
 				while (ctx.key) {
 					ctx = ctx.parent['^'];
 				}
-				cpx = ctx.object;
+				cpx = ctx.object['^'];
 				for (i = 0; i < -n && cpx.key; ++i) {
-					cpx = cpx.parent['^'];
+					cpx = cpx.object['^'];
 				}
 				ctx = cpx.value;
 			} else {
