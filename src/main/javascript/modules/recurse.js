@@ -89,7 +89,7 @@ _.module("recurse", ["channel"], function (channel) {
 				for (i = 0; i < -n && cpx.key; ++i) {
 					cpx = cpx.object['^'];
 				}
-				ctx = cpx.value;
+				ctx = cpx.value['^'];
 			} else {
 				for (i = 0; i < n && ctx.key; ++i) {
 					ctx = ctx.parent['^'];
