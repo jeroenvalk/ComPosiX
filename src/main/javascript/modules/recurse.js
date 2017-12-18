@@ -31,7 +31,7 @@ _.module("recurse", ["channel"], function (channel) {
 		const self = this, current = this.result, size = current.length || 1;
 		const ch = channel.create(true);
 
-		const read = function(argv) {
+		const read = function (argv) {
 			if (argv.length > 0) {
 				current.apply(self, argv);
 			}
@@ -41,7 +41,7 @@ _.module("recurse", ["channel"], function (channel) {
 			recurse();
 		};
 
-		const recurse = function() {
+		const recurse = function () {
 			channel.read(ch.rd, size, read);
 			// TODO: implement catching up after closing stream
 		};
@@ -66,6 +66,38 @@ _.module("recurse", ["channel"], function (channel) {
 	Value.prototype.recurse = function Value$recurse() {
 		this.result = cloneDeep.apply(null, _.flatten([[this.result], this.argv]));
 		return this;
+	};
+
+	Value.prototype.valuesAt = function (paths) {
+		const context = this.parent['^'];
+		if (!paths) {
+			const value = context.value;
+			paths = value.path ? _.extend({"": value.path}, value.paths) : value.paths;
+		}
+		return _.map(paths, function (path) {
+			var i, ctx = context, cpx;
+			const n = path[0];
+			if (isNaN(n)) {
+				n = 0;
+			} else {
+				path = path.slice(1);
+			}
+			if (n < 0) {
+				while (ctx.key) {
+					ctx = ctx.parent['^'];
+				}
+				cpx = ctx.object;
+				for (i = 0; i < -n && cpx.key; ++i) {
+					cpx = cpx.parent['^'];
+				}
+				ctx = cpx.value;
+			} else {
+				for (i = 0; i < n && ctx.key; ++i) {
+					ctx = ctx.parent['^'];
+				}
+			}
+			return path.length > 0 ? _.get(ctx.value, path) : ctx.value;
+		});
 	};
 
 	const cloneDeep = function recurse$cloneDeep(root) {
@@ -101,8 +133,8 @@ _.module("recurse", ["channel"], function (channel) {
 	};
 
 	return {
-		wiring: _.curry(_.rearg(_.mergeWith, [0, 2, 1]), 3)(stream, function(objValue, srcValue, key) {
-			switch(key) {
+		wiring: _.curry(_.rearg(_.mergeWith, [0, 2, 1]), 3)(stream, function (objValue, srcValue, key) {
+			switch (key) {
 				case '#':
 					if (objValue && srcValue !== objValue) {
 						channel.write(objValue, null);
