@@ -24,7 +24,7 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 
 	const resolveAll = function (collection) {
 		const values = [];
-		_.each(collection, function(value) {
+		_.each(collection, function (value) {
 			values.push(value);
 		});
 		channel.write(wr, values);
@@ -33,6 +33,7 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 	};
 
 	const getSwagger = channel.create(true, function (swagger) {
+		const self = this;
 		const todo = {
 			operations: {
 				source: [],
@@ -93,76 +94,78 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 			});
 		});
 		channel.write(wr, null);
-		// TODO: make first resolve async
-		todo.operations.target = _.map(channel.read(rd, Infinity), bodyOf);
-		if (todo.operations.source.length !== todo.operations.target.length) {
-			throw new Error("source target " + todo.operation.source.length + " " + todo.operation.target.length);
-		}
-		_.each(todo.operations.source, function (operation, index) {
-			_.extend(operation, todo.operations.target[index]);
-		});
-		// resolve params
-		_.each(swagger.paths, function (operations) {
-			_.each(operations, function (operation) {
-				const params = operation.parameters;
-				for (var i = 0; i < params.length; ++i) {
-					if (_.isString(params[i])) {
-						if (!todo.params[params[i]]) {
-							todo.params[params[i]] = {
-								method: "GET",
-								url: [auth, "parameters", org, params[i] + ".json"].join("/"),
-								headers: {
-									accept: "application/json"
-								}
+		channel.read(rd, Infinity, function (array) {
+			todo.operations.target = _.map(array, bodyOf);
+			if (todo.operations.source.length !== todo.operations.target.length) {
+				throw new Error("source target " + todo.operations.source.length + " " + todo.operations.target.length);
+			}
+			_.each(todo.operations.source, function (operation, index) {
+				_.extend(operation, todo.operations.target[index]);
+			});
+			// resolve params
+			_.each(swagger.paths, function (operations) {
+				_.each(operations, function (operation) {
+					const params = operation.parameters;
+					for (var i = 0; i < params.length; ++i) {
+						if (_.isString(params[i])) {
+							if (!todo.params[params[i]]) {
+								todo.params[params[i]] = {
+									method: "GET",
+									url: [auth, "parameters", org, params[i] + ".json"].join("/"),
+									headers: {
+										accept: "application/json"
+									}
+								};
+							}
+							params[i] = {
+								"$ref": "#/parameters/" + params[i]
 							};
 						}
-						params[i] = {
-							"$ref": "#/parameters/" + params[i]
-						};
 					}
-				}
+				});
 			});
-		});
-		if (!swagger.parameters) {
-			swagger.parameters = {};
-		}
-		// TODO: make second resolve async
-		_.each(resolveAll(todo.params), function (value, key) {
-			swagger.parameters[key] = bodyOf(value);
-		});
+			if (!swagger.parameters) {
+				swagger.parameters = {};
+			}
+			// TODO: make second resolve async
+			_.each(resolveAll(todo.params), function (value, key) {
+				swagger.parameters[key] = bodyOf(value);
+			});
 
-		// resolve definitions
-		_.each(swagger.paths, function (operations) {
-			_.each(operations, function (operation) {
-				_.each(operation.params, resolveDefinition("schema"));
-				_.each(operation.responses, resolveDefinition("schema"));
+			// resolve definitions
+			_.each(swagger.paths, function (operations) {
+				_.each(operations, function (operation) {
+					_.each(operation.params, resolveDefinition("schema"));
+					_.each(operation.responses, resolveDefinition("schema"));
+				});
 			});
+			if (!swagger.definitions) {
+				swagger.definitions = {};
+			}
+			var done = false, keys, values;
+			while (!done) {
+				keys = [];
+				values = [];
+				done = true;
+				_.each(todo.definitions, function (definition, type) {
+					if (definition) {
+						keys.push(type);
+						values.push(definition);
+						todo.definitions[type] = null;
+						done = false;
+					}
+				});
+				channel.write(wr, values);
+				channel.write(wr, null);
+				values = _.map(channel.read(rd, Infinity), bodyOf);
+				_.each(values, recurse);
+				_.each(keys, function (key, i) {
+					swagger.definitions[key] = values[i];
+				});
+			}
+			self.write(swagger);
+			self.write(null);
 		});
-		if (!swagger.definitions) {
-			swagger.definitions = {};
-		}
-		var done = false, keys, values;
-		while (!done) {
-			keys = [];
-			values = [];
-			done = true;
-			_.each(todo.definitions, function (definition, type) {
-				if (definition) {
-					keys.push(type);
-					values.push(definition);
-					todo.definitions[type] = null;
-					done = false;
-				}
-			});
-			channel.write(wr, values);
-			channel.write(wr, null);
-			values = _.map(channel.read(rd, Infinity), bodyOf);
-			_.each(values, recurse);
-			_.each(keys, function (key, i) {
-				swagger.definitions[key] = values[i];
-			});
-		}
-		return swagger;
 	});
 
 	const loadSwagger = channel.create(true, function (swagger) {
@@ -176,7 +179,7 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 			}
 		});
 		channel.write(wr, null);
-		channel.read(rd, Infinity, function(array) {
+		channel.read(rd, Infinity, function (array) {
 			self.write(_.map(array, bodyOf));
 			self.write(null);
 		});
@@ -185,13 +188,19 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 	return {
 		refreshPaths: channel.create(true, function (swagger) {
 			const self = this;
-			channel.read(loadSwagger(swagger), Infinity, function(array) {
+			channel.read(loadSwagger(swagger), Infinity, function (array) {
 				self.write(_.extend(swagger, array[0]));
 				self.write(null);
 			});
 		}),
 		refresh: channel.create(true, function (swagger) {
-			return _.extend(swagger, channel.read(getSwagger(channel.read(loadSwagger(swagger), Infinity)[0]), Infinity)[0]);
+			const self = this;
+			channel.read(loadSwagger(swagger), Infinity, function (array) {
+				channel.read(getSwagger(array[0]), Infinity, function(array) {
+					self.write(_.extend(swagger, array[0]));
+					self.write(null);
+				});
+			});
 		})
 	};
 });
