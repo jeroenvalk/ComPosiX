@@ -78,7 +78,7 @@ _.describe({
 						expect(this.parent['^'].key).to.equal("a");
 						expect(this.parent['^'].parent).to.equal(x);
 
-						expect(x['^']).to.deep.equal({value: {}});
+						expect(x['^']).to.deep.equal({object: undefined, value: {}});
 
 						return 1;
 					}
@@ -94,6 +94,7 @@ _.describe({
 						expect(this.parent['^'].parent).to.equal(x);
 
 						expect(x['^']).to.deep.equal({
+							object: undefined,
 							value: {
 								a: {
 									$one: 1,
@@ -109,6 +110,20 @@ _.describe({
 
 			y = recurse.create(x);
 
+			expect(x['^']).to.deep.equal({
+				object: undefined,
+				value: {
+					a: {
+						$one: 1,
+						x: 1
+					},
+					b: {
+						$two: 2,
+						y: 2
+					}
+				}
+			});
+
 			expect(y).to.deep.equal({
 				a: {
 					x: 1,
@@ -121,6 +136,7 @@ _.describe({
 			});
 
 			expect(x['^']).to.deep.equal({
+				object: undefined,
 				value: y
 			});
 			expect(x.a['^']).to.deep.equal({
