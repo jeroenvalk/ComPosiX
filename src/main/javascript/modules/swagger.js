@@ -135,36 +135,45 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 			// resolve definitions
 			_.each(swagger.paths, function (operations) {
 				_.each(operations, function (operation) {
-					_.each(operation.params, resolveDefinition("schema"));
+					_.each(operation.parameters, resolveDefinition("schema"));
 					_.each(operation.responses, resolveDefinition("schema"));
 				});
 			});
 			if (!swagger.definitions) {
 				swagger.definitions = {};
 			}
-			var done = false, keys, values;
-			while (!done) {
-				keys = [];
-				values = [];
-				done = true;
+			const loop = function(block) {
+				block(function() {
+					loop();
+				});
+			};
+			loop(function(cb) {
+				const keys = [], values = [];
 				_.each(todo.definitions, function (definition, type) {
 					if (definition) {
 						keys.push(type);
 						values.push(definition);
 						todo.definitions[type] = null;
-						done = false;
 					}
 				});
-				channel.write(wr, values);
-				channel.write(wr, null);
-				values = _.map(channel.read(rd, Infinity), bodyOf);
-				_.each(values, recurse);
-				_.each(keys, function (key, i) {
-					swagger.definitions[key] = values[i];
-				});
-			}
-			self.write(swagger);
-			self.write(null);
+				if (keys.length > 0) {
+					channel.write(wr, values);
+					channel.write(wr, null);
+					channel.read(rd, Infinity, function(array) {
+						const values = _.map(array, bodyOf);
+						_.each(values, recurse);
+						_.each(keys, function (key, i) {
+							swagger.definitions[key] = values[i];
+						});
+						cb();
+					});
+					self.write(swagger);
+					self.write(null);
+				} else {
+					self.write(swagger);
+					self.write(null);
+				}
+			});
 		});
 	});
 

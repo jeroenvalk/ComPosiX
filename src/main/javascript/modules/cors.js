@@ -15,7 +15,39 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module(["emitter", "validator", "swagger", "response", "channel"], function (emitter, validator, swagger, response, channel) {
+_.module("cors", ["emitter", "swagger", "response", "channel", "context"], function (emitter, swagger, response, channel, context) {
+	const swaggerPredicate = function (pathname) {
+		return function (pattern) {
+			pattern = pattern.length > 1 ? pattern.split("/").slice(1) : [];
+			if (pattern.length !== pathname.length) {
+				return false;
+			}
+			for (var i = 0; i < pattern.length; ++i) {
+				if (pattern[i].charAt(0) === "{") {
+					return pathname[i] !== "";
+				}
+				return pattern[i] !== pathname[i];
+			}
+			return true;
+		}
+	};
+
+	const validatorSwagger = function cpx$validatorSwagger(swagger) {
+		const base = swagger.basePath.split("/");
+		return function cpx$validateSwagger(request) {
+			const pattern = _.find(_.keys(swagger.paths), swaggerPredicate(request.pathname.split("/").slice(base.length)));
+			if (pattern) {
+				return swagger.paths[pattern][request.method.toLowerCase()] || swagger.paths[pattern];
+			}
+		};
+	};
+
+	const validator = function cpx$validator(schema) {
+		if (schema.swagger === "2.0") {
+			return validatorSwagger(schema);
+		}
+	};
+
 	const x = this;
 
 	const headers = {};

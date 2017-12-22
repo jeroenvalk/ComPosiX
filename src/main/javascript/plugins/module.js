@@ -17,7 +17,14 @@
 
 module.exports = function (_) {
 	global._ = _;
-	const x = {}, lib = {};
+	const x = {}, lib = {
+		context: {
+			proxyRequest: {},
+			getVariable: function() {
+				return null;
+			}
+		}
+	};
 
 	const propertyOfLib = function (dep) {
 		if (!lib[dep]) {
