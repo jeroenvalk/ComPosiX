@@ -45,8 +45,8 @@ _.module("path", function () {
 		return normalize(pathname.split("/"), asArray);
 	};
 
-	const resolve = function path$resolve(pathname, asArray) {
-		return normalize(pathname, asArray);
+	const resolve = function path$resolve() {
+		return normalize(join.apply(null, arguments));
 	};
 
 	const toPath = function path$toPath(value) {
