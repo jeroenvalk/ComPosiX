@@ -22,7 +22,7 @@ module.exports = function (_) {
 
     const serializeTag = function core$serializeTag(tagname, attr) {
         const result = ['<', tagname];
-        let text;
+        var text;
         if (attr) {
             _.each(attr, function (value, key) {
                 if (key.charAt(0) === '$') {
@@ -51,7 +51,7 @@ module.exports = function (_) {
                 writable.write('</' + tagname + '>');
                 break;
             case Array.prototype:
-                for (let i = 0; i < data.length; ++i) {
+                for (var i = 0; i < data.length; ++i) {
                     serializeXML(tagname, data[i]['@'] ? data[i]['@'][tagname] : {}, data[i], writable);
                 }
                 break;

@@ -144,7 +144,7 @@ _.module("swagger", ["channel", "request"], function (channel, request) {
 			}
 			const loop = function(block) {
 				block(function() {
-					loop();
+					loop(block);
 				});
 			};
 			loop(function(cb) {
