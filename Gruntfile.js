@@ -2,6 +2,17 @@ module.exports = function (grunt) {
 
 	grunt.initConfig({
 		pkg: grunt.file.readJSON('package.json'),
+		clean: {
+			target: ['target'],
+			all: ['target', 'node_modules']
+		},
+		mkdir: {
+			target: {
+				options: {
+					create: ['target', 'target/dist']
+				}
+			}
+		},
 		concat: {
 			composix: {
 				files: [{
@@ -61,6 +72,18 @@ module.exports = function (grunt) {
 				banner: '/* Copyright © ComPosiX (source @ https://github.com/jeroenvalk/ComPosiX) - v<%= pkg.version %> - ' +
 				'<%= grunt.template.today("yyyy-mm-dd") %> */'
 			},
+			module_standalone: {
+				files: {
+					'target/dist/cpx-module_standalone.min.js': [
+						'src/main/javascript/modules/composix.js',
+						'src/main/javascript/modules/module.js',
+						'src/main/javascript/modules/emitter.js',
+						'src/main/javascript/modules/globals.js',
+						'src/main/javascript/modules/typeOf.js',
+						'src/main/javascript/modules/window.js'
+					]
+				}
+			},
 			composix: {
 				files: {
 					'target/dist/composix-release.js': ['target/dist/composix-debug.js'],
@@ -98,5 +121,12 @@ module.exports = function (grunt) {
 		});
 	});
 
-	grunt.registerTask('default', ['concat', 'uglify']);
+	grunt.loadNpmTasks('grunt-mkdir');
+	grunt.loadNpmTasks('grunt-contrib-clean');
+
+	grunt.registerTask('tryout', ['concat', 'uglify']);
+
+	grunt.registerTask('all', ['uglify:module_standalone']);
+
+	grunt.registerTask('default', ['clean:target', 'mkdir:target', 'all']);
 };

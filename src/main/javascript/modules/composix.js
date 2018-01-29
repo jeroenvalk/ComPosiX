@@ -18,8 +18,6 @@
 const _ = {};
 
 (function () {
-	context && context.setVariable("underscore", _);
-
 	const slice = Array.prototype.slice, MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER;
 
 	const extend = function cpx$extend(a) {

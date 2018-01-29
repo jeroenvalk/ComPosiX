@@ -13,17 +13,17 @@
 	},
 	"main": "src/main/javascript/index.js",
 	"scripts": {
+		"prepare": "grunt",
 		"start": "node -i -e \"require('.').boot()\"",
 		"test": "mocha --require src/test/global.js src/test/specs/*.spec.js src/test/specs/**/*.spec.js"
 	},
 	"devDependencies": {
+		"lodash": "~4.17.2",
 		"mocha": "^4.0.1",
 		"chai": "^3.5.0",
 		"grunt": "^1.0.1",
-		"lodash": "~4.17.2",
+		"grunt-mkdir": "^1.0.0",
+		"grunt-contrib-clean": "^1.1.0",
 		"uglify-es": "^3.1.9"
-	},
-	"dependencies": {
-		"xml2js": "^0.4.19"
 	}
 }
