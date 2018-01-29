@@ -68,30 +68,67 @@ const _ = {};
 			return [];
 		};
 
-	mixin({
-		each: function cpx$each(array, iteratee) {
-			if (isArray(array)) {
-				for (var i = 0; i < array.length; ++i) {
-					iteratee(array[i], i);
-				}
-			} else {
-				if (array instanceof Object) {
-					for (var key in array) {
-						if (array.hasOwnProperty(key)) {
-							iteratee(array[key], key);
-						}
-					}
+	const keys = function cpx$keys(object) {
+		return Object.keys(object);
+	};
+
+	const eachKey = function cpx$eachKey(collection, iteratee) {
+		var key;
+		if (isArray(collection)) {
+			for (key = 0; key < collection.length; ++key) {
+				iteratee(key);
+			}
+		} else {
+			for (key in collection) {
+				if (collection.hasOwnProperty(key)) {
+					iteratee(key);
 				}
 			}
+		}
+	};
+
+	const findKey = function cpx$findKey(collection, predicate) {
+		var key;
+		if (isArray(collection)) {
+			for (key = 0; key < collection.length; ++key) {
+				if (predicate(key)) return key;
+			}
+		} else {
+			for (key in collection) {
+				if (collection.hasOwnProperty(key)) {
+					if (predicate(key)) return key;
+				}
+			}
+		}
+	};
+
+	const reduceKey = function globals$reduceKey(collection, iteratee, accumulator) {
+		eachKey(collection, function(key) {
+			accumulator = iteratee(accumulator, key);
+		});
+		return accumulator;
+	};
+
+	const createIteratee = function cpx$createIteratee(collection, iteratee) {
+		return function(key) {
+			return iteratee(collection[key], key, collection);
+		};
+	};
+
+	const reduceIteratee = function cpx$reduceIteratee(collection, iteratee) {
+		return function(accumulator, key) {
+			return iteratee(accumulator, collection[key], key, collection);
+		};
+	};
+
+	mixin({
+		each: function cpx$each(collection, iteratee) {
+			eachKey(collection, createIteratee(collection, iteratee));
 		},
 		constant: constant,
 		extend: extend,
 		find: function cpx$find(array, predicate) {
-			for (var i = 0; i < array.length; ++i) {
-				if (predicate(array[i])) {
-					return array[i];
-				}
-			}
+			return findKey(collection, createIteratee(collection, predicate));
 		},
 		flatten: function cpx$flatten(array) {
 			var i, j, k = 0;
@@ -120,8 +157,8 @@ const _ = {};
 		},
 		invert: function cpx$invert(entity) {
 			const result = {};
-			_.each(entity, function (value, key) {
-				result[value + ''] = key;
+			eachKey(entity, function(key) {
+				result[entity[key] + ''] = key;
 			});
 			return result;
 		},
@@ -130,15 +167,17 @@ const _ = {};
 		isFunction: isFunction,
 		isPlainObject: isPlainObject,
 		isString: isString,
-		keys: function cpx$keys(object) {
-			return Object.keys(object);
-		},
+		keys: keys,
 		map: function cpx$map(entity, iteratee) {
 			const result = [];
-			_.each(entity, function (value, key) {
-				result.push(iteratee(value, key));
+			iteratee = createIteratee(entity, iteratee);
+			eachKey(entity, function (key) {
+				result.push(iteratee(key));
 			});
 			return result;
+		},
+		reduce: function cpx$reduce(collection, iteratee, accumulator) {
+			return reduceKey(collection, reduceIteratee(collection, accumulator), accumulator);
 		},
 		property: function cpx$property(path) {
 			path = toPath(path);
@@ -162,7 +201,7 @@ const _ = {};
 			return slice.call(array, 1);
 		},
 		uniq: function cpx$uniq(entity) {
-			return _.keys(_.invert(entity));
+			return keys(_.invert(entity));
 		},
 		zipObject: function cpx$zipObject(keys, values) {
 			const result = {};

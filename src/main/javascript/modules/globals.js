@@ -18,15 +18,14 @@
 _.module('globals', function() {
 	const x = {};
 
+	const iteratee = function globals$iteratee(acc, key) {
+		if (!acc.hasOwnProperty(key)) {
+			acc[key] = {};
+		}
+		return acc[key];
+	};
+
 	return function(path) {
-		var result;
-
-		const updater = function(value) {
-			return result = value || {};
-		};
-
-		_.update(x, path, updater);
-
-		return result;
+		return _.reduce(_.toPath(path), iteratee, x);
 	}
 });

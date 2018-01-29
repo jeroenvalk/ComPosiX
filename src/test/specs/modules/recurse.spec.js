@@ -227,7 +227,6 @@ _.describe({
 			return true;
 		},
 		cloneDeepOnLodash: function (expect, channel, recurse) {
-			delete underscore.mixin;
 			const __ = _.pick(_, _.keys(underscore));
 			__._ = _.clone(__);
 			const ch = channel.create(true);
