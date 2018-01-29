@@ -177,7 +177,7 @@ const _ = {};
 			return result;
 		},
 		reduce: function cpx$reduce(collection, iteratee, accumulator) {
-			return reduceKey(collection, reduceIteratee(collection, accumulator), accumulator);
+			return reduceKey(collection, reduceIteratee(collection, iteratee), accumulator);
 		},
 		property: function cpx$property(path) {
 			path = toPath(path);
@@ -200,6 +200,7 @@ const _ = {};
 		tail: function cpx$tail(array) {
 			return slice.call(array, 1);
 		},
+		toPath: toPath,
 		uniq: function cpx$uniq(entity) {
 			return keys(_.invert(entity));
 		},
