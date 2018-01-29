@@ -17,8 +17,6 @@
 
 module.exports = function (_) {
 	'use strict';
-
-	return require('./globals')({
-		_: _
-	});
+	require("./plugins/module")(_);
+	return _;
 };
