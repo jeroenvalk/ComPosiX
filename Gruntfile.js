@@ -3,10 +3,16 @@ module.exports = function (grunt) {
 	grunt.initConfig({
 		pkg: grunt.file.readJSON('package.json'),
 		clean: {
+			dist: ['dist'],
 			target: ['target'],
-			all: ['target', 'node_modules']
+			all: ['dist', 'target', 'node_modules']
 		},
 		mkdir: {
+			dist: {
+				options: {
+					create: ['dist']
+				}
+			},
 			target: {
 				options: {
 					create: ['target', 'target/dist']
@@ -74,7 +80,7 @@ module.exports = function (grunt) {
 			},
 			module_standalone: {
 				files: {
-					'target/dist/cpx-module_standalone.min.js': [
+					'dist/cpx-module_standalone.min.js': [
 						'src/main/javascript/modules/composix.js',
 						'src/main/javascript/modules/module.js',
 						'src/main/javascript/modules/emitter.js',
@@ -128,5 +134,5 @@ module.exports = function (grunt) {
 
 	grunt.registerTask('all', ['uglify:module_standalone']);
 
-	grunt.registerTask('default', ['clean:target', 'mkdir:target', 'all']);
+	grunt.registerTask('default', ['clean:dist', 'mkdir:dist', 'all']);
 };
