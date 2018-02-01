@@ -1,5 +1,5 @@
 /**
- * Copyright © 2017 dr. ir. Jeroen M. Valk
+ * Copyright © 2017, 2018 dr. ir. Jeroen M. Valk
  *
  * This file is part of ComPosiX. ComPosiX is free software: you can
  * redistribute it and/or modify it under the terms of the GNU Lesser General
@@ -96,8 +96,13 @@ _.module("mocha", ["channel"], function (channel) {
 							//console.log("ARGV", argv);
 							try {
 								const rd = channel.create(true, value).apply(_.clone(x), argv);
-								channel.read(rd, Infinity, function () {
-									done();
+								channel.read(rd, Infinity, function (array) {
+									if (array.length > 0) {
+										const error = _.extend(new Error(), array[0]);
+										done(error);
+									} else {
+										done();
+									}
 								});
 							} catch (e) {
 								done(e);
