@@ -90,6 +90,20 @@ module.exports = function (grunt) {
 					]
 				}
 			},
+			module_apigee: {
+				files: {
+					'dist/cpx-module_apigee.min.js': [
+						'src/main/javascript/modules/composix.js',
+						'src/main/javascript/modules/module.js',
+						'src/main/javascript/modules/emitter.js',
+						'src/main/javascript/modules/globals.js',
+						'src/main/javascript/modules/typeOf.js',
+						'src/main/javascript/modules/channel.js',
+						'src/main/javascript/apigee/request.js',
+						'src/main/javascript/apigee/context.js'
+					]
+				}
+			},
 			composix: {
 				files: {
 					'target/dist/composix-release.js': ['target/dist/composix-debug.js'],
@@ -132,7 +146,7 @@ module.exports = function (grunt) {
 
 	grunt.registerTask('tryout', ['concat', 'uglify']);
 
-	grunt.registerTask('all', ['uglify:module_standalone']);
+	grunt.registerTask('all', ['uglify:module_standalone', 'uglify:module_apigee']);
 
 	grunt.registerTask('default', ['clean:dist', 'mkdir:dist', 'all']);
 };
