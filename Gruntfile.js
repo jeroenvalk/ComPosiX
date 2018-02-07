@@ -1,4 +1,26 @@
 module.exports = function (grunt) {
+	const _ = require('lodash');
+
+	const files = {
+		module: [
+			'src/main/javascript/modules/composix.js',
+			'src/main/javascript/modules/module.js',
+			'src/main/javascript/modules/emitter.js',
+			'src/main/javascript/modules/globals.js',
+			'src/main/javascript/modules/typeOf.js'
+		]
+	};
+
+	_.extend(files, {
+		module_standalone: _.flatten([files.module, [
+			'src/main/javascript/modules/window.js'
+		]]),
+		module_standalone_apigee: _.flatten([files.module, [
+			'src/main/javascript/modules/channel.js',
+			'src/main/javascript/apigee/request.js',
+			'src/main/javascript/apigee/context.js'
+		]])
+	});
 
 	grunt.initConfig({
 		pkg: grunt.file.readJSON('package.json'),
@@ -80,28 +102,12 @@ module.exports = function (grunt) {
 			},
 			module_standalone: {
 				files: {
-					'dist/cpx-module_standalone.min.js': [
-						'src/main/javascript/modules/composix.js',
-						'src/main/javascript/modules/module.js',
-						'src/main/javascript/modules/emitter.js',
-						'src/main/javascript/modules/globals.js',
-						'src/main/javascript/modules/typeOf.js',
-						'src/main/javascript/modules/window.js'
-					]
+					'dist/cpx-module_standalone.min.js': files.module_standalone
 				}
 			},
 			module_apigee: {
 				files: {
-					'dist/cpx-module_apigee.min.js': [
-						'src/main/javascript/modules/composix.js',
-						'src/main/javascript/modules/module.js',
-						'src/main/javascript/modules/emitter.js',
-						'src/main/javascript/modules/globals.js',
-						'src/main/javascript/modules/typeOf.js',
-						'src/main/javascript/modules/channel.js',
-						'src/main/javascript/apigee/request.js',
-						'src/main/javascript/apigee/context.js'
-					]
+					'dist/cpx-module_apigee.min.js': files.module_standalone_apigee
 				}
 			},
 			composix: {
