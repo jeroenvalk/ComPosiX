@@ -27,17 +27,14 @@ _.module("mocha", ["channel"], function (channel) {
 	const isFunction = _.isFunction, isArray = _.isArray, isObject = _.isObject, push = Array.prototype.push;
 
 	const nodejs = function() {
-		return _.map(_.flatten(arguments), function(name) {
-			const part = _.toPath(name);
-			return _.get(require(part[0]), part.slice(1));
-		});
+			return _.map(_.flatten(arguments), function(name) {
+				const part = _.toPath(name);
+				return _.get(require(part[0]), part.slice(1));
+			});
 	};
 
 	const composix = function() {
 		var array = _.flatten(arguments);
-		_.each(array, function(name) {
-			return require("./" + name);
-		});
 		_.module(array, function() {
 			array = _.flatten(arguments);
 		});
