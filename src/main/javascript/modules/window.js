@@ -15,6 +15,8 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* globals window */
+
 _.module('window', function() {
 	window._ = window._ || _;
 	return window;

@@ -18,6 +18,7 @@
 _.describe({
 	name: "cors",
 	before: function() {
+		_.module('response', _.constant(null));
 		return {};
 	},
 	it: {
