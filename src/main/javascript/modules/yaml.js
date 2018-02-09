@@ -17,7 +17,7 @@
 
 // modified version of json2yml: https://www.npmjs.com/package/json2yaml
 
-_.module('yaml', ['globals', 'typeOf'], function(globals, typeOf) {
+_.module('yaml', ['globals', 'typeOf'], function(_, globals, typeOf) {
 	"use strict";
 
 	const YAML = globals('YAML');

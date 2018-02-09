@@ -37,7 +37,7 @@ _.describe({
 			return true;
 		},
 		async: function(expect, pipe) {
-			_.module(['globals', 'channel'], function(globals, channel) {
+			_.module(['globals', 'channel'], function(_, globals, channel) {
 				const ch = channel.create(true);
 				const info = function(error) {
 					console.error('[INFO]', error);

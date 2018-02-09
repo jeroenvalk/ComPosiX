@@ -1,5 +1,5 @@
 /**
- * Copyright © 2017 dr. ir. Jeroen M. Valk
+ * Copyright © 2017, 2018 dr. ir. Jeroen M. Valk
  *
  * This file is part of ComPosiX. ComPosiX is free software: you can
  * redistribute it and/or modify it under the terms of the GNU Lesser General
@@ -16,7 +16,7 @@
  */
 
 // emitter (basic version)
-_.module("emitter", function Emitter(x) {
+_.module("emitter", function Emitter(_, x) {
 	const listeners = {};
 	var delay = null;
 

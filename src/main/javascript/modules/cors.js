@@ -1,5 +1,5 @@
 /**
- * Copyright © 2017 dr. ir. Jeroen M. Valk
+ * Copyright © 2017, 2018 dr. ir. Jeroen M. Valk
  *
  * This file is part of ComPosiX. ComPosiX is free software: you can
  * redistribute it and/or modify it under the terms of the GNU Lesser General
@@ -15,7 +15,7 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module("cors", ["emitter", "swagger", "response", "channel", "context"], function (emitter, swagger, response, channel, context) {
+_.module("cors", ["emitter", "swagger", "response", "channel", "context"], function (_, emitter, swagger, response, channel, context) {
 	const swaggerPredicate = function (pathname) {
 		return function (pattern) {
 			pattern = pattern.length > 1 ? pattern.split("/").slice(1) : [];

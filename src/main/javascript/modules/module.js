@@ -1,5 +1,5 @@
 /**
- * Copyright © 2017 dr. ir. Jeroen M. Valk
+ * Copyright © 2017, 2018 dr. ir. Jeroen M. Valk
  *
  * This file is part of ComPosiX. ComPosiX is free software: you can
  * redistribute it and/or modify it under the terms of the GNU Lesser General
@@ -24,7 +24,7 @@
 	};
 
 	const module = function cpx$module() {
-		var name = null, deps = [], func = null, res, nameA, nameB;
+		var i, name = null, deps = [], func = null, res, nameA, nameB;
 
 		const Constructor = function() {
 			argv.push(this);
@@ -32,7 +32,7 @@
 			argv.pop();
 		};
 
-		for (var i = 0; i < arguments.length; ++i) {
+		for (i = 0; i < arguments.length; ++i) {
 			if (_.isString(arguments[i])) {
 				name = arguments[i];
 			}
@@ -43,7 +43,12 @@
 				func = arguments[i];
 			}
 		}
-		const argv = _.map(deps, _.propertyOf(lib)), y = new Constructor();
+		const argv = new Array(deps.length + 1);
+		argv[0] = _;
+		for (i = 1; i < argv.length; ++i) {
+			argv[i] = _.propertyOf(lib)(deps[i - 1]);
+		}
+		const y = new Constructor();
 		if (name) {
 			nameA = name.charAt(0); nameB = nameA.toUpperCase();
 			if (nameA === nameB) {

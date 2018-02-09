@@ -15,7 +15,7 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module('globals', function() {
+_.module('globals', function(_) {
 	const x = {};
 
 	const iteratee = function globals$iteratee(acc, key) {

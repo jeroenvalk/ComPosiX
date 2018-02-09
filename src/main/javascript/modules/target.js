@@ -15,7 +15,7 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module('target', ['globals', 'channel'], function (globals, channel) {
+_.module('target', ['globals', 'channel'], function (_, globals, channel) {
 	const objectTarget = _.extend(globals('target.object'), {
 		undefined: function (obj) {
 			return {

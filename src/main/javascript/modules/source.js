@@ -15,7 +15,7 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module('source', ['globals', 'channel'], function (globals, channel) {
+_.module('source', ['globals', 'channel'], function (_, globals, channel) {
 	const sourceUndefined = function source$undefined(readable) {
 		return new Promise(function (resolve) {
 			var ch;

@@ -15,7 +15,7 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module("request", ["channel"], function(channel) {
+_.module("request", ["channel"], function(_, channel) {
 	const i = channel.create(true), o = channel.create(true), rd = i.rd, wr = o.wr;
 
 	const result = function cpx$request(req) {

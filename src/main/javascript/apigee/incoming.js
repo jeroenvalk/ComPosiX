@@ -15,7 +15,7 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module("incoming", ["channel"], function (channel) {
+_.module("incoming", ["channel"], function (_, channel) {
 	const argv = [this], cfg = channel.create(true), ch = channel.create(true);
 	_.extend(this, {
 		'#': cfg.wr,

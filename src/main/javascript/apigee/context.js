@@ -15,7 +15,7 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module('context', function() {
+_.module('context', function(_) {
 	context.setVariable("underscore", _);
 	return context;
 });

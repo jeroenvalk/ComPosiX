@@ -17,47 +17,47 @@
 
 /* globals describe, xdescribe, it */
 
-_.module("mocha", ["channel"], function (channel) {
+_.module("mocha", ["channel"], function (_, channel) {
 	const x = {
 		node: {
 			chai: require("chai")
 		}
 	};
 
-	const isFunction = _.isFunction, isArray = _.isArray, isObject = _.isObject, push = Array.prototype.push;
+	const push = Array.prototype.push;
 
-	const nodejs = function() {
-			return _.map(_.flatten(arguments), function(name) {
+	const nodejs = function(_) {
+			return _.map(_.flatten(arguments).slice(1), function(name) {
 				const part = _.toPath(name);
 				return _.get(require(part[0]), part.slice(1));
 			});
 	};
 
-	const composix = function() {
-		var array = _.flatten(arguments);
+	const composix = function(_) {
+		var array = _.flatten(arguments).slice(1);
 		_.module(array, function() {
-			array = _.flatten(arguments);
+			array = _.flatten(arguments).slice(1);
 		});
 		return array;
 	};
 
-	const cbDescribe = function (use) {
+	const cbDescribe = function (_, use) {
 		const argv = [];
 		_.each(use, function(value, key) {
 			switch(key.toLowerCase()) {
 				case 'nodejs':
-					push.apply(argv, nodejs(value));
+					push.apply(argv, nodejs(_, value));
 					break;
 				case 'cpx':
 				case 'composix':
-					push.apply(argv, composix(value));
+					push.apply(argv, composix(_, value));
 					break;
 			}
 		});
 		return argv;
 	};
 
-	const descr = function cpx$mocha$describe(object) {
+	const descr = function cpx$mocha$describe(object, _) {
 		if (object.name) {
 			describe(object.name, function () {
 				var argv, use = object.use;
@@ -68,11 +68,11 @@ _.module("mocha", ["channel"], function (channel) {
 					};
 				}
 				before(function (done) {
-					if (isFunction(object.before)) {
+					if (_.isFunction(object.before)) {
 						channel.read(channel.create(true, object.before).call(x, x), Infinity, function (array) {
 							use = array[0].use || use;
 							try {
-								argv = cbDescribe(use);
+								argv = cbDescribe(_, use);
 								done();
 							} catch(e) {
 								done(e);
@@ -80,14 +80,14 @@ _.module("mocha", ["channel"], function (channel) {
 						});
 					} else {
 						try {
-							argv = cbDescribe(use);
+							argv = cbDescribe(_, use);
 							done();
 						} catch(e) {
 							done(e);
 						}
 					}
 				});
-				if (isObject(object.it)) {
+				if (_.isObject(object.it)) {
 					_(object.it).each(function (value, key) {
 						it(key, function (done) {
 							//console.log("ARGV", argv);

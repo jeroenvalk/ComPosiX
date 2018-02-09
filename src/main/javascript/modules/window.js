@@ -17,7 +17,7 @@
 
 /* globals window */
 
-_.module('window', function() {
-	window._ = window._ || _;
+_.module('window', function(_) {
+	window._ = _;
 	return window;
 });

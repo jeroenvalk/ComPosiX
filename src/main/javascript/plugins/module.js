@@ -16,7 +16,6 @@
  */
 
 module.exports = function (_) {
-	global._ = _;
 	const x = {}, lib = {
 		context: {
 			proxyRequest: {},
@@ -28,12 +27,16 @@ module.exports = function (_) {
 
 	const propertyOfLib = function (dep) {
 		if (!lib[dep]) {
-			var exists = false;
+			var exists = false, key;
 			try {
 				require.resolve("../plugins/" + dep);
 				exists = true;
 			} catch (e) {
+				key = require.resolve("../modules/" + dep);
+				delete require.cache[key];
+				global._ = _;
 				require("../modules/" + dep);
+				//delete global._;
 			}
 			if (exists) {
 				require("../plugins/" + dep)(_);
@@ -46,7 +49,7 @@ module.exports = function (_) {
 	};
 
 	const module = function cpx$module() {
-		var name = null, deps = [], func = null, res, nameA, nameB;
+		var i, name = null, deps = [], func = null, res, nameA, nameB;
 
 		const Constructor = function () {
 			argv.push(this);
@@ -54,7 +57,7 @@ module.exports = function (_) {
 			argv.pop();
 		};
 
-		for (var i = 0; i < arguments.length; ++i) {
+		for (i = 0; i < arguments.length; ++i) {
 			if (_.isString(arguments[i])) {
 				name = arguments[i];
 			}
@@ -65,7 +68,12 @@ module.exports = function (_) {
 				func = arguments[i];
 			}
 		}
-		const argv = _.map(deps, propertyOfLib), y = new Constructor();
+		const argv = new Array(deps.length + 1);
+		argv[0] = _;
+		for (i = 1; i < argv.length; ++i) {
+			argv[i] = propertyOfLib(deps[i - 1]);
+		}
+		const y = new Constructor();
 		if (name) {
 			lib[name] = res || y;
 		}
@@ -81,4 +89,6 @@ module.exports = function (_) {
 		module: module,
 		throw: throwError
 	});
+
+	return _;
 };

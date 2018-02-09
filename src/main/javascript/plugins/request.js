@@ -18,7 +18,7 @@
 module.exports = function(_) {
 	const https = require("https"), url = require("url");
 
-	_.module("request", ["channel"], function(channel) {
+	_.module("request", ["channel"], function(_, channel) {
 		const i = channel.create(true), o = channel.create(true);
 		const func = channel.create(true, function() {
 			const self = this;

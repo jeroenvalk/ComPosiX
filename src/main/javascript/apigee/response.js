@@ -15,7 +15,7 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module("response", ["emitter"], function (emitter) {
+_.module("response", ["emitter"], function (_, emitter) {
 	const x = this;
 
 	emitter.addListener("flow", function (event) {

@@ -15,7 +15,7 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module(['channel', 'path', 'swagger', 'response', 'incoming'], function (channel, path, swagger, response) {
+_.module(['channel', 'path', 'swagger', 'response', 'incoming'], function (_, channel, path, swagger, response) {
 	channel.write(this['#'], null);
 	channel.read(swagger.refresh({
 		swagger: "2.0",
