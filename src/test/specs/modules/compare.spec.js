@@ -1,5 +1,5 @@
 /**
- * Copyright © 2017 dr. ir. Jeroen M. Valk
+ * Copyright © 2017, 2018 dr. ir. Jeroen M. Valk
  *
  * This file is part of ComPosiX. ComPosiX is free software: you can
  * redistribute it and/or modify it under the terms of the GNU Lesser General
@@ -17,33 +17,36 @@
 
 /* global _ */
 
-_.describe({
-	name: "compare",
-	it: {
-		simple: function(expect) {
-			expect(_.compare({
-				x: 1,
-				y: {
-					e: 1
+_.describe(function () {
+	return {
+		name: "compare",
+		it:
+			{
+				simple: function (expect) {
+					expect(_.compare({
+						x: 1,
+						y: {
+							e: 1
+						}
+					}, {
+						x: {},
+						y: {
+							f: 1
+						},
+						z: 1
+					})).to.deep.equal({
+						number: {
+							x: 1,
+							z: 2
+						},
+						object: {
+							y: 3,
+							x: 2,
+							"x.": {}
+						}
+					});
+					return true;
 				}
-			}, {
-				x: {},
-				y: {
-					f: 1
-				},
-				z: 1
-			})).to.deep.equal({
-				number: {
-					x: 1,
-					z: 2
-				},
-				object: {
-					y: 3,
-					x: 2,
-					"x.": {}
-				}
-			});
-			return true;
-		}
-	}
+			}
+	};
 });

@@ -1,5 +1,5 @@
 /**
- * Copyright © 2017 dr. ir. Jeroen M. Valk
+ * Copyright © 2017, 2018 dr. ir. Jeroen M. Valk
  *
  * This file is part of ComPosiX. ComPosiX is free software: you can
  * redistribute it and/or modify it under the terms of the GNU Lesser General
@@ -17,47 +17,48 @@
 
 /* global _ */
 
-_.describe({
-	name: "swagger",
-	use: {
-		NodeJS: ['chai.expect'],
-		ComPosiX: ['swagger', 'channel', 'request']
-	},
-	it: {
-		refreshPaths: function (expect, swagger, channel) {
-			const self = this;
-			channel.read(swagger.refreshPaths({
-				swagger: "2.0",
-				info: {
-					title: "Identity",
-					version: "v1",
-					contact: {
-						name: "ComPosiX"
-					}
-				},
-				schemes: ["https"],
-				host: "localhost",
-				basePath: "/",
-				paths: {}
-			}), Infinity, function (array) {
-				expect(array[0].paths).to.deep.equal({
-					"/identity/{uid}/at/{entity}" : {
-						"get" : {
-							"operationId": "computeUUIDv5"
+_.describe(function () {
+	return {
+		name: "swagger",
+		use: {
+			NodeJS: ['chai.expect'],
+			ComPosiX: ['swagger', 'channel', 'request']
+		},
+		it: {
+			refreshPaths: function (expect, swagger, channel) {
+				const self = this;
+				channel.read(swagger.refreshPaths({
+					swagger: "2.0",
+					info: {
+						title: "Identity",
+						version: "v1",
+						contact: {
+							name: "ComPosiX"
 						}
 					},
-					"/identity/uuid/{uuid}" : {
-						"get" : {
-							"operationId": "getUUIDv5"
+					schemes: ["https"],
+					host: "localhost",
+					basePath: "/",
+					paths: {}
+				}), Infinity, function (array) {
+					expect(array[0].paths).to.deep.equal({
+						"/identity/{uid}/at/{entity}": {
+							"get": {
+								"operationId": "computeUUIDv5"
+							}
 						},
-						"put" : {
-							"operationId": "putUUIDv5"
+						"/identity/uuid/{uuid}": {
+							"get": {
+								"operationId": "getUUIDv5"
+							},
+							"put": {
+								"operationId": "putUUIDv5"
+							}
 						}
-					}
+					});
+					self.write(null);
 				});
-				self.write(null);
-			});
+			}
 		}
-	}
+	};
 });
-
