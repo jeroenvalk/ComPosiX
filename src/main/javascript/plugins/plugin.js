@@ -16,6 +16,26 @@
  */
 
 module.exports = function (_) {
+	const plugin = function(argv) {
+		const pluginModule = function(_) {
+			_.extend(this, {
+				argv: argv,
+				result: _.module.apply(_, argv)
+			});
+			return _;
+		};
+
+		const pluginFunction = function(_) {
+			_.extend(this, {
+				argv: argv,
+				result: argv[2].call(null, _)
+			});
+			return _;
+		};
+
+		return argv[0] || argv[1] ? pluginModule : pluginFunction;
+	};
+
 	const indexOf = {s: 0, o: 1, f: 2};
 
 	const groupArguments = function (argv) {
@@ -35,14 +55,7 @@ module.exports = function (_) {
 		plugin: function cpx$plugin() {
 			const argv = groupArguments(arguments);
 			if (argv[2]) {
-				if (argv[0] || argv[1]) {
-					current = function (_) {
-						_.module.apply(_, argv);
-						return _;
-					};
-				} else {
-					current = argv[2];
-				}
+				current = plugin(argv);
 			} else {
 				global._ = _;
 				require("./" + argv[0]);

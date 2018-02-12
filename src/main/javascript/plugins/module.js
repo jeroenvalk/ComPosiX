@@ -89,6 +89,4 @@ _.plugin(function (_) {
 		module: module,
 		throw: throwError
 	});
-
-	return _;
 });
