@@ -15,10 +15,10 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.describe('ComPosiX', function ($) {
+_.describe('ComPosiX', function () {
     'use strict';
 
-    const expect = $.expect;
+    const expect = this.expect;
 
     /* global describe, it */
 

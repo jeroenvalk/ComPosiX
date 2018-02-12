@@ -17,11 +17,13 @@
 
 /* globals describe, xdescribe, it */
 
-_.module("mocha", ["channel"], function (_, channel) {
+_.plugin("mocha", ["channel"], function (_, channel) {
 	const x = {
+		_: _,
 		node: {
 			chai: require("chai")
-		}
+		},
+		expect: require("chai").expect
 	};
 
 	const push = Array.prototype.push;
@@ -110,6 +112,23 @@ _.module("mocha", ["channel"], function (_, channel) {
 			});
 		}
 	};
+
+	_.mixin({
+		describe: function(name, fn) {
+			var underscore = _;
+			if (_.isFunction(name)) {
+				//underscore = module($._.runInContext());
+				name = name.call(x, underscore);
+			}
+			if (name instanceof Object) {
+				descr(name, underscore);
+			} else {
+				describe(name, function () {
+					fn.call(x, underscore);
+				});
+			}
+		}
+	});
 
 	return {
 		describe: descr

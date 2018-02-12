@@ -41,29 +41,12 @@ module.exports = function ($) {
 		expect: $.expect || require('chai').expect
 	};
 
-	var mocha, module = require("./plugins/module");
-	module($._);
-	global._ = $._;
-	$._.module(["mocha"], function (_, module) {
-		mocha = module;
-	});
-	delete global._;
+	const plugin = require("./plugins/plugin")($._);
+	const pluginModule = plugin.plugin("module");
+	const pluginMocha = plugin.plugin("mocha");
+	pluginMocha(pluginModule(plugin));
 
 	$._.mixin({
-		describe: function globals$describe(name, fn) {
-			var underscore = $._;
-			if (_.isFunction(name)) {
-				//underscore = module($._.runInContext());
-				name = name.call(null, underscore, globals.expect);
-			}
-			if (name instanceof Object) {
-				mocha.describe(name, underscore);
-			} else {
-				describe(name, function () {
-					fn.call(null, globals);
-				});
-			}
-		},
 		globals: function globals$globals(fn) {
 			return function () {
 				fn.call(this, globals);

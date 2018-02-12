@@ -15,7 +15,7 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-module.exports = function (_) {
+_.plugin(function (_) {
 	const x = {}, lib = {
 		context: {
 			proxyRequest: {},
@@ -91,4 +91,4 @@ module.exports = function (_) {
 	});
 
 	return _;
-};
+});

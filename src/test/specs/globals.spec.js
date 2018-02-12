@@ -15,10 +15,10 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.describe("globals", function($) {
+_.describe("globals", function() {
     'use strict';
 
-    const expect = $.node.chai.expect;
+    const $ = this, expect = this.node.chai.expect;
 
     /* global describe, it */
     it("NodeJS", function() {
