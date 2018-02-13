@@ -17,7 +17,7 @@
 
 /* globals describe, xdescribe, it */
 
-_.plugin("mocha", ["channel"], function (_, channel) {
+_.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 	const x = {
 		_: _,
 		node: {
@@ -25,6 +25,8 @@ _.plugin("mocha", ["channel"], function (_, channel) {
 		},
 		expect: require("chai").expect
 	};
+
+	_.extend(globals('mocha'), x);
 
 	const push = Array.prototype.push;
 
@@ -114,18 +116,19 @@ _.plugin("mocha", ["channel"], function (_, channel) {
 	};
 
 	_.mixin({
-		describe: function(name, fn) {
+		describe: function() {
+			const func = _.plugin.apply(_, arguments);
 			var underscore = _;
-			if (_.isFunction(name)) {
-				//underscore = module($._.runInContext());
-				name = name.call(x, underscore);
-			}
-			if (name instanceof Object) {
-				descr(name, underscore);
-			} else {
-				describe(name, function () {
-					fn.call(x, underscore);
+			//underscore = module($._.runInContext());
+			if (func.argv[0]) {
+				describe(func.argv[0], function () {
+					func.call(x, underscore, {named: false});
 				});
+			} else {
+				func.call(x, underscore);
+				if (x.result instanceof Object) {
+					descr(x.result, underscore);
+				}
 			}
 		}
 	});

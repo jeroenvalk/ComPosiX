@@ -15,10 +15,11 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.describe("globals", function() {
+_.describe("globals", ['globals'], function(_, globals) {
     'use strict';
 
-    const $ = this, expect = this.node.chai.expect;
+    const $ = globals('mocha');
+    const expect = $.node.chai.expect;
 
     /* global describe, it */
     it("NodeJS", function() {
@@ -38,6 +39,5 @@ _.describe("globals", function() {
 
     it("describe", function() {
        expect(_.describe).to.be.an.instanceof(Function);
-       expect(_.describe.length).to.equal(2);
     });
 });

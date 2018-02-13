@@ -15,10 +15,10 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.describe('ComPosiX', function () {
+_.describe('ComPosiX', ['globals'], function (_, globals) {
     'use strict';
 
-    const expect = this.expect;
+    const expect = globals('mocha').expect;
 
     /* global describe, it */
 

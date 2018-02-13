@@ -17,23 +17,26 @@
 
 module.exports = function (_) {
 	const plugin = function(argv) {
-		const pluginModule = function(_) {
+
+		const defaultConfig = {
+			named: true
+		};
+		const pluginModule = function(_, cfg) {
+			cfg = cfg ? Object.setPrototypeOf(cfg, defaultConfig) : Object.create(defaultConfig);
 			_.extend(this, {
-				argv: argv,
-				result: _.module.apply(_, argv)
+				result: _.module.call(_, cfg.named && argv[0], argv[1], argv[2])
 			});
 			return _;
 		};
 
 		const pluginFunction = function(_) {
 			_.extend(this, {
-				argv: argv,
 				result: argv[2].call(null, _)
 			});
 			return _;
 		};
 
-		return argv[0] || argv[1] ? pluginModule : pluginFunction;
+		return _.extend(argv[0] || argv[1] ? pluginModule : pluginFunction, {argv: argv});
 	};
 
 	const indexOf = {s: 0, o: 1, f: 2};
