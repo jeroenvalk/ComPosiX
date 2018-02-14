@@ -1,5 +1,5 @@
 /**
- * Copyright © 2017 dr. ir. Jeroen M. Valk
+ * Copyright © 2017, 2018 dr. ir. Jeroen M. Valk
  *
  * This file is part of ComPosiX. ComPosiX is free software: you can
  * redistribute it and/or modify it under the terms of the GNU Lesser General
@@ -15,7 +15,7 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-module.exports = function(_) {
+_.plugin("request", function(_) {
 	const https = require("https"), url = require("url");
 
 	_.module("request", ["channel"], function(_, channel) {
@@ -52,4 +52,4 @@ module.exports = function(_) {
 			wr: i.wr
 		};
 	});
-};
+});

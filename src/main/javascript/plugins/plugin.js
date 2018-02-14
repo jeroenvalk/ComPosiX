@@ -16,29 +16,6 @@
  */
 
 module.exports = function (_) {
-	const plugin = function(argv) {
-
-		const defaultConfig = {
-			named: true
-		};
-		const pluginModule = function(_, cfg) {
-			cfg = cfg ? Object.setPrototypeOf(cfg, defaultConfig) : Object.create(defaultConfig);
-			_.extend(this, {
-				result: _.module.call(_, cfg.named && argv[0], argv[1], argv[2])
-			});
-			return _;
-		};
-
-		const pluginFunction = function(_) {
-			_.extend(this, {
-				result: argv[2].call(null, _)
-			});
-			return _;
-		};
-
-		return _.extend(argv[0] || argv[1] ? pluginModule : pluginFunction, {argv: argv});
-	};
-
 	const indexOf = {s: 0, o: 1, f: 2};
 
 	const groupArguments = function (argv) {
@@ -52,19 +29,54 @@ module.exports = function (_) {
 		return result;
 	};
 
-	var current;
+	const cache = {};
 
 	_.mixin({
-		plugin: function cpx$plugin() {
-			const argv = groupArguments(arguments);
-			if (argv[2]) {
-				current = plugin(argv);
-			} else {
+		require: function (name) {
+			if (cache[name]) {
+				return cache[name];
+			}
+			const _ = global._;
+			global._ = this;
+			var pathname = "./" + name;
+			try {
+				require.resolve(pathname);
+			} catch (e) {
+				pathname = "../modules/" + name;
+				try {
+					require.resolve(pathname)
+				} catch (e) {
+					pathname = null;
+				}
+			}
+			pathname && require(pathname);
+			if (_) {
 				global._ = _;
-				require("./" + argv[0]);
+			} else {
 				delete global._;
 			}
-			return current;
+			return cache[name];
+		},
+		plugin: function cpx$plugin() {
+			const argv = groupArguments(arguments);
+
+			if (!argv[1]) argv[1] = [];
+
+			const result = function cpx$plugin(_) {
+				const array = new Array(argv[1].length + 1);
+				for (var i = 1; i < array.length; ++i) {
+					array[i] = _.require(argv[1][i - 1]);
+				}
+				array[0] = _;
+				_.extend(this, {
+					result: argv[2].apply(null, array)
+				});
+				return _;
+			};
+			if (arguments[0] && argv[0]) {
+				cache[argv[0]] = result;
+			}
+			return _.extend(result, {argv: argv});
 		}
 	});
 

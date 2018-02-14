@@ -18,15 +18,13 @@
 /* globals describe, xdescribe, it */
 
 _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
-	const x = {
+	_.extend(globals('mocha'), {
 		_: _,
 		node: {
 			chai: require("chai")
 		},
 		expect: require("chai").expect
-	};
-
-	_.extend(globals('mocha'), x);
+	});
 
 	const push = Array.prototype.push;
 
@@ -73,7 +71,7 @@ _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 				}
 				before(function (done) {
 					if (_.isFunction(object.before)) {
-						channel.read(channel.create(true, object.before).call(x, x), Infinity, function (array) {
+						channel.read(channel.create(true, object.before).call(null, null), Infinity, function (array) {
 							use = array[0].use || use;
 							try {
 								argv = cbDescribe(_, use);
@@ -96,7 +94,7 @@ _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 						it(key, function (done) {
 							//console.log("ARGV", argv);
 							try {
-								const rd = channel.create(true, value).apply(_.clone(x), argv);
+								const rd = channel.create(true, value).apply(null, argv);
 								channel.read(rd, Infinity, function (array) {
 									if (array.length > 0) {
 										const error = _.extend(new Error(), array[0]);
@@ -117,7 +115,7 @@ _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 
 	_.mixin({
 		describe: function() {
-			const func = _.plugin.apply(_, arguments);
+			const func = _.plugin.apply(_, arguments), x = {};
 			var underscore = _;
 			//underscore = module($._.runInContext());
 			if (func.argv[0]) {
