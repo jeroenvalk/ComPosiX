@@ -92,12 +92,15 @@ _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 				if (_.isObject(object.it)) {
 					_(object.it).each(function (value, key) {
 						it(key, function (done) {
-							//console.log("ARGV", argv);
 							try {
 								const rd = channel.create(true, value).apply(null, argv);
 								channel.read(rd, Infinity, function (array) {
 									if (array.length > 0) {
-										const error = _.extend(new Error(), array[0]);
+										const error = new Error();
+										error.stack = array[0].stack;
+										if (array[0].CAUSE) {
+											error.stack += "\nCAUSED BY: \n" + array[0].CAUSE.stack;
+										}
 										done(error);
 									} else {
 										done();

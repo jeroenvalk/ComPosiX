@@ -15,7 +15,7 @@
 	"scripts": {
 		"prepare": "grunt",
 		"start": "node -i -e \"require('.').boot()\"",
-		"test": "mocha --require src/test/global.js src/test/specs/*.spec.js src/test/specs/**/*.spec.js"
+		"test": "mocha --full-trace --require src/test/global.js src/test/specs/*.spec.js src/test/specs/**/*.spec.js"
 	},
 	"devDependencies": {
 		"lodash": "~4.17.2",
