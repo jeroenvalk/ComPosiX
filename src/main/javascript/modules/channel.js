@@ -108,8 +108,9 @@ _.module("channel", ["emitter"], function (_, emitter, x) {
 
 	x.read = function cpx$channel$read(fd, amount, callback) {
 		fd = -fd;
+		var data;
 		if (fd > 0) {
-			var i, data, buf = state[fd][0];
+			var i, buf = state[fd][0];
 			if (buf) {
 				for (i = 0; i < buf.length; ++i) {
 					if (!buf[i]) break;
@@ -143,6 +144,11 @@ _.module("channel", ["emitter"], function (_, emitter, x) {
 			}
 			return continuation([], fd, amount, callback);
 		}
-		_.throw(14);
+		if (fd < 0) {
+			_.throw(14);
+		}
+		data = [];
+		callback && callback(data);
+		return data;
 	};
 });
