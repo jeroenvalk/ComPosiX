@@ -30,6 +30,7 @@ module.exports = function (_) {
 	};
 
 	const cache = {};
+	var result = null;
 
 	_.mixin({
 		require: function (name) {
@@ -55,30 +56,28 @@ module.exports = function (_) {
 			} else {
 				delete global._;
 			}
-			return cache[name];
+			return result;
 		},
 		plugin: function cpx$plugin() {
 			const argv = groupArguments(arguments);
-
 			if (!argv[1]) argv[1] = [];
-
-			const result = function cpx$plugin(_) {
-				const array = new Array(argv[1].length + 1);
-				for (var i = 1; i < array.length; ++i) {
-					array[i] = _.require(argv[1][i - 1]);
+			const func = function cpx$plugin(_) {
+				if (argv[0] && !func.nocache) {
+					cache[argv[0]] = func;
 				}
+				var i = argv[1].length, j = arguments.length, k = i + j;
+				const array = new Array(k);
 				array[0] = _;
-				_.extend(this, {
-					result: argv[2].apply(null, array)
-				});
-				return _;
+				while (i > 0) {
+					array[i] = _.require(argv[1][--i]);
+				}
+				while (j > 1) {
+					array[--k] = arguments[--j];
+				}
+				return argv[2].apply(this, array);
 			};
-			if (arguments[0] && argv[0]) {
-				cache[argv[0]] = result;
-			}
-			return _.extend(result, {argv: argv});
+			func.argv = argv;
+			return result = func;
 		}
 	});
-
-	return _;
 };

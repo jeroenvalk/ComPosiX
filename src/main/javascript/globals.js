@@ -41,11 +41,12 @@ module.exports = function ($) {
 		expect: $.expect || require('chai').expect
 	};
 
-	const plugin = require("./plugins/plugin")($._);
-	const pluginModule = plugin.require("module");
-	const pluginMocha = plugin.require("mocha");
+	require("./plugins/plugin")($._);
+	const pluginModule = $._.require("module");
+	const pluginMocha = $._.require("mocha");
 
-	pluginMocha(pluginModule(plugin));
+	pluginModule($._);
+	pluginMocha($._);
 
 	$._.mixin({
 		globals: function globals$globals(fn) {

@@ -26,31 +26,7 @@ _.plugin("module", function (_) {
 	};
 
 	const module = function cpx$module() {
-		var i, name = null, deps = [], func = null, res;
-
-		const Constructor = function () {
-			argv.push(this);
-			res = func.apply(x, argv);
-			argv.pop();
-		};
-
-			for (i = 0; i < arguments.length; ++i) {
-				if (_.isString(arguments[i])) {
-					name = arguments[i];
-				}
-				if (_.isArray(arguments[i])) {
-					deps = arguments[i];
-				}
-				if (_.isFunction(arguments[i])) {
-					func = arguments[i];
-				}
-			}
-		const argv = new Array(deps.length + 1);
-		argv[0] = _;
-		for (i = 1; i < argv.length; ++i) {
-			argv[i] = _.require(deps[i - 1]);
-		}
-		const y = new Constructor();
+		const y = {}, func = this.plugin.apply(this, arguments), res = func.call(x, this, y), name = func.argv[0];
 		if (name) {
 			lib[name] = res || y;
 		}

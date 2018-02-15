@@ -115,17 +115,18 @@ _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 
 	_.mixin({
 		describe: function() {
-			const func = _.plugin.apply(_, arguments), x = {};
+			const func = _.plugin.apply(_, arguments);
+			func.nocache = true;
 			var underscore = _;
 			//underscore = module($._.runInContext());
 			if (func.argv[0]) {
 				describe(func.argv[0], function () {
-					func.call(x, underscore, {named: false});
+					func.call(null, underscore);
 				});
 			} else {
-				func.call(x, underscore);
-				if (x.result instanceof Object) {
-					descr(x.result, underscore);
+				const result = func.call(null, underscore);
+				if (result instanceof Object) {
+					descr(result, underscore);
 				}
 			}
 		}
