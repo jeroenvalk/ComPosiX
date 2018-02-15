@@ -15,28 +15,22 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module('pipe', ['globals', 'typeOf', 'channel'], function (globals, typeOf, channel) {
-	//const logger = this.logger;
+_.module('pipe', ['globals', 'typeOf', 'globals', 'channel'], function (_, globals2, typeOf, globals, channel) {
 	const pipeSource = globals('pipe.source'), pipeTarget = globals('pipe.target');
 
-	var cause, stderr;
+	var cause;
 
 	const onReject = function pipe$onReject(error) {
 		if (cause) {
 			error.CAUSE = cause;
 		}
-		if (stderr) {
-			stderr.write(_.pick(error, ['type', 'stack', 'CAUSE.stack']));
-			stderr.end();
-		} else {
-			//logger.error(3, {error: error});
-			console.error(error);
-		}
+		throw error;
 	};
 
 	pipeSource.number = _.identity;
 	pipeTarget.number = function (wr) {
 		return {
+			result: 0,
 			amount: 1, // TODO: this can better be NaN
 			write: function (array) {
 				channel.write(wr, array);
@@ -86,8 +80,7 @@ _.module('pipe', ['globals', 'typeOf', 'channel'], function (globals, typeOf, ch
 		});
 	};
 
-	return function cpx$pipe(source, target, error) {
-		stderr = error && pipeTarget[typeOf(error)](error);
+	return function cpx$pipe(source, target) {
 		cause = new Error('pipe');
 		return Promise.all([source, target]).then(normalize).then(function (pair) {
 			helper(pair[0], pair[1]);
