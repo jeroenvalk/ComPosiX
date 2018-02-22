@@ -43,7 +43,6 @@ _.describe(['pipe'], function (_) {
 				pipe(0, 0).then(function(pair) {
 					expect(pair).to.equal(0);
 					self.write(null);
-					//return pipe(null, this);
 				}).catch(errorHandler(this));
 			},
 			error: function (expect, channel, pipe) {
@@ -69,7 +68,7 @@ _.describe(['pipe'], function (_) {
 					flag = true;
 					expect(value).to.equal(0);
 					expect(channel.read(ch.rd, Infinity)).to.deep.equal(msg);
-					pipe(null, self);
+					self.write(null);
 				}).catch(errorHandler(self));
 				expect(flag).to.equal(false);
 			}

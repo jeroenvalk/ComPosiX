@@ -18,7 +18,7 @@
 _.describe('ComPosiX', ['globals'], function (_, globals) {
     'use strict';
 
-    const expect = globals('mocha').expect;
+    const expect = require('chai').expect;
 
     /* global describe, it */
 
