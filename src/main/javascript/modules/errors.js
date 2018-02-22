@@ -20,7 +20,7 @@ _.module(function(_) {
 		1: _.constant("not implemented"),
 		2: _.constant("internal error"),
 		3: function(param) {
-			return "pipe error: " + JSON.stringify(param);
+			return "module not found: " + param;
 		},
 		10: function (param) {
 			return "expected object but got: " + JSON.stringify(param);
@@ -30,7 +30,10 @@ _.module(function(_) {
 		},
 		12: _.constant("channel descriptor must be a number"),
 		13: _.constant("writing to readable endpoint"),
-		14: _.constant("reading from writable endpoint")
+		14: _.constant("reading from writable endpoint"),
+		20: function(param) {
+			return "pipe error: " + JSON.stringify(param);
+		}
 	};
 
 	const throwError = function error$throw(errno, param) {

@@ -121,12 +121,13 @@ _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 			const func = _.plugin.apply(_, arguments);
 			func.nocache = true;
 			var underscore = _;
-			//underscore = module($._.runInContext());
 			if (func.argv[0]) {
 				describe(func.argv[0], function () {
 					func.call(null, underscore);
 				});
 			} else {
+				//underscore = underscore.runInContext();
+				//underscore.require('module')(underscore);
 				const result = func.call(null, underscore);
 				if (result instanceof Object) {
 					descr(result, underscore);

@@ -25,10 +25,18 @@ _.plugin("module", function (_) {
 		}
 	};
 
+	const helper = function(name, func, _) {
+		const y = {}, res = func.call(x, _, y);
+		lib[name] = res || y;
+	};
+
 	const module = function cpx$module() {
-		const y = {}, func = this.plugin.apply(this, arguments), res = func.call(x, this, y), name = func.argv[0];
+		const func = this.plugin.apply(this, arguments), name = func.argv[0];
+		func.type = 1; // module
 		if (name) {
-			lib[name] = res || y;
+			helper(name, func, this);
+		} else {
+			func.call(x, this);
 		}
 	};
 
@@ -38,19 +46,31 @@ _.plugin("module", function (_) {
 		}
 	};
 
-	const pluginRequest = _.require;
+	const pluginRequire = _.require;
 
 	_.mixin({
 		require: function(name) {
 			if (lib[name]) {
 				return lib[name];
 			}
-			const func = pluginRequest.call(this, name);
+			const func = pluginRequire.call(this, name);
 			if (!lib[name]) {
-				func.call(null, this);
+				switch(func.type) {
+					case 0:
+						// func is supposed to invoke _.module
+						func.call(null, this);
+						break;
+					case 1:
+						// func is a module in the plugin cache
+						// calling it creates a new instance
+						if (name === func.argv[0]) {
+							helper(name, func, this, {});
+						}
+						break;
+				}
 			}
 			if (!lib[name]) {
-				throw new Error();
+				_.throw(3, name);
 			}
 			return lib[name];
 		},
