@@ -17,7 +17,7 @@
 
 /* global _ */
 
-_.describe(function () {
+_.describe(function (_) {
 	return {
 		name: "swagger",
 		use: {

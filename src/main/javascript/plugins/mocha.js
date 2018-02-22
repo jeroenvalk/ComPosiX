@@ -35,11 +35,10 @@ _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 			});
 	};
 
-	const composix = function(_) {
-		var array = _.flatten(arguments).slice(1);
-		_.module(array, function() {
-			array = _.flatten(arguments).slice(1);
-		});
+	const composix = function(_, array) {
+		for (var i = 0; i < array.length; ++i) {
+			array[i] = _.require(array[i]);
+		}
 		return array;
 	};
 

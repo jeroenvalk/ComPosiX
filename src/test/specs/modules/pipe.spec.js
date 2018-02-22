@@ -17,7 +17,7 @@
 
 /* global _ */
 
-_.describe(['pipe'], function (pipe) {
+_.describe(['pipe'], function (_) {
 	const errorHandler = function(self, ignore) {
 		return function (e) {
 			if (!(e instanceof Error)) {

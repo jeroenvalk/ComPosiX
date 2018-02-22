@@ -27,7 +27,7 @@ const context = {
 global.context = context;
 require("../../../main/javascript/modules/composix.js");
 
-_.describe(function () {
+_.describe(function (_) {
 	return {
 		name: "recurse",
 		use: {

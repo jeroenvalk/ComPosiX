@@ -1,5 +1,5 @@
 /**
- * Copyright © 2017 dr. ir. Jeroen M. Valk
+ * Copyright © 2017, 2018 dr. ir. Jeroen M. Valk
  *
  * This file is part of ComPosiX. ComPosiX is free software: you can
  * redistribute it and/or modify it under the terms of the GNU Lesser General
@@ -17,7 +17,7 @@
 
 /* global _ */
 
-_.describe(function (inherit) {
+_.describe(function (_) {
 	return {
 		//name: "inherit",
 		it: {

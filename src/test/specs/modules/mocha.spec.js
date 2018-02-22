@@ -15,7 +15,7 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.describe(function () {
+_.describe(function (_) {
 	return {
 		name: "mocha",
 		use: {
