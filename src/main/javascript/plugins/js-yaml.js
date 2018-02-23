@@ -15,7 +15,7 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-module.exports = function(_) {
+_.plugin(function(_) {
 	const yaml = require('js-yaml');
 
 	_.module('js-yaml', ['globals', 'channel'], function(_, globals, channel) {
@@ -47,4 +47,4 @@ module.exports = function(_) {
 	});
 
 	return _;
-};
+});
