@@ -20,7 +20,11 @@ _.module('target', ['globals', 'channel'], function (_, globals, channel) {
 		undefined: function (obj) {
 			return {
 				amount: 1, // TODO: better set to NaN
-				write: _.unary(obj.write),
+				write: function(array) {
+					for (var i = 0; i < array.length; ++i) {
+						obj.write(array[i]);
+					}
+				},
 				end: function () {
 					if (obj.end) {
 						obj.end();
