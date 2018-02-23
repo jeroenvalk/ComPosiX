@@ -29,27 +29,43 @@ module.exports = function (_) {
 		return result;
 	};
 
-	const cache = {};
+	const cache = {}, search = [];
 	var result = null;
 
-	const pluginRequire = function plugin$require(name) {
-		if (cache[name]) {
-			return cache[name];
+	const recurse = function plugin$recurse(pathnames) {
+		const pathname = pathnames.pop();
+		if (pathname) {
+			try {
+				require.resolve(pathname);
+				return pathname;
+			} catch(e) {
+				return recurse(pathnames);
+			}
+		}
+		return null;
+	};
+
+	const resolve = function plugin$resolve(module) {
+		const pathnames = _.concat(["../modules/" + module, "../plugins/" + module], search);
+		for (var i = 2; i < pathnames.length; ++i) {
+			pathnames[i] = [pathnames[i], module].join("/");
+		}
+		const pathname = recurse(pathnames);
+		i = pathname.lastIndexOf("/");
+		return {
+			pathname: pathname,
+			name: pathname.substr(++i)
+		};
+	};
+
+	const pluginRequire = function plugin$require(module) {
+		const x = resolve(module);
+		if (cache[x.name]) {
+			return cache[x.name];
 		}
 		const _ = global._;
 		global._ = this;
-		var pathname = "../plugins/" + name;
-		try {
-			require.resolve(pathname);
-		} catch (e) {
-			pathname = "../modules/" + name;
-			try {
-				require.resolve(pathname)
-			} catch (e) {
-				pathname = null;
-			}
-		}
-		pathname && require(pathname);
+		x.pathname && require(x.pathname);
 		if (_) {
 			global._ = _;
 		} else {
@@ -96,4 +112,6 @@ module.exports = function (_) {
 	};
 
 	_.mixin(mixin);
+
+	return search;
 };
