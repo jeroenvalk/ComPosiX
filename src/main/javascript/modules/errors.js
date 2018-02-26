@@ -31,18 +31,31 @@ _.module(function(_) {
 		12: _.constant("channel descriptor must be a number"),
 		13: _.constant("writing to readable endpoint"),
 		14: _.constant("reading from writable endpoint"),
-		20: function(param) {
-			return "pipe error: " + JSON.stringify(param);
+		20: _.constant("pipe error"),
+		21: function(param) {
+			return "pipe: no source (1st arg) plugin for type: " + param.type;
+		},
+		22: function (param) {
+			return 'pipe: no target (2nd arg) plugin for type: ' + param.type;
 		}
 	};
 
-	const throwError = function error$throw(errno, param) {
+	const error = function error$error(errno, param) {
 		if (isFinite(errno) && errno > 0) {
 			throw new Error((msg[errno] ? msg[errno](param) : JSON.stringify(param)) + " (errno=" + errno + ")");
+		}
+		return null;
+	};
+
+	const throwError = function error$throw(errno, param) {
+		const e = error(errno, param);
+		if (e) {
+			throw e;
 		}
 	};
 
 	_.mixin({
+		error: error,
 		throw: throwError
 	});
 });

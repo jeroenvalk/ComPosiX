@@ -18,15 +18,6 @@
 _.module('pipe', ['globals', 'typeOf', 'globals', 'channel'], function (_, globals2, typeOf, globals, channel) {
 	const pipeSource = globals('pipe.source'), pipeTarget = globals('pipe.target');
 
-	var cause;
-
-	const onReject = function pipe$onReject(error) {
-		if (cause) {
-			error.CAUSE = cause;
-		}
-		throw error;
-	};
-
 	pipeSource.number = _.identity;
 	pipeTarget.number = function (wr) {
 		return {
@@ -63,10 +54,10 @@ _.module('pipe', ['globals', 'typeOf', 'globals', 'channel'], function (_, globa
 	const normalize = function (pair) {
 		const normalizeSource = pipeSource[typeOf(pair[0])], normalizeTarget = pipeTarget[typeOf(pair[1])];
 		if (!_.isFunction(normalizeSource)) {
-			throw new Error('pipe: no source (1st arg) plugin for type: ' + typeOf(pair[0]));
+			_.throw(21, {type: typeOf(pair[0])});
 		}
 		if (!_.isFunction(normalizeTarget)) {
-			throw new Error('pipe: no target (2nd arg) plugin for type: ' + typeOf(pair[1]));
+			_.throw(22, {type: typeOf(pair[1])});
 		}
 		return Promise.resolve(normalizeSource(pair[0])).then(function (source) {
 			if (!isFinite(source)) {
@@ -81,10 +72,9 @@ _.module('pipe', ['globals', 'typeOf', 'globals', 'channel'], function (_, globa
 	};
 
 	return function cpx$pipe(source, target) {
-		cause = new Error('pipe');
 		return Promise.all([source, target]).then(normalize).then(function (pair) {
 			helper(pair[0], pair[1]);
 			return pair[1].result;
-		}).catch(onReject);
+		}).catch(_.cause(20));
 	};
 });

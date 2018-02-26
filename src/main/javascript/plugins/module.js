@@ -40,9 +40,27 @@ _.plugin("module", function (_) {
 		}
 	};
 
-	const throwError = function module$throw(errno, param) {
+	const error = function module$error(errno, param) {
 		if (isFinite(errno) && errno > 0) {
-			throw new Error(JSON.stringify(param) + " (errno=" + errno + ")");
+			return new Error(JSON.stringify(param) + " (errno=" + errno + ")");
+		}
+		return null;
+	};
+
+	const throwError = function module$throw(errno, param) {
+		const e = error(errno, param);
+		if (e) {
+			throw e;
+		}
+	};
+
+	const cause = function module$cause(errno, param) {
+		const cause = error(errno, param);
+		return function(e) {
+			if (cause) {
+				e.CAUSE = cause;
+			}
+			throw e;
 		}
 	};
 
@@ -75,6 +93,8 @@ _.plugin("module", function (_) {
 			return lib[name];
 		},
 		module: module,
-		throw: throwError
+		error: error,
+		throw: throwError,
+		cause: cause
 	});
 });
