@@ -59,27 +59,24 @@ _.module('target', ['globals', 'channel'], function (_, globals, channel) {
 			},
 			end: function () {
 				var result = func.call(func, argv);
-				if (result instanceof Array) {
-					if (!(result[0] instanceof Array)) {
-						result = [result];
-					}
-				} else {
-					result = [[result]];
-				}
-				if (!wr) {
-					switch (typeof result[0][0]) {
+				if (!(result instanceof Array)) {
+					switch(typeof result) {
 						case 'string':
-							wr = createChannel(false);
+							result = [Buffer.from(result)];
 							break;
 						case 'object':
-							wr = createChannel(true);
+							result = [result];
+							break;
+						default:
+							result = [Buffer.from(result.toString())];
 							break;
 					}
 				}
-				for (i = 0; i < result.length; ++i) {
-					channel.write(ch.wr, result[i]);
-					channel.write(ch.wr, null);
+				if (!wr) {
+					wr = createChannel(!(result[0] instanceof Buffer));
 				}
+				channel.write(wr, result);
+				channel.write(wr, null);
 			}
 		}
 	};
