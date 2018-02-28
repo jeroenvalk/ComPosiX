@@ -16,12 +16,19 @@
  */
 
 _.describe(['channel', 'pipe', 'target'], function(_, channel, pipe) {
+	const fail = function(self) {
+		return function(e) {
+			self.write(_.pick(e, ['type', 'stack', 'CAUSE.stack']));
+			self.write(null);
+		};
+	};
+
 	const msg = Buffer.from("Hello World!");
 	const passthrough = function target$passthrough(expect) {
 		const self = this;
 		const PassThrough = require('stream').PassThrough;
 		const target = new PassThrough(), ch = channel.create();
-		pipe(ch.rd, target);
+		pipe(ch.rd, target).catch(fail(this));
 		target.on("data", function(chunk) {
 			expect(chunk).to.equal(msg);
 		});
