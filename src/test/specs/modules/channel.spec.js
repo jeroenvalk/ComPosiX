@@ -18,9 +18,46 @@
 /* global _ */
 
 _.describe(function (_) {
+	_.mixin({
+		throw: function(errno, param) {
+			const e = _.error(errno, param);
+			if (e) {
+				e.errno = errno;
+				throw e;
+			}
+		}
+	});
+
+	const expectErrno = function(expect, errno, func) {
+		try {
+			func();
+			throw null;
+		} catch(e) {
+			expect(e).to.not.equal(null);
+			if (e) {
+				expect(e.errno).to.equal(errno);
+			}
+		}
+	};
+
 	return {
 		name: "channel",
 		it: {
+			error: function(expect, channel) {
+				expectErrno(expect, 12, function() {
+					channel.read(NaN);
+				});
+				expectErrno(expect, 12, function() {
+					channel.write(NaN);
+				});
+				expectErrno(expect, 12, function() {
+					channel.read('1');
+				});
+				expectErrno(expect, 12, function() {
+					channel.read(undefined);
+				});
+				return true;
+			},
 			simple: function (expect, channel) {
 				const ch = channel.create(true), rd = ch.rd, wr = ch.wr;
 				expect(channel.read(rd, 0)).to.deep.equal([]);

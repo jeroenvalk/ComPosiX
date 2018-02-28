@@ -16,6 +16,8 @@
  */
 
 _.plugin("module", function (_) {
+	const isInteger = Number.isInteger;
+
 	const x = {}, lib = {
 		context: {
 			proxyRequest: {},
@@ -41,7 +43,7 @@ _.plugin("module", function (_) {
 	};
 
 	const error = function module$error(errno, param) {
-		if (isFinite(errno) && errno > 0) {
+		if (isInteger(errno) && errno > 0) {
 			return new Error(JSON.stringify(param) + " (errno=" + errno + ")");
 		}
 		return null;

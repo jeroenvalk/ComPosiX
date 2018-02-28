@@ -16,7 +16,7 @@
  */
 
 _.module("channel", ["emitter"], function (_, emitter, x) {
-	const state = {0: [{push: _.identity}, true]}, push = Array.prototype.push;
+	const state = {0: [{push: _.identity}, true]}, push = Array.prototype.push, isInteger = Number.isInteger;
 	var current = 0;
 
 	const continuation = function (buf, fd, amount, callback) {
@@ -71,6 +71,7 @@ _.module("channel", ["emitter"], function (_, emitter, x) {
 	};
 
 	x.write = function cpx$channel$write(fd) {
+		_.throw(isInteger(fd) ? (fd < 0 ? 13 : 0) : 12);
 		var i;
 		if (fd > 0) {
 			const array = _.flatten(arguments), paused = state[fd][0], objectMode = state[fd][1],
@@ -103,10 +104,10 @@ _.module("channel", ["emitter"], function (_, emitter, x) {
 
 			return 0;
 		}
-		_.throw(isNaN(fd) ? 12 : (fd < 0 ? 13 : 0));
 	};
 
 	x.read = function cpx$channel$read(fd, amount, callback) {
+		_.throw(isInteger(fd) ? (fd > 0 ? 14 : 0) : 12);
 		fd = -fd;
 		var data;
 		if (fd > 0) {
@@ -143,9 +144,6 @@ _.module("channel", ["emitter"], function (_, emitter, x) {
 				return data;
 			}
 			return continuation([], fd, amount, callback);
-		}
-		if (fd < 0) {
-			_.throw(14);
 		}
 		data = [];
 		callback && callback(data);
