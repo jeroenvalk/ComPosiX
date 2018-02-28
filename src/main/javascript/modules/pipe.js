@@ -16,12 +16,14 @@
  */
 
 _.module('pipe', ['globals', 'typeOf', 'globals', 'channel'], function (_, globals2, typeOf, globals, channel) {
-	const pipeSource = globals('pipe.source'), pipeTarget = globals('pipe.target');
+	const pipeSource = globals('pipe.source'), pipeTarget = globals('pipe.target'), isInteger = Number.isInteger;
 
 	pipeSource.number = _.identity;
 	pipeTarget.number = function (wr) {
+		_.throw(isInteger(wr) ? (wr < 0 ? 13 : 0) : 24)
 		return {
-			result: 0,
+			type: 'target',
+			result: NaN,
 			amount: 1, // TODO: this can better be NaN
 			write: function (array) {
 				channel.write(wr, array);
@@ -49,32 +51,40 @@ _.module('pipe', ['globals', 'typeOf', 'globals', 'channel'], function (_, globa
 			});
 		};
 		recurse();
+		return target.result;
 	};
 
-	const normalize = function (pair) {
-		const normalizeSource = pipeSource[typeOf(pair[0])], normalizeTarget = pipeTarget[typeOf(pair[1])];
-		if (!_.isFunction(normalizeSource)) {
-			_.throw(21, {type: typeOf(pair[0])});
-		}
-		if (!_.isFunction(normalizeTarget)) {
-			_.throw(22, {type: typeOf(pair[1])});
-		}
-		return Promise.resolve(normalizeSource(pair[0])).then(function (source) {
-			if (!isFinite(source)) {
-				_.throw();
+	const _source = function(source) {
+		return Promise.resolve(source).then(function(source) {
+			const func = pipeSource[typeOf(source)];
+			if (!_.isFunction(func)) {
+				return Promise.reject(_.error(21, {type: typeOf(source)}));
 			}
-			return Promise.resolve(normalizeTarget(pair[1])).then(function (target) {
-				pair[0] = source;
-				pair[1] = target;
-				return pair;
-			});
+			return func(source);
+		}).then(function(rd) {
+			_.throw(isInteger(rd) ? (rd > 0 ? 14 : 0) : 23);
+			return rd;
 		});
 	};
 
-	return function cpx$pipe(source, target) {
-		return Promise.all([source, target]).then(normalize).then(function (pair) {
-			helper(pair[0], pair[1]);
-			return pair[1].result;
-		}).catch(_.cause(20));
+	const _target = function(target) {
+		return Promise.resolve(target).then(function(target) {
+			const func = pipeTarget[typeOf(target)];
+			if (!_.isFunction(func)) {
+				return Promise.reject(_.error(22, {type: typeOf(target)}));
+
+			}
+			return func(target);
+		}).then(function(obj) {
+			_.throw(obj && obj.type === 'target' ? 0 : 24);
+			return obj;
+		});
 	};
+
+	return _.extend(function cpx$pipe(source, target) {
+		return Promise.all([_source(source), _target(target)]).then(_.spread(helper)).catch(_.cause(20));
+	}, {
+		source: _source,
+		target: _target
+	});
 });

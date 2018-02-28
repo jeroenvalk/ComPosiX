@@ -19,6 +19,7 @@ _.module('target', ['globals', 'channel'], function (_, globals, channel) {
 	const objectTarget = _.extend(globals('target.object'), {
 		undefined: function (obj) {
 			return {
+				type: 'target',
 				amount: 1, // TODO: better set to NaN
 				write: function(array) {
 					for (var i = 0; i < array.length; ++i) {

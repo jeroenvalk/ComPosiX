@@ -16,6 +16,8 @@
  */
 
 _.module(function(_) {
+	const isInteger = Number.isInteger;
+
 	const msg = {
 		1: _.constant("not implemented"),
 		2: _.constant("internal error"),
@@ -33,16 +35,22 @@ _.module(function(_) {
 		14: _.constant("reading from writable endpoint"),
 		20: _.constant("pipe error"),
 		21: function(param) {
-			return "pipe: no source (1st arg) plugin for type: " + param.type;
+			return "pipe.source: no plugin for type: " + param.type;
 		},
 		22: function (param) {
-			return 'pipe: no target (2nd arg) plugin for type: ' + param.type;
+			return 'pipe.target: no plugin for type: ' + param.type;
+		},
+		23: function(param) {
+			return 'pipe.source: invalid plugin for type: ' + param.type;
+		},
+		24: function(param) {
+			return 'pipe.target: invalid plugin for type: ' + param.type;
 		}
 	};
 
 	const error = function error$error(errno, param) {
-		if (isFinite(errno) && errno > 0) {
-			throw new Error((msg[errno] ? msg[errno](param) : JSON.stringify(param)) + " (errno=" + errno + ")");
+		if (isInteger(errno) && errno > 0) {
+			return new Error((msg[errno] ? msg[errno](param) : JSON.stringify(param)) + " (errno=" + errno + ")");
 		}
 		return null;
 	};
