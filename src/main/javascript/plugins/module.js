@@ -50,14 +50,14 @@ _.plugin("module", function (_) {
 	};
 
 	const throwError = function module$throw(errno, param) {
-		const e = error(errno, param);
+		const e = _.error(errno, param);
 		if (e) {
 			throw e;
 		}
 	};
 
 	const cause = function module$cause(errno, param) {
-		const cause = error(errno, param);
+		const cause = _.error(errno, param);
 		return function(e) {
 			if (cause) {
 				e.CAUSE = cause;
