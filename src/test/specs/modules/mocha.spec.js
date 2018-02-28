@@ -16,6 +16,13 @@
  */
 
 _.describe(function (_) {
+	const fail = function(self) {
+		return function(e) {
+			self.write(_.pick(e, ['type', 'stack', 'CAUSE.stack']));
+			self.write(null);
+		};
+	};
+
 	return {
 		name: "mocha",
 		use: {
@@ -26,7 +33,7 @@ _.describe(function (_) {
 			sync: function (expect, pipe) {
 				// for successfull tests use the pipe method send an EOF to this testcase
 				// otherwise the test will run into a timeout
-				pipe(null, this);
+				pipe(null, this).catch(fail(this));
 				// note that null is used as EOF symbol (as implemented in source.js)
 				// also note that 'this' is a writable target (see target.js for supported writables)
 			},
@@ -65,7 +72,7 @@ _.describe(function (_) {
 
 				const EOF = function (self) {
 					return function () {
-						pipe(null, self);
+						return pipe(null, self);
 					};
 				};
 
@@ -73,7 +80,7 @@ _.describe(function (_) {
 					const fatal = new Error('internal error');
 					fatal.type = 'FATAL';
 					return function (error) {
-						pipe(error, self, {
+						return pipe(error, self, {
 							write: function (err) {
 								fatal.CAUSE = err;
 								console.error('ERROR', fatal);
@@ -88,7 +95,7 @@ _.describe(function (_) {
 					throw _.extend(new Error(), {type: 'INFO'});
 					//throw _.extend(new Error(), {type: 'ERROR'});
 					//throw _.extend(new Error(), {type: 'FATAL'});
-				}).then(EOF(this), ERR(this)); // use ERR function to catch errors
+				}).then(EOF(this), ERR(this)).catch(fail(this)); // use ERR function to catch errors
 			}
 		}
 	};
