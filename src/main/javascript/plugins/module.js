@@ -69,7 +69,10 @@ _.plugin("module", function (_) {
 	const pluginRequire = _.require;
 
 	_.mixin({
-		require: function(name) {
+		require: function(name, plugin) {
+			if (plugin) {
+				return pluginRequire.call(this, name);
+			}
 			if (lib[name]) {
 				return lib[name];
 			}

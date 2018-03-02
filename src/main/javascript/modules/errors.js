@@ -15,7 +15,7 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module(function(_) {
+_.module('errors', function(_) {
 	const isInteger = Number.isInteger;
 
 	const msg = {
