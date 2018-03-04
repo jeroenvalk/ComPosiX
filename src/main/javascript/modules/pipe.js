@@ -25,6 +25,7 @@ _.module('pipe', ['globals', 'typeOf', 'globals', 'channel'], function (_, globa
 			type: 'target',
 			result: NaN,
 			amount: 1, // TODO: this can better be NaN
+			forever: true,
 			write: function (array) {
 				channel.write(wr, array);
 			},
@@ -41,7 +42,7 @@ _.module('pipe', ['globals', 'typeOf', 'globals', 'channel'], function (_, globa
 				target.write(array, k += array.length);
 				if (array.length < target.amount) {
 					target.end(k);
-					if (k > 0) {
+					if (target.forever && k > 0) {
 						k = 0;
 						recurse();
 					}

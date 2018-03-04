@@ -55,6 +55,7 @@ _.module('target', ['globals', 'channel'], function (_, globals, channel) {
 				callback = resolve;
 			}),
 			amount: Infinity,
+			forever: true,
 			write: function (array) {
 				argv = array;
 			},
