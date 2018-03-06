@@ -41,7 +41,8 @@ module.exports = function ($) {
 		expect: $.expect || require('chai').expect
 	};
 
-	require("./plugins/plugin")($._);
+	require(".")($._);
+	$._.require('plugin')($._)
 	const pluginModule = $._.require("module");
 	const pluginMocha = $._.require("mocha");
 

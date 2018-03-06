@@ -15,8 +15,10 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-module.exports = function (_) {
+_.plugin(function (_) {
 	const indexOf = {s: 0, o: 1, f: 2};
+
+	const cpxRequire = _.require;
 
 	const groupArguments = function (argv) {
 		const result = new Array(3);
@@ -29,48 +31,14 @@ module.exports = function (_) {
 		return result;
 	};
 
-	const cache = {}, search = [];
+	const cache = {};
 	var result = null;
 
-	const recurse = function plugin$recurse(pathnames) {
-		const pathname = pathnames.pop();
-		if (pathname) {
-			try {
-				require.resolve(pathname);
-				return pathname;
-			} catch(e) {
-				return recurse(pathnames);
-			}
-		}
-		return null;
-	};
-
-	const resolve = function plugin$resolve(module) {
-		const pathnames = _.concat(["../modules/" + module, "../plugins/" + module], search);
-		for (var i = 2; i < pathnames.length; ++i) {
-			pathnames[i] = [pathnames[i], module].join("/");
-		}
-		const pathname = recurse(pathnames);
-		i = pathname.lastIndexOf("/");
-		return {
-			pathname: pathname,
-			name: pathname.substr(++i)
-		};
-	};
-
 	const pluginRequire = function plugin$require(module) {
-		const x = resolve(module);
-		if (cache[x.name]) {
-			return cache[x.name];
+		if (cache[module]) {
+			return cache[module];
 		}
-		const _ = global._;
-		global._ = this;
-		x.pathname && require(x.pathname);
-		if (_) {
-			global._ = _;
-		} else {
-			delete global._;
-		}
+		cpxRequire(module)(this);
 		return result;
 	};
 
@@ -112,6 +80,4 @@ module.exports = function (_) {
 	};
 
 	_.mixin(mixin);
-
-	return search;
-};
+});

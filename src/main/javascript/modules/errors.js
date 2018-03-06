@@ -22,7 +22,7 @@ _.module('errors', function(_) {
 		1: _.constant("not implemented"),
 		2: _.constant("internal error"),
 		3: function(param) {
-			return "module not found: " + param;
+			return "module not found: " + param.module + ": PATH=" + param.search.join(';');
 		},
 		10: function (param) {
 			return "expected object but got: " + JSON.stringify(param);
