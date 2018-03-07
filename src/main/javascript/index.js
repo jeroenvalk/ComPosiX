@@ -15,14 +15,30 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-module.exports = function(_) {
-	var result = null;
-	_.mixin({
-		require: require,
-		plugin: function(func) {
-			result = func(this);
+module.exports = function (_) {
+	const boot = {
+		extend: _.extend,
+		results: [],
+		require: _.extend(function (module) {
+			const underscore = global._;
+			global._ = this;
+			require(module);
+			if (underscore) {
+				global._ = underscore;
+			} else {
+				delete global._;
+			}
+		}, {
+			resolve: require.resolve
+		}),
+		plugin: function (func) {
+			this.results.push(func(this));
+		},
+		runInContext: function() {
+			return _.runInContext();
 		}
-	});
-	global._ = _; _.require(_.require.resolve('./plugins/require')); delete global._;
-	return result;
+	};
+
+	boot.require(boot.require.resolve('./plugins/require'));
+	return boot.results[0];
 };

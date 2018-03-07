@@ -118,6 +118,7 @@ _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 	_.mixin({
 		describe: function() {
 			const underscore = _.runInContext();
+			underscore.require('plugin')(underscore);
 			underscore.require('module')(underscore);
 			const func = underscore.plugin.apply(underscore, arguments);
 			func.nocache = true;

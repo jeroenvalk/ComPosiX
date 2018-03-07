@@ -15,16 +15,16 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.plugin(function(_) {
-	const require = _.require, search = ["./modules","./plugins"];
+_.plugin(function (boot) {
+	const bootRequire = boot.require, search = ["./modules", "./plugins"];
 
 	const recurse = function plugin$recurse(pathnames) {
 		const pathname = pathnames.pop();
 		if (pathname) {
 			try {
-				require.resolve(pathname);
+				bootRequire.resolve(pathname);
 				return pathname;
-			} catch(e) {
+			} catch (e) {
 				return recurse(pathnames);
 			}
 		}
@@ -32,34 +32,55 @@ _.plugin(function(_) {
 	};
 
 	const resolve = function plugin$resolve(module) {
-		const pathname = recurse(_.map(search, function(dir) {
+		const pathname = recurse(this.map(search, function (dir) {
 			return [dir, module].join("/");
 		}));
 		if (!pathname) {
-			_.throw(3, {
+			this.throw(3, {
 				module: module,
 				search: search
 			});
 		}
-		return {
-			pathname: pathname,
-			name: module
-		};
+		return pathname;
 	};
 
-	_.mixin({
-		require: function cpx$require(module) {
-			return function(_) {
-				const x = resolve(module);
-				const underscore = global._;
-				global._ = _;
-				x.pathname && require(x.pathname);
-				if (underscore) {
-					global._ = underscore;
-				} else {
-					delete global._;
-				}
-			}
+	const _require = _.extend(function cpx$require(module) {
+		return function (_) {
+			bootRequire.call(_, resolve.call(_, module));
+		};
+	}, {
+		search: search
+	});
+
+	var plugin = null;
+
+	boot.extend(boot, {
+		require: _require,
+		mixin: function (mixin) {
+			plugin = mixin;
 		}
 	});
+
+	const runInContext = function cpx$runInContext() {
+		const _ = boot.runInContext();
+
+		_.mixin({
+			require: function (module) {
+				if (module === 'plugin') {
+					if (!plugin) {
+						bootRequire.call(boot, './plugins/plugin');
+					}
+					return function(_) {
+						_.mixin(plugin);
+					}
+				}
+				return _require(module);
+			},
+			runInContext: runInContext
+		});
+
+		return _;
+	};
+
+	return runInContext();
 });

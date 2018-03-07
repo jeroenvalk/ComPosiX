@@ -35,15 +35,16 @@ _.plugin(function (_) {
 	var result = null;
 
 	const pluginRequire = function plugin$require(module) {
+		const _ = this;
 		if (cache[module]) {
 			return cache[module];
 		}
-		cpxRequire(module)(this);
+		cpxRequire(module)(_);
 		return result;
 	};
 
 	const plugin = function plugin$plugin() {
-		const argv = groupArguments(arguments);
+		const _ = this, argv = groupArguments(arguments);
 		if (!argv[1]) argv[1] = [];
 		const func = function cpx$plugin(_) {
 			if (argv[0] && !func.nocache) {
@@ -65,18 +66,9 @@ _.plugin(function (_) {
 		return result = func;
 	};
 
-	const _runInContext = _.runInContext;
-
-	const runInContext = function plugin$runInContext() {
-		const _ = _runInContext.apply(this, arguments);
-		_.mixin(mixin);
-		return _;
-	};
-
 	const mixin = {
 		require: pluginRequire,
-		plugin: plugin,
-		runInContext: runInContext
+		plugin: plugin
 	};
 
 	_.mixin(mixin);

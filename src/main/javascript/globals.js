@@ -29,7 +29,7 @@ module.exports = function ($) {
 	$.url = $.url || require('url');
 	$.stream = $.stream || require('stream');
 	$.http = $.http || require('http');
-	$._ = $._ || require('lodash');
+	$._ = require(".")($._ || require('lodash'));
 	$.processor = $.processor || require('./processor');
 
 	var globals = {
@@ -41,8 +41,7 @@ module.exports = function ($) {
 		expect: $.expect || require('chai').expect
 	};
 
-	require(".")($._);
-	$._.require('plugin')($._)
+	$._.require('plugin')($._);
 	const pluginModule = $._.require("module");
 	const pluginMocha = $._.require("mocha");
 
