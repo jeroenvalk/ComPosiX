@@ -134,8 +134,4 @@ _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 			}
 		}
 	});
-
-	return {
-		describe: descr
-	};
 });

@@ -44,18 +44,16 @@ _.plugin(function (boot) {
 		return pathname;
 	};
 
-	const _require = _.extend(function cpx$require(module) {
+	const require = function (module) {
 		return function (_) {
 			bootRequire.call(_, resolve.call(_, module));
 		};
-	}, {
-		search: search
-	});
+	};
 
 	var plugin = null;
 
 	boot.extend(boot, {
-		require: _require,
+		require: require,
 		mixin: function (mixin) {
 			plugin = mixin;
 		}
@@ -65,7 +63,7 @@ _.plugin(function (boot) {
 		const _ = boot.runInContext();
 
 		_.mixin({
-			require: function (module) {
+			require: _.extend(function cpx$require(module) {
 				if (module === 'plugin') {
 					if (!plugin) {
 						bootRequire.call(boot, './plugins/plugin');
@@ -74,8 +72,10 @@ _.plugin(function (boot) {
 						_.mixin(plugin);
 					}
 				}
-				return _require(module);
-			},
+				return require(module);
+			}, {
+				search: search
+			}),
 			runInContext: runInContext
 		});
 

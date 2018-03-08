@@ -11,7 +11,7 @@
 	"bin": {
 		"cpx": "src/bin/cpx.js"
 	},
-	"main": "src/main/javascript/plugins/plugin.js",
+	"main": "src/main/javascript/index.js",
 	"scripts": {
 		"prepare": "grunt",
 		"start": "node -i -e \"require('.').boot()\"",
