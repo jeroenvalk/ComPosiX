@@ -19,7 +19,7 @@ _.module("swagger", ["channel", "request"], function (_, channel, request) {
 	const rd = request.rd, wr = request.wr;
 
 	const auth = "https://raw.githubusercontent.com/jeroenvalk/swagger/master/src";
-	const bodyOf = _.property("body.0");
+	const bodyOf = _.property("body");
 	var org;
 
 	const resolveAll = function (collection) {

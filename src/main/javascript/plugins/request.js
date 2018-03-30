@@ -18,7 +18,7 @@
 _.plugin("request", function (_) {
 	const https = require("https"), url = require("url");
 
-	_.module("request", ["channel", "pipe"], function (_, channel, pipe) {
+	_.module("request", ["channel", "pipe", "target"], function (_, channel, pipe) {
 		const i = channel.create(true), o = channel.create(true);
 
 		var busy = false, count = 0;
@@ -35,9 +35,26 @@ _.plugin("request", function (_) {
 				});
 				res.on("end", function () {
 					const buffer = Buffer.concat(result);
+					var body;
+					if (_.get(options, "headers.accept") === "application/json") {
+						try {
+							body = JSON.parse(buffer.toString());
+						} catch (e) {
+							body = null;
+						}
+					} else {
+						if (res.headers["content-type"] === "application/json") {
+							body = JSON.parse(buffer.toString());
+						} else {
+							body = null;
+						}
+					}
 					channel.write(o.wr, {
 						statusCode: res.statusCode,
-						body: res.headers["content-type"] === "application/json" ? JSON.parse(buffer.toString()) : null
+						headers: {
+							contentType: res.headers["content-type"]
+						},
+						body: body
 					});
 					if (--count === 0) {
 						busy = false;
