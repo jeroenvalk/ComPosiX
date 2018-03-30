@@ -34,7 +34,8 @@ _.module('target', ['globals', 'channel'], function (_, globals, channel) {
 					}
 				}
 			}
-		}
+		},
+		target: _.identity
 	});
 
 	const targetObject = function target$object(obj) {

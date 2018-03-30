@@ -73,9 +73,12 @@ _.module('pipe', ['globals', 'typeOf', 'globals', 'channel'], function (_, globa
 			const func = pipeTarget[typeOf(target)];
 			if (!_.isFunction(func)) {
 				return Promise.reject(_.error(22, {type: typeOf(target)}));
-
 			}
-			return func(target);
+			try {
+				return func(target);
+			} catch(e) {
+				return Promise.reject(e);
+			}
 		}).then(function(obj) {
 			_.throw(obj && obj.type === 'target' ? 0 : 24);
 			return obj;

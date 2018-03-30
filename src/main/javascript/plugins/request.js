@@ -15,39 +15,53 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.plugin("request", function(_) {
+_.plugin("request", function (_) {
 	const https = require("https"), url = require("url");
 
-	_.module("request", ["channel"], function(_, channel) {
+	_.module("request", ["channel", "pipe"], function (_, channel, pipe) {
 		const i = channel.create(true), o = channel.create(true);
-		const func = channel.create(true, function() {
-			const self = this;
-			_.map(arguments, function(options) {
+
+		var busy = false, count = 0;
+
+		const process = function (options) {
+			++count;
+			if (options.url) {
 				_.extend(options, url.parse(options.url));
-				https.request(options, function(res) {
-					const result = [];
-					res.on("data", function(chunk) {
-						result.push(chunk);
-					})
-					res.on("end", function() {
-						const buffer = Buffer.concat(result);
-						self.write({body: [JSON.parse(buffer.toString())]});
-						self.write(null);
-					});
-				}).end();
-			});
-		});
-		const recurse = function(depth) {
-			channel.read(i.rd, Infinity, function(array) {
-				channel.read(func.apply(null, array), Infinity, function(array) {
-					channel.write(o.wr, array);
-					channel.write(o.wr, null);
-					if (--depth > 0) recurse(depth);
+			}
+			https.request(options, function (res) {
+				const result = [];
+				res.on("data", function (chunk) {
+					result.push(chunk);
 				});
-			});
+				res.on("end", function () {
+					const buffer = Buffer.concat(result);
+					channel.write(o.wr, {
+						statusCode: res.statusCode,
+						body: res.headers["content-type"] === "application/json" ? JSON.parse(buffer.toString()) : null
+					});
+					if (--count === 0) {
+						busy = false;
+						channel.write(o.wr, null);
+					}
+				});
+			}).end(options.body ? options.body['#'] : undefined);
 		};
-		recurse(Infinity);
+		pipe(i.rd, {
+			type: 'target',
+			amount: 1,
+			forever: true,
+			write: function (array) {
+				if (busy) {
+					throw new Error('busy');
+				}
+				_.each(array, process);
+			},
+			end: function () {
+				busy = true;
+			}
+		});
 		return {
+			type: "node",
 			rd: o.rd,
 			wr: i.wr
 		};
