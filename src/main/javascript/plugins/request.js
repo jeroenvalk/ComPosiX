@@ -51,9 +51,9 @@ _.plugin("request", function (_) {
 					}
 					channel.write(o.wr, {
 						statusCode: res.statusCode,
-						headers: {
-							contentType: res.headers["content-type"]
-						},
+						headers: _.fromPairs(_.map(res.headers, function(value, key) {
+							return [_.camelCase(key), value];
+						})),
 						body: body
 					});
 					if (--count === 0) {
