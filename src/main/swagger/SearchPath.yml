@@ -1,0 +1,77 @@
+---
+# Copyright © 2018 dr. ir. Jeroen M. Valk
+#
+# This file is part of ComPosiX. ComPosiX is free software: you can
+# redistribute it and/or modify it under the terms of the GNU Lesser General
+# Public License as published by the Free Software Foundation, either version 3
+# of the License, or (at your option) any later version.
+#
+# ComPosiX is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
+
+swagger: 2.0
+info:
+  title: searchPath
+  version: 1.0
+paths:
+  /current:
+    get:
+      operationId: searchPath$getCurrent
+      parameters:
+        - $ref: #/parameters/baseURL
+    post:
+      operationId: searchPath$postCurrent
+      parameters:
+        - $ref: #/parameters/baseURL
+        - $ref: #/parameters/pathname
+          required: false
+        - in: body
+          name: body
+          scheme:
+            type:
+              $ref: #/definitions/RequestOptions
+      responses:
+        200:
+          description: OK
+  /resolve:
+    get:
+      operationId: searchPath$resolve
+      parameters:
+        - $ref: #/parameters/baseURL
+        - $ref: #/parameters/pathname
+      responses:
+        200:
+          description: OK
+parameters:
+  baseURL:
+    in: query
+    name: baseURL
+    type: string
+    required: true
+  pathname:
+    in: query
+    name: pathname
+    required: true
+definitions:
+  RequestOptions:
+    type: object
+    required: [hostname, path]
+    properties:
+      protocol:
+        type: string
+        enum: [https,file]
+        default: https
+      method:
+        type: string
+        enum: [OPTIONS,GET,POST,PUT,DELETE]
+        default: OPTIONS
+      hostname:
+        type: string
+        default: localhost
+      path:
+        type: string
