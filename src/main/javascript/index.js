@@ -22,12 +22,13 @@ module.exports = function (_) {
 		require: _.extend(function (module) {
 			const underscore = global._;
 			global._ = this;
-			require(module);
+			const result = require(module);
 			if (underscore) {
 				global._ = underscore;
 			} else {
 				delete global._;
 			}
+			return result;
 		}, {
 			resolve: require.resolve
 		}),

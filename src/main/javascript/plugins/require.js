@@ -36,17 +36,28 @@ _.plugin(function (boot) {
 			return [dir, module].join("/");
 		}));
 		if (!pathname) {
-			this.throw(3, {
-				module: module,
-				search: search
-			});
+			try {
+				bootRequire.resolve(module);
+			} catch(e) {
+				this.throw(3, {
+					module: module,
+					search: search
+				});
+			}
 		}
 		return pathname;
 	};
 
 	const require = function (module) {
 		return function (_) {
-			bootRequire.call(_, resolve.call(_, module));
+			const resolved = resolve.call(_, module);
+			if (resolved) {
+				bootRequire.call(_, resolved);
+			} else {
+				_.module(module, function() {
+					return bootRequire.call(_, module);
+				});
+			}
 		};
 	};
 

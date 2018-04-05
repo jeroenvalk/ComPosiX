@@ -58,6 +58,20 @@ _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 		return argv;
 	};
 
+
+	const invokeAndDone = function(func, done) {
+		try {
+			const result = func.call(null);
+			if (result instanceof Promise) {
+				result.then(function() {
+					done();
+				}, done);
+			}
+		} catch(e) {
+			done(e);
+		}
+	};
+
 	const descr = function cpx$mocha$describe(object, _) {
 		if (object.name) {
 			describe(object.name, function () {
@@ -70,15 +84,7 @@ _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 				}
 				before(function (done) {
 					if (_.isFunction(object.before)) {
-						channel.read(channel.create(true, object.before).call(null, null), Infinity, function (array) {
-							use = array[0].use || use;
-							try {
-								argv = cbDescribe(_, use);
-								done();
-							} catch(e) {
-								done(e);
-							}
-						});
+						invokeAndDone(object.before, done);
 					} else {
 						try {
 							argv = cbDescribe(_, use);
