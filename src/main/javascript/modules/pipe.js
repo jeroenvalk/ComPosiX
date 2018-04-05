@@ -39,7 +39,8 @@ _.module('pipe', ['globals', 'typeOf', 'globals', 'channel'], function (_, globa
 		var k = 0;
 		const recurse = function () {
 			channel.read(source, target.amount, function (array) {
-				target.write(array, k += array.length);
+				target.write(array, k);
+				k += array.length;
 				if (array.length < target.amount) {
 					target.end(k);
 					if (target.forever && k > 0) {
@@ -80,7 +81,7 @@ _.module('pipe', ['globals', 'typeOf', 'globals', 'channel'], function (_, globa
 				return Promise.reject(e);
 			}
 		}).then(function(obj) {
-			_.throw(obj && obj.type === 'target' ? 0 : 24);
+			_.throw(obj && obj.type === 'target' ? 0 : 24, {type: 'hallo'});
 			return obj;
 		});
 	};
