@@ -23,7 +23,7 @@ _.plugin("request", function (_) {
 
 		var busy = false, count = 0;
 
-		const process = function (options) {
+		const process_https = function (options) {
 			++count;
 			if (options.url) {
 				_.extend(options, url.parse(options.url));
@@ -63,6 +63,18 @@ _.plugin("request", function (_) {
 				});
 			}).end(options.body ? options.body['#'] : undefined);
 		};
+
+		const process = function(options) {
+			switch(options.protocol) {
+				case undefined:
+				case 'https':
+					process_https(options);
+					break;
+				default:
+					throw new Error('not implemented');
+			}
+		};
+
 		pipe(i.rd, {
 			type: 'target',
 			amount: 1,
