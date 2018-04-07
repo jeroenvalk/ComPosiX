@@ -15,7 +15,9 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-module.exports = function (_) {
+module.exports = function (_, config) {
+	const path = require('path');
+
 	const boot = {
 		extend: _.extend,
 		results: [],
@@ -40,6 +42,14 @@ module.exports = function (_) {
 		}
 	};
 
+	config.baseURL = config.baseURL || "file://localhost" + path.resolve(__dirname, "../../..") + '/';
 	boot.require(boot.require.resolve('./plugins/require'));
+
+	const search = boot.results[0].require.search;
+	_.eachRight(config.search, function(pathname) {
+		search.push(pathname);
+	});
+	config.swaggers.push('src/main/swaggers/');
+
 	return boot.results[0];
 };
