@@ -61,7 +61,10 @@ _.module('searchPath', ['url', 'operation'], function (_, url, op) {
 		}
 		return Promise.reject({
 			type: "response",
-			statusCode: 404
+			statusCode: 400,
+			body: {
+				baseURL: baseURL || null
+			}
 		});
 	};
 
