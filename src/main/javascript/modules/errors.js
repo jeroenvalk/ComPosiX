@@ -15,13 +15,17 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module('errors', function(_) {
-	const isInteger = Number.isInteger;
+_.module('errors', ['logging', 'searchPath', 'operation', 'swagger'], function (_, logging, searchPath, operation, swagger) {
+	const logger = logging.getLogger(this), isInteger = Number.isInteger;
+
+	if (_.isEmpty(searchPath.getCurrent())) {
+		throw new Error();
+	}
 
 	const msg = {
 		1: _.constant("not implemented"),
 		2: _.constant("internal error"),
-		3: function(param) {
+		3: function (param) {
 			return "module not found: " + param.module + ": PATH=" + param.search.join(';');
 		},
 		10: function (param) {
@@ -34,23 +38,33 @@ _.module('errors', function(_) {
 		13: _.constant("writing to readable endpoint"),
 		14: _.constant("reading from writable endpoint"),
 		20: _.constant("pipe error"),
-		21: function(param) {
+		21: function (param) {
 			return "pipe.source: no plugin for type: " + param.type;
 		},
 		22: function (param) {
 			return 'pipe.target: no plugin for type: ' + param.type;
 		},
-		23: function(param) {
+		23: function (param) {
 			return 'pipe.source: invalid plugin for type: ' + param.type;
 		},
-		24: function(param) {
-			return 'pipe.target: invalid plugin for type: ' + param.type;
-		}
+		$ref: "resources/errors.yml"
 	};
 
 	const error = function error$error(errno, param) {
+		var errors;
 		if (isInteger(errno) && errno > 0) {
-			return new Error((msg[errno] ? msg[errno](param) : JSON.stringify(param)) + " (errno=" + errno + ")");
+			switch (typeof msg[errno]) {
+				case 'function':
+					return new Error(msg[errno](param));
+				case 'object':
+					errors = swagger.typeCheck(param, msg[errno].scheme);
+					if (errors.length > 0) {
+						return new Error();
+					}
+					return new Error(_.template(msg[errno].template)(param));
+				default:
+					return new Error('ERRNO=' + errno + ": no error definition");
+			}
 		}
 		return null;
 	};
@@ -66,4 +80,47 @@ _.module('errors', function(_) {
 		error: error,
 		throw: throwError
 	});
+
+	const request = function(options) {
+		return operation.readJSON(operation.request(options));
+	};
+
+	const target = [], cache = {};
+
+	const references = function(entity) {
+		if (entity instanceof Object) {
+			const ref = entity.$ref;
+			if (ref && !(cache[ref] instanceof Error)) {
+				target.push(entity);
+			}
+			_.each(entity, references);
+		}
+	};
+
+	const recurse = function(entity) {
+		target.length = 0;
+		references(entity);
+		if (target.length > 0) {
+			const refs = _.map(target, function(value) {
+				const ref = value.$ref;
+				delete value.$ref;
+				return ref;
+			});
+			return Promise.all(_.map(refs, function(ref) {
+				if (cache[ref]) {
+					return cache[ref];
+				}
+				return searchPath.resolve(ref).then(request).catch(function(e) {
+					cache[ref] = e instanceof Error ? e : new Error();
+					return {$ref: ref};
+				});
+			})).then(function(source) {
+				return recurse(_.map(source, function(value, key) {
+					return _.extend(target[key], value);
+				}));
+			});
+		}
+	};
+
+	return recurse(msg).then(_.constant(msg));
 });

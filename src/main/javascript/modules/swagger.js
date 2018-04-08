@@ -195,6 +195,7 @@ _.module("swagger", ["channel", "request"], function (_, channel, request) {
 	});
 
 	return {
+		typeCheck: _.constant([]),
 		refreshPaths: channel.create(true, function (swagger) {
 			const self = this;
 			channel.read(loadSwagger(swagger), Infinity, function (array) {

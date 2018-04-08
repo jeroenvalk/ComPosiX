@@ -92,15 +92,17 @@ _.module('operation', ['fs'], function (_, fs) {
 	};
 
 	const readJSON = function () {
-		const result = readArrayJSON(arguments);
-		switch (result.length) {
-			case 0:
-				return null;
-			case 1:
-				return result[0];
-			default:
-				return result;
-		}
+		return then(_.spread(function() {
+			const result = readArrayJSON(arguments);
+			switch (result.length) {
+				case 0:
+					return null;
+				case 1:
+					return result[0];
+				default:
+					return result;
+			}
+		}))(arguments);
 	};
 
 	const requestSingle = function(options) {
