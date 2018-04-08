@@ -1,0 +1,82 @@
+---
+# Copyright © 2018 dr. ir. Jeroen M. Valk
+#
+# This file is part of ComPosiX. ComPosiX is free software: you can
+# redistribute it and/or modify it under the terms of the GNU Lesser General
+# Public License as published by the Free Software Foundation, either version 3
+# of the License, or (at your option) any later version.
+#
+# ComPosiX is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
+
+swagger: 2.0
+info:
+  title: Operation
+  version: 1.0
+schemes: ["https"]
+host: localhost
+basePath: /operation
+paths:
+  /request:
+    post:
+      operationId: operation$request
+      parameters:
+        - in: body
+          name: body
+          required: true
+          scheme:
+            $ref: swagger/definitions/Request.yml
+            example:
+              type: "request",
+              method: "GET",
+              protocol: "file:",
+              hostname: "localhost",
+              pathname: "~/src/main/swagger/Operation.yml"
+      responses:
+        200:
+          description: OK
+          schema:
+            anyOf:
+              - $ref: swagger/definitions/Response.yml
+              - {}
+  /request#batch:
+    post:
+      operationId: operation$request
+      parameters:
+        - in: body
+          name: body
+          required: true
+          scheme:
+            type: array
+            items:
+              $ref: swagger/definitions/Request.yml
+            example:
+              - type: "request",
+                method: "GET",
+                protocol: "file:",
+                hostname: "localhost",
+                pathname: "~/src/main/swagger/Operation.yml"
+              - type: "request",
+                method: "GET",
+                protocol: "file:",
+                hostname: "localhost",
+                pathname: "~/src/main/swagger/definitions/Request.yml"
+              - type: "request",
+                method: "GET",
+                protocol: "file:",
+                hostname: "localhost",
+                pathname: "~/src/main/swagger/definitions/Response.yml"
+      responses:
+        200:
+          description: OK
+          schema:
+            type: array
+            items:
+              anyOf:
+                - $ref: swagger/definitions/Response.yml
+                - {}

@@ -21,7 +21,8 @@ _.module('operation', ['fs'], function (_, fs) {
 	const mimeType = {
 		".json": "application/json",
 		".yaml": "application/x-yaml",
-		".yml": "application/x-yaml"
+		".yml": "application/x-yaml",
+		".js": "application/javascript"
 	};
 
 	const convert = {
@@ -30,7 +31,8 @@ _.module('operation', ['fs'], function (_, fs) {
 		},
 		"application/x-yaml": function(array) {
 			return yaml.safeLoad(Buffer.concat(array));
-		}
+		},
+		"application/javascript": _.identity
 	};
 
 	const then = function (func) {
@@ -48,22 +50,24 @@ _.module('operation', ['fs'], function (_, fs) {
 	};
 
 	const readArray = function (rd, func) {
-		if (!func) {
-			_.throw(30, _.pick(array[i], ['contentType']));
-		}
-		if (rd instanceof Array) {
-			return func(rd);
-		}
-		var callback;
-		const result = channel.read(rd, Infinity, function (array) {
-			callback(func(array));
-		});
-		if (result) {
-			return func(result);
-		}
-		return new Promise(function (resolve) {
-			callback = resolve;
-		});
+		return then(_.spread(function(rd, func) {
+			if (!func) {
+				_.throw(30, _.pick(array[i], ['contentType']));
+			}
+			if (rd instanceof Array) {
+				return func(rd);
+			}
+			var callback;
+			const result = channel.read(rd, Infinity, function (array) {
+				callback(func(array));
+			});
+			if (result) {
+				return func(result);
+			}
+			return new Promise(function (resolve) {
+				callback = resolve;
+			});
+		}))(arguments);
 	};
 
 	const read = function (func) {
@@ -72,8 +76,8 @@ _.module('operation', ['fs'], function (_, fs) {
 		};
 	};
 
-	const readArrayJSON = function (array) {
-		return then(function (array) {
+	const readArrayJSON = function () {
+		return then(_.spread(function (array) {
 			for (var i = 0; i < array.length; ++i) {
 				if (array[i]['#']) {
 					if (array[i].contentType) {
@@ -84,7 +88,7 @@ _.module('operation', ['fs'], function (_, fs) {
 				}
 			}
 			return array;
-		})(array);
+		}))(arguments);
 	};
 
 	const readJSON = function () {
@@ -99,42 +103,52 @@ _.module('operation', ['fs'], function (_, fs) {
 		}
 	};
 
-	const request = function operation$request() {
-		return read(then(_.spread(function (options) {
-			switch (options.protocol) {
-				case 'file:':
-					switch (options.method) {
-						case "GET":
-							console.log("OPTIONS", options);
-							return new Promise(function (resolve, reject) {
-								fs.readFile(options.pathname, function (err, buffer) {
-									if (err) {
-										reject(err);
-									} else {
-										resolve({
-											contentType: mimeType[path.extname(options.pathname)],
-											"#": [buffer]
-										});
-									}
+	const requestSingle = function(options) {
+		switch (options.protocol) {
+			case 'file:':
+				switch(options.hostname) {
+					case 'localhost':
+						switch (options.method) {
+							case "GET":
+								return new Promise(function (resolve, reject) {
+									fs.readFile(options.pathname, function (err, buffer) {
+										if (err) {
+											reject(err);
+										} else {
+											resolve({
+												contentType: mimeType[path.extname(options.pathname)],
+												"#": [buffer]
+											});
+										}
+									});
 								});
-							});
-						case "OPTIONS":
-							return {
-								type: "response",
-								statusCode: 200
-							};
-						default:
-							return {
-								type: "response",
-								statusCode: 405
-							};
-					}
-				default:
-					return {
-						type: "response",
-						statusCode: 500
-					};
+							case "OPTIONS":
+								return {
+									type: "response",
+									statusCode: 200
+								};
+							default:
+								return {
+									type: "response",
+									statusCode: 405
+								};
+						}
+					default:
+
+				}
+			default:
+				return {
+					type: "response",
+					statusCode: 500
+				};
+		}
+	};
+	const request = function operation$request() {
+		return read(then(_.spread(function(options) {
+			if (options instanceof Array) {
+				return Promise.all(_.map(options, requestSingle));
 			}
+			return requestSingle(options);
 		})))(arguments);
 	};
 

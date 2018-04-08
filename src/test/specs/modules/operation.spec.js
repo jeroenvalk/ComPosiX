@@ -29,21 +29,57 @@ _.describe(['chai', 'operation'], function (_, chai, operation) {
 				return true;
 			},
 			readJSON: function () {
-				const empty = {}, array = [];
+				const self = this, empty = {}, array = [];
 				expect(operation.readJSON()).to.equal(null);
 				expect(operation.readJSON(empty)).to.equal(empty);
 				expect(operation.readJSON(1, {"#": array})[1]).to.equal(array);
-				return true;
+
+				operation.request({
+					method: "GET",
+					protocol: "file:",
+					hostname: "localhost",
+					pathname: [__dirname, "../../../main/swagger/definitions/IterationContext.yml"].join("/")
+				}).then(function(result) {
+					expect(operation.readJSON(result)).to.deep.equal({
+						type: "object",
+						properties: {
+							type: {
+								type: "string",
+								default: "iterationContext",
+								enum: ["iterationContext", "iC"]
+							},
+							value: {},
+							key: {
+								type: "string"
+							},
+							object: {
+								anyOf: [{
+									type: "object"
+								}, {
+									type: "array"
+								}]
+							}
+						}
+					});
+					self.write(null);
+				}).catch(function(e) {
+					self.write(e);
+					self.write(null);
+				});
 			},
 			request: function () {
 				const self = this;
 				expect(_.map([{
-					protocol: "cpx:"
+					protocol: "cpx:",
+					hostname: "localhost"
 				}, {
-					protocol: "file:", method: "POST"
-				}, {
+					method: "POST",
 					protocol: "file:",
-					method: "OPTIONS"
+					hostname: "localhost"
+				}, {
+					method: "OPTIONS",
+					protocol: "file:",
+					hostname: "localhost"
 				}], function(options) {
 					return operation.request(options);
 				})).to.deep.equal([{
@@ -57,11 +93,32 @@ _.describe(['chai', 'operation'], function (_, chai, operation) {
 					statusCode: 200
 				}]);
 
-				operation.request({
-					protocol: "file:",
+				operation.request([{
 					method: "GET",
+					protocol: "file:",
+					hostname: "localhost",
 					pathname: [__dirname, "operation.spec.js"].join("/")
-				}).then(function() {
+				}, {
+					method: "GET",
+					protocol: "file:",
+					hostname: "localhost",
+					pathname: [__dirname, "../../../main/swagger/Operation.yml"].join("/")
+				}]).then(function(result) {
+					expect(result.constructor).to.equal(Array);
+					expect(result.length).to.equal(2);
+
+					expect(result[0].contentType).to.equal("application/javascript");
+					expect(result[0]['#'].constructor).to.equal(Array);
+					_.each(result[0]['#'], function(buffer) {
+						expect(buffer).to.be.an.instanceof(Buffer);
+					});
+
+					expect(result[1].contentType).to.equal("application/x-yaml");
+					expect(result[0]['#'].constructor).to.equal(Array);
+					_.each(result[0]['#'], function(buffer) {
+						expect(buffer).to.be.an.instanceof(Buffer);
+					});
+
 					self.write(null);
 				});
 			},
