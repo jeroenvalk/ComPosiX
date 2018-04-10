@@ -57,15 +57,26 @@ _.module('operation', ['fs'], function (_, fs) {
 			if (rd instanceof Array) {
 				return func(rd);
 			}
-			var callback;
-			const result = channel.read(rd, Infinity, function (array) {
-				callback(func(array));
-			});
-			if (result) {
-				return func(result);
+			if (isFinite(rd)) {
+				var callback;
+				const result = channel.read(rd, Infinity, function (array) {
+					callback(func(array));
+				});
+				if (result) {
+					return func(result);
+				}
+				return new Promise(function (resolve) {
+					callback = resolve;
+				});
 			}
-			return new Promise(function (resolve) {
-				callback = resolve;
+			return new Promise(function(resolve) {
+				const array = [];
+				rd.on("data", function(chunk) {
+					array.push(chunk);
+				});
+				rd.on("end", function() {
+					resolve(func(array));
+				});
 			});
 		}))(arguments);
 	};
