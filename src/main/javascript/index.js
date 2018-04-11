@@ -21,8 +21,8 @@ module.exports = function (_, config) {
 	const initialize = function(_) {
 		const iteratee = function (baseURL) {
 			return function (pathname) {
-				__.require('searchPath').postCurrent(baseURL, pathname);
-			}
+				_.require('searchPath').postCurrent(baseURL, pathname);
+			};
 		};
 
 		const config = this;
@@ -30,10 +30,10 @@ module.exports = function (_, config) {
 
 		const plugins = {
 			module: _.require('module')
-		}
+		};
 		_.each(config.plugins, function(plugin) {
 			plugins[plugin] = _.require(plugin);
-		})
+		});
 		_.each(plugins, function (func) {
 			func(_);
 		});
