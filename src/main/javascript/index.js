@@ -16,7 +16,35 @@
  */
 
 module.exports = function (_, config) {
-	const path = require('path');
+	const path = require('path'), url = require('url');
+
+	const initialize = function(_) {
+		const iteratee = function (baseURL) {
+			return function (pathname) {
+				__.require('searchPath').postCurrent(baseURL, pathname);
+			}
+		};
+
+		const config = this;
+		_.require('plugin')(_);
+
+		const plugins = {
+			module: _.require('module')
+		}
+		_.each(config.plugins, function(plugin) {
+			plugins[plugin] = _.require(plugin);
+		})
+		_.each(plugins, function (func) {
+			func(_);
+		});
+
+		_.each(config.resources, iteratee(config.baseURL));
+		_.each(config.home, function(value) {
+			_.each(config.resources, iteratee(url.resolve(config.baseURL, value)));
+		});
+
+		_.module('config', _.constant(config));
+	};
 
 	const boot = {
 		extend: _.extend,
@@ -37,19 +65,27 @@ module.exports = function (_, config) {
 		plugin: function (func) {
 			this.results.push(func(this));
 		},
-		runInContext: function() {
+		runInContext: function () {
 			return _.runInContext();
 		}
 	};
-
-	config.baseURL = config.baseURL || "file://localhost" + path.resolve(__dirname, "../../..") + '/';
 	boot.require(boot.require.resolve('./plugins/require'));
 
-	const search = boot.results[0].require.search;
-	_.eachRight(config.search, function(pathname) {
-		search.push(pathname);
-	});
-	config.swaggers.push('src/main/swaggers/');
+	const __ = boot.results[0];
 
-	return boot.results[0];
+	if (config) {
+		config.baseURL = config.baseURL || "file://localhost" + path.resolve(__dirname, "../../..") + '/';
+		const search = __.require.search;
+		__.eachRight(config.search, function (pathname) {
+			search.push(pathname);
+		});
+		config.resources.push('src/main/');
+		config.initialize = initialize;
+
+		if (config.enforce) {
+			config.initialize(__);
+		}
+	}
+
+	return __;
 };
