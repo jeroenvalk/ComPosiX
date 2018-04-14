@@ -66,14 +66,6 @@ _.plugin(function (boot) {
 
 		_.mixin({
 			require: _.extend(function cpx$require(module) {
-				if (module === 'plugin') {
-					if (!bootRequire.plugin) {
-						bootRequire.call(boot, './plugins/plugin');
-					}
-					return function(_) {
-						_.mixin(bootRequire.plugin);
-					}
-				}
 				return require(module);
 			}, {
 				search: search
@@ -81,19 +73,14 @@ _.plugin(function (boot) {
 			runInContext: runInContext
 		});
 
-		//_.require('plugin')(_);
+		_.mixin(bootRequire.plugin);
 
 		return _;
 	};
 
 	boot.extend(boot, {
-		require: require,
-		mixin: function (mixin) {
-			bootRequire.plugin = mixin;
-		}
+		require: require
 	});
-
-	//bootRequire.call(boot, './plugins/plugin');
 
 	return runInContext();
 });

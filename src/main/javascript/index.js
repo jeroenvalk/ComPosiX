@@ -51,7 +51,7 @@ module.exports = function (_, config) {
 		};
 
 		const config = this;
-		_.require('plugin')(_);
+		//_.require('plugin')(_);
 		if (!_.plugin) {
 			throw new Error();
 		}
@@ -98,12 +98,25 @@ module.exports = function (_, config) {
 		},
 		runInContext: function () {
 			return _.runInContext();
-		}
+		},
+		mixin: _.identity
 	};
+
+	const bootRequire = boot.require;
 	boot.require(boot.require.resolve('./plugins/require'));
-	//boot.require.call(boot, './plugins/plugin');
+
+	global._ = boot;
+	require('./plugins/plugin');
+	delete global._;
+
+	bootRequire.plugin = results[1];
+
+	if (typeof bootRequire.plugin === 'undefined') {
+		throw new Error();
+	}
 
 	const __ = results[0];
+	__.mixin(bootRequire.plugin);
 
 	if (config.enforce) {
 		config.initialize(__);
