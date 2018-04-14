@@ -29,7 +29,13 @@ module.exports = function ($) {
 	$.url = $.url || require('url');
 	$.stream = $.stream || require('stream');
 	$.http = $.http || require('http');
-	$._ = require(".")($._ || require('lodash'));
+	$._ = require(".")($._ || require('lodash'), {
+		enforce: true,
+		baseURL: $.url.resolve("file://localhost" + __dirname + "/", "../../../package.json"),
+		search: [],
+		resources: [],
+		plugins: ['mocha']
+	});
 	$.processor = $.processor || require('./processor');
 
 	var globals = {
@@ -40,13 +46,6 @@ module.exports = function ($) {
 		},
 		expect: $.expect || require('chai').expect
 	};
-
-	$._.require('plugin')($._);
-	const pluginModule = $._.require("module");
-	const pluginMocha = $._.require("mocha");
-
-	pluginModule($._);
-	pluginMocha($._);
 
 	$._.mixin({
 		globals: function globals$globals(fn) {
