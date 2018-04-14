@@ -16,9 +16,34 @@
  */
 
 module.exports = function (_, config) {
-	const path = require('path'), url = require('url');
+	const path = require('path'), fs = require('fs'), url = require('url');
 
-	const initialize = function(_) {
+	const workspace = path.resolve(__dirname, "../../../../..");
+
+	if (!config) {
+		config = {};
+	}
+
+	_.defaults(config, {
+		baseURL: "file://localhost" + workspace +'/',
+		search: {
+			sources: [],
+			resources: []
+		},
+		home: _.fromPairs(_.compact(_.map(fs.readdirSync(workspace), function (file) {
+			if (fs.statSync(path.resolve(workspace, file)).isDirectory()) {
+				const home = _.map(file, function (c) {
+					return c === c.toLowerCase() ? '' : c;
+				}).join('');
+				return home ? ['~' + home, {pathname: file, search: ['src/main/']}] : null;
+			}
+		})))
+	});
+
+	const sources = _.concat(config.search.sources, './plugins', './modules'),
+		resources = _.concat(config.search.resources, 'ComPosiX/ComPosiX/src/main/');
+
+	const initialize = function (_) {
 		const iteratee = function (baseURL) {
 			return function (pathname) {
 				_.require('searchPath').postCurrent(baseURL, pathname);
@@ -31,24 +56,26 @@ module.exports = function (_, config) {
 		const plugins = {
 			module: _.require('module')
 		};
-		_.each(config.plugins, function(plugin) {
+		_.each(config.plugins, function (plugin) {
 			plugins[plugin] = _.require(plugin);
 		});
 		_.each(plugins, function (func) {
 			func(_);
 		});
 
-		_.each(config.resources, iteratee(config.baseURL));
-		_.each(config.home, function(value) {
-			_.each(config.resources, iteratee(url.resolve(config.baseURL, value)));
+		_.each(resources, iteratee(config.baseURL));
+
+		_.each(config.home, function(home) {
+			_.each(home.search, iteratee(url.resolve(config.baseURL, home.pathname)));
 		});
 
 		_.module('config', _.constant(config));
 	};
 
-	const boot = {
+	config.initialize = initialize;
+
+	const results = [], boot = {
 		extend: _.extend,
-		results: [],
 		require: _.extend(function (module) {
 			const underscore = global._;
 			global._ = this;
@@ -60,10 +87,11 @@ module.exports = function (_, config) {
 			}
 			return result;
 		}, {
-			resolve: require.resolve
+			resolve: require.resolve,
+			search: _.reverse(sources)
 		}),
 		plugin: function (func) {
-			this.results.push(func(this));
+			results.push(func(this));
 		},
 		runInContext: function () {
 			return _.runInContext();
@@ -71,20 +99,10 @@ module.exports = function (_, config) {
 	};
 	boot.require(boot.require.resolve('./plugins/require'));
 
-	const __ = boot.results[0];
+	const __ = results[0];
 
-	if (config) {
-		config.baseURL = config.baseURL || "file://localhost" + path.resolve(__dirname, "../../..") + '/';
-		const search = __.require.search;
-		__.eachRight(config.search, function (pathname) {
-			search.push(pathname);
-		});
-		config.resources.push('src/main/');
-		config.initialize = initialize;
-
-		if (config.enforce) {
-			config.initialize(__);
-		}
+	if (config.enforce) {
+		config.initialize(__);
 	}
 
 	return __;

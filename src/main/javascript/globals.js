@@ -31,9 +31,6 @@ module.exports = function ($) {
 	$.http = $.http || require('http');
 	$._ = require(".")($._ || require('lodash'), {
 		enforce: true,
-		baseURL: $.url.resolve("file://localhost" + __dirname + "/", "../../../package.json"),
-		search: [],
-		resources: [],
 		plugins: ['mocha']
 	});
 	$.processor = $.processor || require('./processor');

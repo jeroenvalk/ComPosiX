@@ -16,7 +16,7 @@
  */
 
 _.plugin(function (boot) {
-	const bootRequire = boot.require, search = ["./modules", "./plugins"];
+	const bootRequire = boot.require, search = bootRequire.search;
 
 	const recurse = function plugin$recurse(pathnames) {
 		const pathname = pathnames.pop();
