@@ -61,8 +61,10 @@ _.plugin(function (boot) {
 		};
 	};
 
-	const runInContext = function cpx$runInContext() {
-		const _ = boot.runInContext();
+	const runInContext = boot.runInContext;
+
+	const cpxRunInContext = function cpx$runInContext() {
+		const _ = runInContext.call(boot);
 
 		_.mixin({
 			require: _.extend(function cpx$require(module) {
@@ -79,8 +81,7 @@ _.plugin(function (boot) {
 	};
 
 	boot.extend(boot, {
-		require: require
+		require: require,
+		runInContext: cpxRunInContext
 	});
-
-	return runInContext();
 });

@@ -50,13 +50,7 @@ module.exports = function (_, config) {
 			};
 		};
 
-		const config = this;
-		//_.require('plugin')(_);
-		if (!_.plugin) {
-			throw new Error();
-		}
-
-		const plugins = {
+		const config = this, plugins = {
 			module: _.require('module')
 		};
 		_.each(config.plugins, function (plugin) {
@@ -77,8 +71,9 @@ module.exports = function (_, config) {
 
 	config.initialize = initialize;
 
-	const results = [], boot = {
-		extend: _.extend,
+	const results = [];
+
+	_.mixin({
 		require: _.extend(function (module) {
 			const underscore = global._;
 			global._ = this;
@@ -95,32 +90,21 @@ module.exports = function (_, config) {
 		}),
 		plugin: function (func) {
 			results.push(func(this));
-		},
-		runInContext: function () {
-			return _.runInContext();
-		},
-		mixin: _.identity
-	};
+		}
+	});
 
-	const bootRequire = boot.require;
-	boot.require(boot.require.resolve('./plugins/require'));
+	const bootRequire = _.require;
+	_.require(_.require.resolve('./plugins/require'));
 
-	global._ = boot;
+	global._ = _;
 	require('./plugins/plugin');
 	delete global._;
 
 	bootRequire.plugin = results[1];
 
-	if (typeof bootRequire.plugin === 'undefined') {
-		throw new Error();
-	}
-
-	const __ = results[0];
-	__.mixin(bootRequire.plugin);
-
 	if (config.enforce) {
-		config.initialize(__);
+		config.initialize(_);
 	}
 
-	return __;
+	return _;
 };
