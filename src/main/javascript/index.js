@@ -52,6 +52,9 @@ module.exports = function (_, config) {
 
 		const config = this;
 		_.require('plugin')(_);
+		if (!_.plugin) {
+			throw new Error();
+		}
 
 		const plugins = {
 			module: _.require('module')
@@ -98,6 +101,7 @@ module.exports = function (_, config) {
 		}
 	};
 	boot.require(boot.require.resolve('./plugins/require'));
+	//boot.require.call(boot, './plugins/plugin');
 
 	const __ = results[0];
 
