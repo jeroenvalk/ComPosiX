@@ -75,8 +75,6 @@ module.exports = function (_, config) {
 
 	config.initialize = initialize;
 
-	const results = [];
-
 	_.mixin({
 		require: _.extend(function (module) {
 			const underscore = global._;
@@ -93,7 +91,7 @@ module.exports = function (_, config) {
 			search: _.reverse(sources)
 		}),
 		plugin: function (func) {
-			results.push(func(this));
+			func(this);
 		}
 	});
 
@@ -104,7 +102,10 @@ module.exports = function (_, config) {
 	require('./plugins/plugin');
 	delete global._;
 
-	bootRequire.plugin = results[1];
+	bootRequire.plugin = {
+		require: _.require,
+		plugin: _.plugin
+	};
 
 	if (config.enforce) {
 		config.initialize(_);

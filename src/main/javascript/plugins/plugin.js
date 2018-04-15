@@ -34,7 +34,7 @@ _.plugin(function (_) {
 	const cache = {};
 	var result = null;
 
-	const plugin = {
+	_.mixin({
 		require: _.extend(function plugin$require(module) {
 			const _ = this;
 			if (cache[module]) {
@@ -68,7 +68,5 @@ _.plugin(function (_) {
 			func.argv = argv;
 			return result = func;
 		}
-	};
-	_.mixin(plugin);
-	return plugin;
+	});
 });
