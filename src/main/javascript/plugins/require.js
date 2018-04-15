@@ -63,8 +63,11 @@ _.plugin(function (_) {
 
 	const runInContext = function cpx$runInContext() {
 		const result = bootRunInContext.call(_);
-		result.mixin(mixin);
-		result.mixin(bootRequire.plugin);
+		result.mixin({
+			runInContext: runInContext,
+			require: _.plugin.require,
+			plugin: _.plugin
+		});
 		return result;
 	};
 

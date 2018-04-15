@@ -29,10 +29,12 @@ module.exports = function ($) {
 	$.url = $.url || require('url');
 	$.stream = $.stream || require('stream');
 	$.http = $.http || require('http');
-	$._ = require(".")($._ || require('lodash'), {
+	$._ = require(".")($._ || require('lodash'));
+	$._.ComPosiX({
 		enforce: true,
 		plugins: ['mocha']
 	});
+	$._.ComPosiX(require);
 	$.processor = $.processor || require('./processor');
 
 	var globals = {

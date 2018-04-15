@@ -16,37 +16,26 @@
  */
 
 _.plugin(function (_) {
-	const indexOf = {s: 0, o: 1, f: 2};
-
 	const cpxRequire = _.require;
 
-	const groupArguments = function (argv) {
-		const result = new Array(3);
-		for (var i = 0; i < argv.length; ++i) {
-			const index = indexOf[(typeof argv[i]).charAt(0)];
-			if (!isNaN(index)) {
-				result[index] = argv[i];
-			}
-		}
-		return result;
-	};
+	console.log(_.plugin.groupArguments);
+	const groupArguments = _.plugin.groupArguments;
 
 	const cache = {};
 	var result = null;
 
+	const require = function plugin$require(module) {
+		const _ = this;
+		if (cache[module]) {
+			return cache[module];
+		}
+		cpxRequire(module)(_);
+		return result;
+	};
+
 	_.mixin({
-		require: _.extend(function plugin$require(module) {
-			const _ = this;
-			if (cache[module]) {
-				return cache[module];
-			}
-			cpxRequire(module)(_);
-			//console.log('RESULT', result);
-			return result;
-		}, {
-			search: _.require.search
-		}),
-		plugin: function plugin$plugin() {
+		require: require,
+		plugin: _.extend(function plugin$plugin() {
 			const _ = this, argv = groupArguments(arguments);
 			if (!argv[1]) argv[1] = [];
 			const func = function cpx$plugin(_) {
@@ -67,6 +56,8 @@ _.plugin(function (_) {
 			func.type = 0; // plugin
 			func.argv = argv;
 			return result = func;
-		}
+		}, {
+			require: require
+		})
 	});
 });
