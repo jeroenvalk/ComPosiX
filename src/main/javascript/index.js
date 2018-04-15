@@ -15,8 +15,39 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
+const initialize = function (_) {
+	const url = require('url');
+
+	const iteratee = function (baseURL) {
+		return function (pathname) {
+			_.require('searchPath').postCurrent(baseURL, pathname);
+		};
+	};
+
+	const config = this, plugins = {
+		module: _.require('module')
+	};
+
+	const resources = _.concat(config.search.resources, 'ComPosiX/ComPosiX/src/main/');
+
+	_.each(config.plugins, function (plugin) {
+		plugins[plugin] = _.require(plugin);
+	});
+	_.each(plugins, function (func) {
+		func(_);
+	});
+
+	_.each(resources, iteratee(config.baseURL));
+
+	_.each(config.home, function(home) {
+		_.each(home.search, iteratee(url.resolve(config.baseURL, home.pathname)));
+	});
+
+	_.module('config', _.constant(config));
+};
+
 module.exports = function (_, config) {
-	const path = require('path'), fs = require('fs'), url = require('url');
+	const path = require('path'), fs = require('fs');
 
 	const workspace = path.resolve(__dirname, "../../../../..");
 
@@ -40,34 +71,7 @@ module.exports = function (_, config) {
 		})))
 	});
 
-	const sources = _.concat(config.search.sources, './plugins', './modules'),
-		resources = _.concat(config.search.resources, 'ComPosiX/ComPosiX/src/main/');
-
-	const initialize = function (_) {
-		const iteratee = function (baseURL) {
-			return function (pathname) {
-				_.require('searchPath').postCurrent(baseURL, pathname);
-			};
-		};
-
-		const config = this, plugins = {
-			module: _.require('module')
-		};
-		_.each(config.plugins, function (plugin) {
-			plugins[plugin] = _.require(plugin);
-		});
-		_.each(plugins, function (func) {
-			func(_);
-		});
-
-		_.each(resources, iteratee(config.baseURL));
-
-		_.each(config.home, function(home) {
-			_.each(home.search, iteratee(url.resolve(config.baseURL, home.pathname)));
-		});
-
-		_.module('config', _.constant(config));
-	};
+	const sources = _.concat(config.search.sources, './plugins', './modules');
 
 	config.initialize = initialize;
 
@@ -94,9 +98,9 @@ module.exports = function (_, config) {
 	});
 
 	const bootRequire = _.require;
-	_.require(_.require.resolve('./plugins/require'));
 
 	global._ = _;
+	require('./plugins/require');
 	require('./plugins/plugin');
 	delete global._;
 

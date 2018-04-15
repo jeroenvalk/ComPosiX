@@ -15,8 +15,8 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.plugin(function (boot) {
-	const bootRequire = boot.require, search = bootRequire.search;
+_.plugin(function (_) {
+	const bootRequire = _.require, bootRunInContext = _.runInContext, search = bootRequire.search;
 
 	const recurse = function plugin$recurse(pathnames) {
 		const pathname = pathnames.pop();
@@ -61,27 +61,17 @@ _.plugin(function (boot) {
 		};
 	};
 
-	const runInContext = boot.runInContext;
-
-	const cpxRunInContext = function cpx$runInContext() {
-		const _ = runInContext.call(boot);
-
-		_.mixin({
-			require: _.extend(function cpx$require(module) {
-				return require(module);
-			}, {
-				search: search
-			}),
-			runInContext: runInContext
-		});
-
-		_.mixin(bootRequire.plugin);
-
-		return _;
+	const runInContext = function cpx$runInContext() {
+		const result = bootRunInContext.call(_);
+		result.mixin(mixin);
+		result.mixin(bootRequire.plugin);
+		return result;
 	};
 
-	boot.extend(boot, {
+	const mixin = {
 		require: require,
-		runInContext: cpxRunInContext
-	});
+		runInContext: runInContext
+	};
+
+	_.mixin(mixin);
 });
