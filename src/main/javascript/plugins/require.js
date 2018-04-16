@@ -16,7 +16,7 @@
  */
 
 _.plugin(function (_) {
-	const bootRequire = _.require, bootRunInContext = _.runInContext, cpx = _.ComPosiX;
+	const bootRequire = _.require;
 
 	const resolve = _.ComPosiX.resolve;
 
@@ -33,19 +33,7 @@ _.plugin(function (_) {
 		};
 	};
 
-	const runInContext = function cpx$runInContext() {
-		const result = bootRunInContext.call(_);
-		result.mixin({
-			ComPosiX: cpx,
-			runInContext: runInContext,
-			require: _.plugin.require,
-			plugin: _.plugin
-		});
-		return result;
-	};
-
 	_.mixin({
-		require: require,
-		runInContext: runInContext
+		require: require
 	});
 });

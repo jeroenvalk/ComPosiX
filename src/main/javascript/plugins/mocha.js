@@ -124,7 +124,8 @@ _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 	_.mixin({
 		describe: function() {
 			const argv = _.ComPosiX.groupArguments(arguments);
-			const underscore = _.ComPosiX(['module']);
+			const underscore = _.ComPosiX(true);
+			underscore.ComPosiX('module', true);
 			const func = underscore.plugin.call(underscore, argv[1], argv[2]);
 			if (func.argv[0]) {
 				describe(func.argv[0], function () {

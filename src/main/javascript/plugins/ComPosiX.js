@@ -47,7 +47,7 @@ _.plugin(function(_) {
 
 	const config = {}, plugins = {};
 
-	const initialize = function (_, pluginNames) {
+	const initialize = function (_) {
 		const iteratee = function (baseURL) {
 			return function (pathname) {
 				_.require('searchPath').postCurrent(baseURL, pathname);
@@ -55,10 +55,6 @@ _.plugin(function(_) {
 		};
 
 		const resources = _.concat(config.search.resources, 'ComPosiX/ComPosiX/src/main/');
-
-		_.each(pluginNames, function (name) {
-			plugins[name].call(null, _);
-		});
 
 		_.each(resources, iteratee(config.baseURL));
 
@@ -123,32 +119,52 @@ _.plugin(function(_) {
 		});
 	};
 
-	var state = 0;
+	var state = 0, mixin, current = _;
 
 	_.mixin({
 		ComPosiX: function ComPosiX() {
-			var _ = this;
-			for (var i = 0; i < arguments.length; ++i) {
-				switch(state) {
-					case 0:
-						if (_.isPlainObject(arguments[i])) {
-							configure(arguments[i]);
-						} else {
-							bootstrap(arguments[i]);
-							++state;
-						}
-						break;
-					case 1:
-						initialize(_, arguments[i]);
-						++state;
-						break;
-					case 2:
-						_ = _.runInContext();
-						initialize(_, arguments[i]);
-						break;
-				}
+			if (this === _ && state === 2 && arguments[0] === true) {
+				current = this;
 			}
-			return _;
+			if (current === this) {
+				for (var i = 0; i < arguments.length; ++i) {
+					switch (state) {
+						case 0:
+							if (current.isPlainObject(arguments[i])) {
+								configure(arguments[i]);
+							} else {
+								bootstrap(arguments[i]);
+								mixin = {
+									ComPosiX: current.ComPosiX,
+									require: current.plugin.require,
+									plugin: current.plugin
+								};
+								++state;
+							}
+							break;
+						case 1:
+							if (_.isString(arguments[i])) {
+								plugins[arguments[i]].call(null, current);
+							} else {
+								if (arguments[i]) {
+									initialize(current, arguments[i]);
+								}
+								++state;
+							}
+							break;
+						case 2:
+							if (arguments[i] === true) {
+								current = current.runInContext();
+								current.mixin(mixin);
+								--state;
+							}
+							break;
+					}
+				}
+			} else {
+				throw new Error();
+			}
+			return current;
 		}
 	});
 
