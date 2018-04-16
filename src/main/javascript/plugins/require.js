@@ -18,34 +18,24 @@
 _.plugin(function (_) {
 	const bootRequire = _.require, bootRunInContext = _.runInContext, search = bootRequire.search;
 
-	const recurse = function plugin$recurse(pathnames) {
-		const pathname = pathnames.pop();
-		if (pathname) {
+	const resolve = function plugin$resolve(module) {
+		for (var i = 0; i < search.length; ++i) {
+			const pathname = [search[i], module].join("/");
 			try {
 				bootRequire.resolve(pathname);
 				return pathname;
 			} catch (e) {
-				return recurse(pathnames);
+				continue;
 			}
 		}
-		return null;
-	};
-
-	const resolve = function plugin$resolve(module) {
-		const pathname = recurse(this.map(search, function (dir) {
-			return [dir, module].join("/");
-		}));
-		if (!pathname) {
-			try {
-				bootRequire.resolve(module);
-			} catch(e) {
-				this.throw(3, {
-					module: module,
-					search: search
-				});
-			}
+		try {
+			bootRequire.resolve(module);
+		} catch (e) {
+			this.throw(3, {
+				module: module,
+				search: search
+			});
 		}
-		return pathname;
 	};
 
 	const require = function (module) {
@@ -54,7 +44,7 @@ _.plugin(function (_) {
 			if (resolved) {
 				bootRequire.call(_, resolved);
 			} else {
-				_.module(module, function() {
+				_.module(module, function () {
 					return bootRequire.call(_, module);
 				});
 			}

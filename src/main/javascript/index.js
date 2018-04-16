@@ -19,12 +19,10 @@ const path = require('path'), fs = require('fs');
 const workspace = path.resolve(__dirname, "../../../../..");
 
 module.exports = function (_) {
-	global._ = _;
-
 	const config = {
 		baseURL: "file://localhost" + workspace +'/',
 		search: {
-			sources: ['./plugins', './modules'],
+			sources: [path.resolve(__dirname, 'plugins'), path.resolve(__dirname, 'modules')],
 			resources: []
 		},
 		home: _.fromPairs(_.compact(_.map(fs.readdirSync(workspace), function (file) {
@@ -43,10 +41,9 @@ module.exports = function (_) {
 		}
 	});
 
+	global._ = _;
 	require('./plugins/ComPosiX');
-
 	_.ComPosiX(config);
-
 	return _;
 };
 

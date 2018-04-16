@@ -76,12 +76,10 @@ _.plugin(function(_) {
 		url = require('url');
 
 		_.mixin({
-			plugin: _.extend(function cpx$plugin() {
+			plugin: function cpx$plugin() {
 				const argv = groupArguments(arguments);
 				argv[2].apply(this, _.concat(_, _.map(argv[1], require)));
-			}, {
-				groupArguments: null
-			}),
+			},
 			require: _.extend(function (module) {
 				global._ = this;
 				const result = require(module);
@@ -89,7 +87,7 @@ _.plugin(function(_) {
 				return result;
 			}, {
 				resolve: require.resolve,
-				search: _.reverse(config.search.sources)
+				search: config.search.sources
 			})
 		});
 
