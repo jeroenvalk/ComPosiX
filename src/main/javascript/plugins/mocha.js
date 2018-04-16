@@ -28,14 +28,14 @@ _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 
 	const push = Array.prototype.push;
 
-	const nodejs = function(_) {
-			return _.map(_.flatten(arguments).slice(1), function(name) {
-				const part = _.toPath(name);
-				return _.get(require(part[0]), part.slice(1));
-			});
+	const nodejs = function (_) {
+		return _.map(_.flatten(arguments).slice(1), function (name) {
+			const part = _.toPath(name);
+			return _.get(require(part[0]), part.slice(1));
+		});
 	};
 
-	const composix = function(_, array) {
+	const composix = function (_, array) {
 		for (var i = 0; i < array.length; ++i) {
 			array[i] = _.require(array[i]);
 		}
@@ -44,8 +44,8 @@ _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 
 	const cbDescribe = function (_, use) {
 		const argv = [];
-		_.each(use, function(value, key) {
-			switch(key.toLowerCase()) {
+		_.each(use, function (value, key) {
+			switch (key.toLowerCase()) {
 				case 'nodejs':
 					push.apply(argv, nodejs(_, value));
 					break;
@@ -59,15 +59,15 @@ _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 	};
 
 
-	const invokeAndDone = function(func, done) {
+	const invokeAndDone = function (func, done) {
 		try {
 			const result = func.call(null);
 			if (result instanceof Promise) {
-				result.then(function() {
+				result.then(function () {
 					done();
 				}, done);
 			}
-		} catch(e) {
+		} catch (e) {
 			done(e);
 		}
 	};
@@ -89,7 +89,7 @@ _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 						try {
 							argv = cbDescribe(_, use);
 							done();
-						} catch(e) {
+						} catch (e) {
 							done(e);
 						}
 					}
@@ -122,21 +122,16 @@ _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 	};
 
 	_.mixin({
-		describe: function() {
+		describe: function () {
 			const argv = _.ComPosiX.groupArguments(arguments);
 			const underscore = _.ComPosiX(true);
-			underscore.ComPosiX('module', true);
+			underscore.ComPosiX('module');
 			const func = underscore.plugin.call(underscore, argv[1], argv[2]);
-			if (func.argv[0]) {
-				describe(func.argv[0], function () {
-					func.call(null, underscore);
-				});
-			} else {
-				const result = func.call(null, underscore);
-				if (result instanceof Object) {
-					descr(result, underscore);
-				}
+			const result = func.call(null, underscore);
+			if (result instanceof Object) {
+				descr(result, underscore);
 			}
+			underscore.ComPosiX(false);
 		}
 	});
 });
