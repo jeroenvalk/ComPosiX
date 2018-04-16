@@ -23,11 +23,14 @@ _.plugin(function(_) {
 	};
 
 	const getValue = function(object, path, defaultValue) {
-		const result = _.get(object, path, defaultValue);
-		if (result instanceof Object) {
-			return;
+		if (path) {
+			const result = _.get(object, path, defaultValue);
+			if (result instanceof Object) {
+				return;
+			}
+			return result;
 		}
-		return result;
+		return _.cloneDeep(object);
 	};
 
 	const indexOf = {s: 0, o: 1, f: 2};
