@@ -16,27 +16,9 @@
  */
 
 _.plugin(function (_) {
-	const bootRequire = _.require, bootRunInContext = _.runInContext, search = bootRequire.search;
+	const bootRequire = _.require, bootRunInContext = _.runInContext;
 
-	const resolve = function plugin$resolve(module) {
-		for (var i = 0; i < search.length; ++i) {
-			const pathname = [search[i], module].join("/");
-			try {
-				bootRequire.resolve(pathname);
-				return pathname;
-			} catch (e) {
-				continue;
-			}
-		}
-		try {
-			bootRequire.resolve(module);
-		} catch (e) {
-			this.throw(3, {
-				module: module,
-				search: search
-			});
-		}
-	};
+	const resolve = _.ComPosiX.resolve;
 
 	const require = function (module) {
 		return function (_) {

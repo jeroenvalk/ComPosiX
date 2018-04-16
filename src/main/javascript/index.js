@@ -22,7 +22,7 @@ module.exports = function (_) {
 	const config = {
 		baseURL: "file://localhost" + workspace +'/',
 		search: {
-			sources: [path.resolve(__dirname, 'plugins'), path.resolve(__dirname, 'modules')],
+			sources: [path.resolve(__dirname, 'modules'), path.resolve(__dirname, 'plugins')],
 			resources: []
 		},
 		home: _.fromPairs(_.compact(_.map(fs.readdirSync(workspace), function (file) {

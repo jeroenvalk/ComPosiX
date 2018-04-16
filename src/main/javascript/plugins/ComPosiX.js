@@ -75,6 +75,31 @@ _.plugin(function(_) {
 	const bootstrap = function cpx$bootstrap(require) {
 		url = require('url');
 
+		const search = _.reverse(config.search.sources);
+
+		const resolve = function cpx$resolve(module) {
+			for (var i = 0; i < search.length; ++i) {
+				const pathname = [search[i], module].join("/");
+				try {
+					require.resolve(pathname);
+					return pathname;
+				} catch (e) {
+					continue;
+				}
+			}
+			try {
+				require.resolve(module);
+			} catch (e) {
+				_.throw(3, {
+					module: module,
+					search: search
+				});
+			}
+		};
+
+		_.ComPosiX.groupArguments = groupArguments;
+		_.ComPosiX.resolve = resolve;
+
 		_.mixin({
 			plugin: function cpx$plugin() {
 				const argv = groupArguments(arguments);
@@ -85,14 +110,11 @@ _.plugin(function(_) {
 				const result = require(module);
 				global._ = _;
 				return result;
-			}, {
-				resolve: require.resolve,
-				search: config.search.sources
 			})
 		});
 
-		require('./plugins/require');
-		require('./plugins/plugin');
+		require(resolve('require'));
+		require(resolve('plugin'));
 
 		module = _.require('module');
 
@@ -102,7 +124,7 @@ _.plugin(function(_) {
 	};
 
 	_.mixin({
-		ComPosiX: _.extend(function ComPosiX(entity) {
+		ComPosiX: function ComPosiX(entity) {
 			const _ = this;
 
 			if (entity) {
@@ -112,8 +134,7 @@ _.plugin(function(_) {
 					bootstrap(entity)
 				}
 			}
-		}, {
-			groupArguments: groupArguments
-		})
+		}
 	});
+
 });
