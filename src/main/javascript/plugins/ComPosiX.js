@@ -24,6 +24,8 @@ _.plugin(function(_) {
 
 	var url, module;
 
+	const config = {};
+
 	const initialize = function (_) {
 		const iteratee = function (baseURL) {
 			return function (pathname) {
@@ -31,7 +33,7 @@ _.plugin(function(_) {
 			};
 		};
 
-		const config = this, plugins = {
+		const plugins = {
 			module: module
 		};
 
@@ -52,8 +54,6 @@ _.plugin(function(_) {
 
 		_.module('config', _.constant(config));
 	};
-
-	const config = {initialize: initialize};
 
 	const configure = function cpx$configure(conf) {
 		return _.mergeWith(config, conf, customizer);
@@ -118,9 +118,7 @@ _.plugin(function(_) {
 
 		module = _.require('module');
 
-		if (config.enforce) {
-			config.initialize(_);
-		}
+		initialize(_);
 	};
 
 	_.mixin({
@@ -133,6 +131,9 @@ _.plugin(function(_) {
 				} else {
 					bootstrap(entity)
 				}
+			} else {
+				delete config.plugins;
+				initialize(_);
 			}
 		}
 	});

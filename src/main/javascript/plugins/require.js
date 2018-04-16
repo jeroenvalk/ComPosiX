@@ -16,7 +16,7 @@
  */
 
 _.plugin(function (_) {
-	const bootRequire = _.require, bootRunInContext = _.runInContext;
+	const bootRequire = _.require, bootRunInContext = _.runInContext, cpx = _.ComPosiX;
 
 	const resolve = _.ComPosiX.resolve;
 
@@ -36,6 +36,7 @@ _.plugin(function (_) {
 	const runInContext = function cpx$runInContext() {
 		const result = bootRunInContext.call(_);
 		result.mixin({
+			ComPosiX: cpx,
 			runInContext: runInContext,
 			require: _.plugin.require,
 			plugin: _.plugin
@@ -43,10 +44,8 @@ _.plugin(function (_) {
 		return result;
 	};
 
-	const mixin = {
+	_.mixin({
 		require: require,
 		runInContext: runInContext
-	};
-
-	_.mixin(mixin);
+	});
 });

@@ -125,9 +125,7 @@ _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 		describe: function() {
 			const argv = _.ComPosiX.groupArguments(arguments);
 			const underscore = _.runInContext();
-			const config = _.require('config');
-			delete config.plugins;
-			config.initialize(underscore);
+			underscore.ComPosiX();
 
 			const func = underscore.plugin.call(underscore, argv[1], argv[2]);
 			func.nocache = true;
