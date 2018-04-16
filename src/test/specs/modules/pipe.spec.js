@@ -56,7 +56,7 @@ _.describe(['pipe'], function (_) {
 		it: {
 			null: function (expect, channel, pipe) {
 				const self = this;
-				Promise.all([
+				return Promise.all([
 					pipe(0, 0),
 					pipe(NaN).catch(expectErrno(expect, 23)),
 					pipe(0, NaN).catch(expectErrno(expect, 24))
@@ -64,11 +64,10 @@ _.describe(['pipe'], function (_) {
 					expect(isNaN(rd[0])).to.equal(true);
 					expect(rd[1]).to.equal(undefined);
 					expect(rd[2]).to.equal(undefined);
-					self.write(null);
-				}).catch(errorHandler(this));
+				});
 			},
 			error: function (expect, channel, pipe) {
-				pipe('', 0).then(errorHandler(this), errorHandler(this, true));
+				return pipe('', 0).catch(expectErrno(expect, 21));
 			},
 			plugin: function (expect, channel, pipe) {
 				_.module(['globals'], function (_, globals) {
@@ -86,13 +85,13 @@ _.describe(['pipe'], function (_) {
 				});
 				const self = this, ch = channel.create(), msg = [new Buffer('Hello World!')];
 				var flag = false;
-				pipe(msg, ch.wr).then(function (rd) {
+				const result = pipe(msg, ch.wr).then(function (rd) {
 					flag = true;
 					expect(isNaN(rd)).to.equal(true);
 					expect(channel.read(ch.rd, Infinity)).to.deep.equal(msg);
-					self.write(null);
-				}).catch(errorHandler(self));
+				});
 				expect(flag).to.equal(false);
+				return result;
 			}
 		}
 	};

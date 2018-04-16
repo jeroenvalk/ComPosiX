@@ -34,12 +34,12 @@ _.describe(['chai', 'operation'], function (_, chai, operation) {
 				expect(operation.readJSON(empty)).to.equal(empty);
 				expect(operation.readJSON(1, {"#": array})[1]).to.equal(array);
 
-				operation.request({
+				return operation.request({
 					method: "GET",
 					protocol: "file:",
 					hostname: "localhost",
 					pathname: [__dirname, "../../../main/swagger/definitions/IterationContext.yml"].join("/")
-				}).then(function(result) {
+				}).then(function (result) {
 					expect(operation.readJSON(result)).to.deep.equal({
 						type: "object",
 						properties: {
@@ -61,10 +61,6 @@ _.describe(['chai', 'operation'], function (_, chai, operation) {
 							}
 						}
 					});
-					self.write(null);
-				}).catch(function(e) {
-					self.write(e);
-					self.write(null);
 				});
 			},
 			request: function () {
@@ -80,7 +76,7 @@ _.describe(['chai', 'operation'], function (_, chai, operation) {
 					method: "OPTIONS",
 					protocol: "file:",
 					hostname: "localhost"
-				}], function(options) {
+				}], function (options) {
 					return operation.request(options);
 				})).to.deep.equal([{
 					type: "response",
@@ -93,7 +89,7 @@ _.describe(['chai', 'operation'], function (_, chai, operation) {
 					statusCode: 200
 				}]);
 
-				operation.request([{
+				return operation.request([{
 					method: "GET",
 					protocol: "file:",
 					hostname: "localhost",
@@ -103,26 +99,24 @@ _.describe(['chai', 'operation'], function (_, chai, operation) {
 					protocol: "file:",
 					hostname: "localhost",
 					pathname: [__dirname, "../../../main/swagger/Operation.yml"].join("/")
-				}]).then(function(result) {
+				}]).then(function (result) {
 					expect(result.constructor).to.equal(Array);
 					expect(result.length).to.equal(2);
 
 					expect(result[0].contentType).to.equal("application/javascript");
 					expect(result[0]['#'].constructor).to.equal(Array);
-					_.each(result[0]['#'], function(buffer) {
+					_.each(result[0]['#'], function (buffer) {
 						expect(buffer).to.be.an.instanceof(Buffer);
 					});
 
 					expect(result[1].contentType).to.equal("application/x-yaml");
 					expect(result[0]['#'].constructor).to.equal(Array);
-					_.each(result[0]['#'], function(buffer) {
+					_.each(result[0]['#'], function (buffer) {
 						expect(buffer).to.be.an.instanceof(Buffer);
 					});
-
-					self.write(null);
 				});
 			},
-			execute: function() {
+			execute: function () {
 				const array = [];
 				expect(operation.execute({
 					type: "request",

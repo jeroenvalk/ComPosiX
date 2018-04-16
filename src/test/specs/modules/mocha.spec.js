@@ -33,7 +33,7 @@ _.describe(function (_) {
 			sync: function (expect, pipe) {
 				// for successfull tests use the pipe method send an EOF to this testcase
 				// otherwise the test will run into a timeout
-				pipe(null, this).catch(fail(this));
+				//pipe(null, this).catch(fail(this));
 				// note that null is used as EOF symbol (as implemented in source.js)
 				// also note that 'this' is a writable target (see target.js for supported writables)
 			},
@@ -48,7 +48,7 @@ _.describe(function (_) {
 				_.module(['globals', 'channel'], function (_, globals, channel) {
 					const ch = channel.create(true);
 					const info = function (error) {
-						console.error('[INFO]', error);
+						//console.error('[INFO]', error);
 						channel.write(ch.wr, null);
 						return ch.rd;
 					};
@@ -83,7 +83,7 @@ _.describe(function (_) {
 						return pipe(error, self, {
 							write: function (err) {
 								fatal.CAUSE = err;
-								console.error('ERROR', fatal);
+								//console.error('ERROR', fatal);
 							},
 							end: EOF(self)
 						});
@@ -91,11 +91,11 @@ _.describe(function (_) {
 				};
 
 				const self = this;
-				Promise.resolve().then(function () {
+				return Promise.resolve().then(function () {
 					throw _.extend(new Error(), {type: 'INFO'});
 					//throw _.extend(new Error(), {type: 'ERROR'});
 					//throw _.extend(new Error(), {type: 'FATAL'});
-				}).then(EOF(this), ERR(this)).catch(fail(this)); // use ERR function to catch errors
+				}).then(EOF(this), ERR(this)).catch(fail(this)).catch(function(){}); // use ERR function to catch errors
 			}
 		}
 	};

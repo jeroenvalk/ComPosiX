@@ -26,37 +26,43 @@ _.describe(function (_) {
 		},
 		it: {
 			refreshPaths: function (expect, swagger, channel) {
-				const self = this;
-				channel.read(swagger.refreshPaths({
-					swagger: "2.0",
-					info: {
-						title: "Identity",
-						version: "v1",
-						contact: {
-							name: "ComPosiX"
-						}
-					},
-					schemes: ["https"],
-					host: "localhost",
-					basePath: "/",
-					paths: {}
-				}), Infinity, function (array) {
-					expect(array[0].paths).to.deep.equal({
-						"/identity/{uid}/at/{entity}": {
-							"get": {
-								"operationId": "computeUUIDv5"
+				return new Promise(function(resolve, reject) {
+					channel.read(swagger.refreshPaths({
+						swagger: "2.0",
+						info: {
+							title: "Identity",
+							version: "v1",
+							contact: {
+								name: "ComPosiX"
 							}
 						},
-						"/identity/uuid/{uuid}": {
-							"get": {
-								"operationId": "getUUIDv5"
-							},
-							"put": {
-								"operationId": "putUUIDv5"
-							}
+						schemes: ["https"],
+						host: "localhost",
+						basePath: "/",
+						paths: {}
+					}), Infinity, function (array) {
+						try {
+							expect(array[0].paths).to.deep.equal({
+								"/identity/{uid}/at/{entity}": {
+									"get": {
+										"operationId": "computeUUIDv5"
+									}
+								},
+								"/identity/uuid/{uuid}": {
+									"get": {
+										"operationId": "getUUIDv5"
+									},
+									"put": {
+										"operationId": "putUUIDv5"
+									}
+								}
+							});
+							resolve();
+						} catch(e) {
+							reject(e);
 						}
 					});
-					self.write(null);
+
 				});
 			}
 		}

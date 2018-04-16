@@ -41,14 +41,13 @@ _.describe(['chai', 'searchPath'], function(_, chai, searchPath) {
 				return true;
 			},
 			resolve: function() {
-				const self = this, options = {
+				const options = {
 					protocol: "file:",
 					method: "GET",
 					hostname: "localhost",
 					pathname: __dirname + "/"
 				};
-				searchPath.resolve("searchPath.spec.js").then(function(result) {
-					self.write(null);
+				return searchPath.resolve("searchPath.spec.js").then(function(result) {
 					expect(result).to.deep.equal(options);
 				});
 			}
