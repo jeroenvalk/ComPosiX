@@ -31,10 +31,10 @@ module.exports = function ($) {
 	$.http = $.http || require('http');
 	$._ = require(".")($._ || require('lodash'));
 	$._.ComPosiX({
-		enforce: true,
 		plugins: ['mocha']
 	});
 	$._.ComPosiX(require);
+	$._.ComPosiX(['module', 'mocha']);
 	$.processor = $.processor || require('./processor');
 
 	var globals = {

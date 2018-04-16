@@ -32,7 +32,8 @@ module.exports = function (_) {
 				}).join('');
 				return home ? ['~' + home, {pathname: file, search: ['src/main/']}] : null;
 			}
-		})))
+		}))),
+		plugins: ['module']
 	};
 
 	_.mixin({

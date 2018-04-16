@@ -35,24 +35,35 @@ _.plugin(function (_) {
 	const plugin = function plugin$plugin() {
 		const argv = groupArguments(arguments);
 		if (!argv[1]) argv[1] = [];
-		const func = function cpx$plugin(_) {
-			if (argv[0] && !func.nocache) {
-				cache[argv[0]] = func;
-			}
-			var i = argv[1].length, j = arguments.length, k = i + j;
-			const array = new Array(k);
-			array[0] = _;
-			while (i > 0) {
-				array[i] = _.require(argv[1][--i]);
-			}
-			while (j > 1) {
-				array[--k] = arguments[--j];
-			}
-			return argv[2].apply(this, array);
-		};
-		func.type = 0; // plugin
-		func.argv = argv;
-		return result = func;
+		if (argv[1] instanceof Array) {
+			const func = function cpx$plugin(_) {
+				if (argv[0]) {
+					cache[argv[0]] = func;
+				}
+				var i = argv[1].length, j = arguments.length, k = i + j;
+				const array = new Array(k);
+				array[0] = _;
+				while (i > 0) {
+					array[i] = _.require(argv[1][--i]);
+				}
+				while (j > 1) {
+					array[--k] = arguments[--j];
+				}
+				return argv[2].apply(this, array);
+			};
+			func.type = 0; // plugin
+			func.argv = argv;
+			return result = func;
+		}
+		if (argv[2]) {
+			result = _.extend(argv[2], argv[1]);
+		} else {
+			result = argv[1];
+		}
+		if (argv[0]) {
+			return cache[argv[0]] = result;
+		}
+		return result;
 	};
 
 	plugin.require = require;

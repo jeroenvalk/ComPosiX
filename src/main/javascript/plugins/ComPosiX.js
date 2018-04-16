@@ -22,41 +22,12 @@ _.plugin(function(_) {
 		}
 	};
 
-	var url, module;
-
-	const config = {};
-
-	const initialize = function (_) {
-		const iteratee = function (baseURL) {
-			return function (pathname) {
-				_.require('searchPath').postCurrent(baseURL, pathname);
-			};
-		};
-
-		const plugins = {
-			module: module
-		};
-
-		const resources = _.concat(config.search.resources, 'ComPosiX/ComPosiX/src/main/');
-
-		_.each(config.plugins, function (plugin) {
-			plugins[plugin] = _.require(plugin);
-		});
-		_.each(plugins, function (func) {
-			func(_);
-		});
-
-		_.each(resources, iteratee(config.baseURL));
-
-		_.each(config.home, function(home) {
-			_.each(home.search, iteratee(url.resolve(config.baseURL, home.pathname)));
-		});
-
-		_.module('config', _.constant(config));
-	};
-
-	const configure = function cpx$configure(conf) {
-		return _.mergeWith(config, conf, customizer);
+	const getValue = function(object, path, defaultValue) {
+		const result = _.get(object, path, defaultValue);
+		if (result instanceof Object) {
+			return;
+		}
+		return result;
 	};
 
 	const indexOf = {s: 0, o: 1, f: 2};
@@ -70,6 +41,36 @@ _.plugin(function(_) {
 			}
 		}
 		return result;
+	};
+
+	var url;
+
+	const config = {}, plugins = {};
+
+	const initialize = function (_, pluginNames) {
+		const iteratee = function (baseURL) {
+			return function (pathname) {
+				_.require('searchPath').postCurrent(baseURL, pathname);
+			};
+		};
+
+		const resources = _.concat(config.search.resources, 'ComPosiX/ComPosiX/src/main/');
+
+		_.each(pluginNames, function (name) {
+			plugins[name].call(null, _);
+		});
+
+		_.each(resources, iteratee(config.baseURL));
+
+		_.each(config.home, function(home) {
+			_.each(home.search, iteratee(url.resolve(config.baseURL, home.pathname)));
+		});
+
+		_.module('config', _.constant(config));
+	};
+
+	const configure = function cpx$configure(conf) {
+		return _.mergeWith(config, conf, customizer);
 	};
 
 	const bootstrap = function cpx$bootstrap(require) {
@@ -99,6 +100,7 @@ _.plugin(function(_) {
 
 		_.ComPosiX.groupArguments = groupArguments;
 		_.ComPosiX.resolve = resolve;
+		_.ComPosiX.config = _.curry(getValue)(config);
 
 		_.mixin({
 			plugin: function cpx$plugin() {
@@ -116,25 +118,37 @@ _.plugin(function(_) {
 		require(resolve('require'));
 		require(resolve('plugin'));
 
-		module = _.require('module');
-
-		initialize(_);
+		_.each(config.plugins, function(name) {
+			plugins[name] = _.require(name);
+		});
 	};
 
-	_.mixin({
-		ComPosiX: function ComPosiX(entity) {
-			const _ = this;
+	var state = 0;
 
-			if (entity) {
-				if (_.isPlainObject(entity)) {
-					return configure(entity);
-				} else {
-					bootstrap(entity)
+	_.mixin({
+		ComPosiX: function ComPosiX() {
+			var _ = this;
+			for (var i = 0; i < arguments.length; ++i) {
+				switch(state) {
+					case 0:
+						if (_.isPlainObject(arguments[i])) {
+							configure(arguments[i]);
+						} else {
+							bootstrap(arguments[i]);
+							++state;
+						}
+						break;
+					case 1:
+						initialize(_, arguments[i]);
+						++state;
+						break;
+					case 2:
+						_ = _.runInContext();
+						initialize(_, arguments[i]);
+						break;
 				}
-			} else {
-				delete config.plugins;
-				initialize(_);
 			}
+			return _;
 		}
 	});
 
