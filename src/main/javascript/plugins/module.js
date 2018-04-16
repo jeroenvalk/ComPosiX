@@ -33,12 +33,12 @@ _.plugin("module", function (_) {
 	};
 
 	const module = function cpx$module() {
-		const func = this.plugin.apply(this, arguments), name = func.argv[0];
+		const func = _.plugin.apply(null, arguments), name = func.argv[0];
 		func.type = 1; // module
 		if (name) {
-			helper(name, func, this);
+			helper(name, func, _);
 		} else {
-			func.call(x, this);
+			func.call(x, _);
 		}
 	};
 

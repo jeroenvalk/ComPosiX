@@ -15,12 +15,14 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.plugin(['url'], function(_, url) {
+_.plugin(function(_) {
 	const customizer = function(objValue, srcValue) {
 		if (_.isArray(objValue)) {
 			return objValue.concat(srcValue);
 		}
 	};
+
+	var url, module;
 
 	const initialize = function (_) {
 		const iteratee = function (baseURL) {
@@ -30,7 +32,7 @@ _.plugin(['url'], function(_, url) {
 		};
 
 		const config = this, plugins = {
-			module: _.require('module')
+			module: module
 		};
 
 		const resources = _.concat(config.search.resources, 'ComPosiX/ComPosiX/src/main/');
@@ -57,8 +59,29 @@ _.plugin(['url'], function(_, url) {
 		return _.mergeWith(config, conf, customizer);
 	};
 
+	const indexOf = {s: 0, o: 1, f: 2};
+
+	const groupArguments = function (argv) {
+		const result = new Array(3);
+		for (var i = 0; i < argv.length; ++i) {
+			const index = indexOf[(typeof argv[i]).charAt(0)];
+			if (!isNaN(index)) {
+				result[index] = argv[i];
+			}
+		}
+		return result;
+	};
+
 	const bootstrap = function cpx$bootstrap(require) {
+		url = require('url');
+
 		_.mixin({
+			plugin: _.extend(function cpx$plugin() {
+				const argv = groupArguments(arguments);
+				argv[2].apply(this, _.concat(_, _.map(argv[1], require)));
+			}, {
+				groupArguments: null
+			}),
 			require: _.extend(function (module) {
 				global._ = this;
 				const result = require(module);
@@ -73,13 +96,15 @@ _.plugin(['url'], function(_, url) {
 		require('./plugins/require');
 		require('./plugins/plugin');
 
+		module = _.require('module');
+
 		if (config.enforce) {
 			config.initialize(_);
 		}
 	};
 
 	_.mixin({
-		ComPosiX: function ComPosiX(entity) {
+		ComPosiX: _.extend(function ComPosiX(entity) {
 			const _ = this;
 
 			if (entity) {
@@ -89,6 +114,8 @@ _.plugin(['url'], function(_, url) {
 					bootstrap(entity)
 				}
 			}
-		}
+		}, {
+			groupArguments: groupArguments
+		})
 	});
 });

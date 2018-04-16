@@ -37,26 +37,10 @@ module.exports = function (_) {
 		})))
 	};
 
-	const indexOf = {s: 0, o: 1, f: 2};
-
-	const groupArguments = function (argv) {
-		const result = new Array(3);
-		for (var i = 0; i < argv.length; ++i) {
-			const index = indexOf[(typeof argv[i]).charAt(0)];
-			if (!isNaN(index)) {
-				result[index] = argv[i];
-			}
-		}
-		return result;
-	};
-
 	_.mixin({
-		plugin: _.extend(function cpx$plugin() {
-			const argv = groupArguments(arguments);
-			argv[2].apply(this, _.concat(_, _.map(argv[1], require)));
-		}, {
-			groupArguments: groupArguments
-		})
+		plugin: function cpx$plugin(func) {
+			func(_);
+		}
 	});
 
 	require('./plugins/ComPosiX');

@@ -18,8 +18,7 @@
 _.plugin(function (_) {
 	const cpxRequire = _.require;
 
-	console.log(_.plugin.groupArguments);
-	const groupArguments = _.plugin.groupArguments;
+	const groupArguments = _.ComPosiX.groupArguments;
 
 	const cache = {};
 	var result = null;
@@ -33,31 +32,33 @@ _.plugin(function (_) {
 		return result;
 	};
 
+	const plugin = function plugin$plugin() {
+		const argv = groupArguments(arguments);
+		if (!argv[1]) argv[1] = [];
+		const func = function cpx$plugin(_) {
+			if (argv[0] && !func.nocache) {
+				cache[argv[0]] = func;
+			}
+			var i = argv[1].length, j = arguments.length, k = i + j;
+			const array = new Array(k);
+			array[0] = _;
+			while (i > 0) {
+				array[i] = _.require(argv[1][--i]);
+			}
+			while (j > 1) {
+				array[--k] = arguments[--j];
+			}
+			return argv[2].apply(this, array);
+		};
+		func.type = 0; // plugin
+		func.argv = argv;
+		return result = func;
+	};
+
+	plugin.require = require;
+
 	_.mixin({
 		require: require,
-		plugin: _.extend(function plugin$plugin() {
-			const _ = this, argv = groupArguments(arguments);
-			if (!argv[1]) argv[1] = [];
-			const func = function cpx$plugin(_) {
-				if (argv[0] && !func.nocache) {
-					cache[argv[0]] = func;
-				}
-				var i = argv[1].length, j = arguments.length, k = i + j;
-				const array = new Array(k);
-				array[0] = _;
-				while (i > 0) {
-					array[i] = _.require(argv[1][--i]);
-				}
-				while (j > 1) {
-					array[--k] = arguments[--j];
-				}
-				return argv[2].apply(this, array);
-			};
-			func.type = 0; // plugin
-			func.argv = argv;
-			return result = func;
-		}, {
-			require: require
-		})
+		plugin: plugin
 	});
 });
