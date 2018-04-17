@@ -19,10 +19,16 @@ _.module('searchPath', ['url', 'operation'], function (_, url, op) {
 	const cache = {};
 
 	const getCurrent = function searchPath$getCurrent(baseURL) {
-		return baseURL ? (cache[baseURL] || {
-			type: "response",
-			statusCode: 404
-		}) : cache;
+		if (baseURL) {
+			if (cache[baseURL]) {
+				return cache[baseURL];
+			}
+			throw {
+				type: "response",
+				statusCode: 404
+			};
+		}
+		return cache;
 	};
 
 	const postCurrent = function searchPath$postCurrent(baseURL, pathname, body) {

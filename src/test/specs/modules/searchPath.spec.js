@@ -22,11 +22,15 @@ _.describe(['chai', 'searchPath'], function(_, chai, searchPath) {
 		it: {
 			getCurrent: function() {
 				expect(searchPath.getCurrent()).to.deep.equal({});
-				expect(searchPath.getCurrent("file://localhost")).to.deep.equal({
-					type: "response",
-					statusCode: 404
-				})
-				return true;
+				try {
+					expect(searchPath.getCurrent("file://localhost"));
+					throw new Error();
+				} catch(e) {
+					expect(e).to.deep.equal({
+						type: "response",
+						statusCode: 404
+					});
+				}
 			},
 			postCurrent: function() {
 				const options = {
@@ -38,14 +42,13 @@ _.describe(['chai', 'searchPath'], function(_, chai, searchPath) {
 				expect(searchPath.postCurrent("file://localhost", __dirname + "/")).to.deep.equal(options);
 				expect(searchPath.getCurrent()).to.deep.equal({"file://localhost": [options]});
 				expect(searchPath.getCurrent("file://localhost")).to.deep.equal([options]);
-				return true;
 			},
 			resolve: function() {
 				const options = {
 					protocol: "file:",
 					method: "GET",
 					hostname: "localhost",
-					pathname: __dirname + "/"
+					pathname: __dirname + "/searchPath.spec.js"
 				};
 				return searchPath.resolve("searchPath.spec.js").then(function(result) {
 					expect(result).to.deep.equal(options);
