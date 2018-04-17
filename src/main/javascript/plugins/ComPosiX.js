@@ -15,14 +15,14 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.plugin(function(_) {
-	const customizer = function(objValue, srcValue) {
+_.plugin(function (_) {
+	const customizer = function (objValue, srcValue) {
 		if (_.isArray(objValue)) {
 			return objValue.concat(srcValue);
 		}
 	};
 
-	const getValue = function(object, path, defaultValue) {
+	const getValue = function (object, path, defaultValue) {
 		if (path) {
 			const result = _.get(object, path, defaultValue);
 			if (result instanceof Object) {
@@ -48,30 +48,25 @@ _.plugin(function(_) {
 
 	var url;
 
-	const resolveHome = function(suffix, base) {
+	const resolveHome = function (suffix, base) {
 		if (suffix.startsWith('~')) {
 			const home = suffix.split('/', 1)[0].substr(1);
-			return [url.resolve(config.pathname, home ? config.home[home].pathname : base), suffix.substr(home.length + 2)];
+			return [home ? config.home[home].pathname : base, suffix.substr(home.length + 2)];
 		}
 	};
 
 	const config = {}, plugins = {};
 
 	const initialize = function (searchPath) {
-		//_.eachRight(config.search.resources, function(suffix) {
-		//	const part = resolveHome(suffix, "./");
-		//	console.log(part[0]);
-		//	searchPath.postCurrent(url.resolve(config.authority, part[0]), part[1]);
-		//});
-		_.each(config.home, function(home) {
-			_.eachRight(home.search, function(suffix) {
+		const authority = url.resolve(config.authority, config.pathname);
+		_.eachRight(config.search.resources, function (suffix) {
+			const part = resolveHome(suffix, "./");
+			searchPath.postCurrent(authority, url.resolve(part[0], part[1]));
+		});
+		_.each(config.home, function (home) {
+			_.eachRight(home.search, function (suffix) {
 				const part = resolveHome(suffix, home.pathname);
-				console.log(home, suffix, part);
-				try {
-					searchPath.postCurrent(url.resolve(config.authority, part[0]), part[1]);
-				} catch(e) {
-					throw new Error(JSON.stringify(e));
-				}
+				searchPath.postCurrent(url.resolve(authority, part[0]), part[1]);
 			});
 		});
 	};
@@ -83,9 +78,9 @@ _.plugin(function(_) {
 	const bootstrap = function cpx$bootstrap(require) {
 		url = require('url');
 
-		const search = _.reverse(_.map(config.search.sources, function(source) {
+		const search = _.reverse(_.map(config.search.sources, function (source) {
 			if (source.startsWith('~')) {
-				return resolveHome(source, "./").join('');
+				return url.resolve(config.pathname, resolveHome(source, "./").join(''));
 			}
 			return source;
 		}));
@@ -130,7 +125,7 @@ _.plugin(function(_) {
 		require(resolve('require'));
 		require(resolve('plugin'));
 
-		_.each(config.plugins, function(name) {
+		_.each(config.plugins, function (name) {
 			plugins[name] = _.require(name);
 		});
 	};

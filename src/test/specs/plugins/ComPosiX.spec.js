@@ -15,13 +15,13 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.describe('ComPosiX', ['os', 'url', 'chai', 'searchPath'], function(_, os, url, chai, searchPath) {
-	const workspace = url.resolve("file://localhost", url.resolve(os.homedir() + "/", "Desktop/ComPosiX/"));
+_.describe('ComPosiX', ['os', 'url', 'chai', 'searchPath'], function (_, os, url, chai, searchPath) {
+	const workspace = url.resolve(_.ComPosiX.config('authority'), _.ComPosiX.config('pathname'));
 	const expect = chai.expect;
 
-	const then = function(value) {
+	const then = function (value) {
 		if (value instanceof Promise) {
-			return value.then(function(value) {
+			return value.then(function (value) {
 				return then(value);
 			});
 		}
@@ -34,23 +34,32 @@ _.describe('ComPosiX', ['os', 'url', 'chai', 'searchPath'], function(_, os, url,
 	};
 
 	_.ComPosiX(true);
+	console.log(searchPath.getCurrent());
 
 	return {
 		it: {
-			config: function() {
-				console.log(searchPath.getCurrent());
-				try {
-					// by default no search paths are set in the workspace so we cannot search there
-					searchPath.getCurrent(workspace);
-				} catch(e) {
-					expect(e).to.deep.equal({
-						type: "response",
-						statusCode: 404
-					})
-				}
+			config: function () {
+				expect(searchPath.getCurrent(workspace)).to.deep.equal([{
+					protocol: "file:",
+					hostname: "localhost",
+					method: "OPTIONS",
+					pathname: [
+						_.ComPosiX.config('pathname'),
+						_.ComPosiX.config('home.cpx.pathname'),
+						'src/main/resources/'
+					].join('')
+				}]);
 
 				const cpx = url.resolve(workspace, _.ComPosiX.config("home.cpx.pathname"));
-				expect(searchPath.getCurrent(cpx)).to.deep.equal([_.extend(_.pick(url.parse(cpx), "protocol", "hostname", "pathname"), {method: "OPTIONS"})]);
+				expect(searchPath.getCurrent(cpx)).to.deep.equal([{
+					protocol: "file:",
+					hostname: "localhost",
+					method: "OPTIONS",
+					pathname: [
+						_.ComPosiX.config('pathname'),
+						_.ComPosiX.config('home.cpx.pathname')
+					].join('')
+				}]);
 			}
 		}
 	}
