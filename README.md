@@ -5,66 +5,114 @@ Extremely simple to use module system on top of your favorite `_` dialect such a
 [Underscore](http://underscorejs.org/) or [Lodash](http://lodash.com/).
 Modules will work easily on NodeJS and in the browser without any hassle.
 
-##NodeJS
+#Getting Started
 
-### Installation
-Install ComPosiX along with your favorite `_` implementation.
-
-For UnderscoreJS:
+## Step 1: Get your favorite _ implementation
+For example:
+```shell
+$ npm install composix lodash underscore
 ```
-npm install underscore composix
-```
+Make sure the _ variable is in the global scope before you load ComPosiX.
 
-For Lodash:
-```
-npm install lodash composix
-```
-
-### Usage
-In your JavaScript code, require ComPosiX and feed it the _ implementation of
-your choice.
-
-For UnderscoreJS:
+_NodeJS_:
 ```javascript
-const _ = require('composix')(require('underscore'));
+global._ = require('lodash');
+require('composix').ComPosiX(require, true);
 ```
 
-For Lodash:
+Note that ComPosiX uses the CommonJS require function to load all modules.
+The boolean option true tells ComPosiX to automatically configure itself
+using the default configuration.
+
+_Browser_:
+```html
+<script type="application/javascript" src="lodash.js"></script>
+<script type="application/javascript" src="composix.js"></script>
+<script type="application/javascript" src="your_javascript_modules.js"></script>
+<script type="application/javascript">
+    _.ComPosiX(true);
+    _.module(['your_first_module'], function(_, your_first_module) {
+    	your_first_module.start();
+    });
+</script>
+```
+
+This runs ComPosiX without a module loader so you need to assure that
+dependencies are already loaded before you use them. So given the HTML above
+we expect 'your_first_module' to be defined in the 
+file 'your_javascript_modules.js'.
+
+## Step 2: start writing your own modules
+Modules are created using the _.module(name, deps, func) plugin which takes up to
+three arguments:
+- name: a unique name you give to your module for future reference as a dependency
+- deps: array with module names that you want to use as a dependency
+- func: JavaScript function that provides the implementation of your module
+
+Only the JavaScript function is required allowing you to write JavaScript
+in a contained scope like so:
 ```javascript
-const _ = require('composix')(require('lodash'));
+_.module(function(_) {
+	console.log("Hello World!");
+});
+console.log("Bye World!");
 ```
+The module function is directly executed (synchronously). So you will see "Hello World!" and
+"Bye World!" in the correct order.
 
-Now the plugin `_.module` has been added and is ready to use. Start writing
-your own modules.
+Anonymous modules with dependencies are a bit more advanced:
+```javascript
+_.module(['uuid/v4'], function(uuidv4) {
+	console.log("Hello " + uuidv4());
+});
+```
+This module is again synchronously executed and depends on the uuid NodeJS module to
+print a unique identifier to the console. 
 
-Simple named module without dependencies:
+Besides existing dependencies any named module can also be included as a dependency to a 
+module. For example:
 ```javascript
 _.module('HelloWorld', function() {
     return "Hello World!"
 });
+
+_.module(['HelloWorld'], function(hw) {
+    console.log(hw);
+ );
 ```
 
-Named module with one dependency:
+An interesting aspect of named modules is that they can be executed again when demanded
+in another underscore context. Consider for example the following named module.
 ```javascript
-_.module('printHelloWorld', ['HelloWorld'], function(hw) {
-    return function() {
-        console.log(hw);
-    };
+_.module('counter', ['uuid/v4'], function(_, uuidv4) {
+	var N = 0;
+	
+	const uuid = uuidv4(), count = function() {
+		console.log(uuid, N++);
+		_.delay(count, 1000);
+	};
+	
+	return uuid;
 });
 ```
-
-Anonymous module with dependency:
+Again this module executed synchronously and the immediately the counting starts on
+the console. A named module may again be executed in another ComPosiX context.
+A new ComPosiX context can be created by calling _.runInContext() to create
+a new _ underscore object then initializing ComPosiX in it.
 ```javascript
-_.module(['printHelloWorld'], function(run) {
-    run();
+// first counter is already running
+
+// create a new ComPosiX context
+const __ = _.runInContext();
+__.ComPosiX(true);
+
+// executes new counter because demanded as dependency in a new context
+__.module(['counter'], function(second ) {
+	
 });
-```
+``` 
 
-## Browsers
-
-Instructions coming soon.
-
-## Builtins
+## Step 3: Learn more about ComPosiX
 
 ComPosiX comes with a lot of useful modules built in. For example,
 offers powerful YAML and CSV handling.
