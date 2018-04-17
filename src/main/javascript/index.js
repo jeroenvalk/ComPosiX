@@ -15,24 +15,48 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-const path = require('path'), fs = require('fs');
-const workspace = path.resolve(__dirname, "../../../../..");
 
 module.exports = function (_) {
-	const config = {
-		baseURL: "file://localhost" + workspace +'/',
-		search: {
-			sources: [path.resolve(__dirname, 'modules'), path.resolve(__dirname, 'plugins')],
-			resources: []
-		},
-		home: _.fromPairs(_.compact(_.map(fs.readdirSync(workspace), function (file) {
-			if (fs.statSync(path.resolve(workspace, file)).isDirectory()) {
+	const url = require('url'), fs = require('fs');
+
+	const workspace = url.resolve(require('os').homedir() + '/', "Desktop/ComPosiX/");
+	console.log("[INFO] workspace=" + workspace);
+	if (!__dirname.startsWith(workspace)) {
+		console.error('[ERROR] security violation: ' + url.resolve(__dirname + '/', '../../../'));
+		return;
+	}
+	const cpxdir = url.resolve(__dirname.substr(workspace.length), '../../');
+	console.log("[INFO] cpx=" + cpxdir);
+
+	const getOrganizations = function(workspace) {
+		return _.fromPairs(_.compact(_.map(fs.readdirSync(workspace), function (file) {
+			if (fs.statSync(url.resolve(workspace, file)).isDirectory()) {
 				const home = _.map(file, function (c) {
 					return c === c.toLowerCase() ? '' : c;
 				}).join('');
-				return home ? ['~' + home, {pathname: file, search: ['src/main/']}] : null;
+				return home ? [home, file] : null;
 			}
-		}))),
+		})));
+	};
+
+	const config = {
+		authority: "file://localhost",
+		pathname: workspace,
+		search: {
+			sources: ['~cpx/src/main/javascript/modules/', '~cpx/src/main/javascript/plugins/'],
+			resources: ['~cpx/src/main/resources/']
+		},
+		home: _.extend({
+			cpx: {
+				pathname: cpxdir,
+				search: ['~/']
+			}
+		}, _.mapValues(getOrganizations(workspace), function(file) {
+			return {
+				pathname: file + '/',
+				search: ['~/']
+			}
+		})),
 		plugins: ['module']
 	};
 

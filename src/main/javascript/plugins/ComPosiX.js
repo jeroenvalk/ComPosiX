@@ -48,24 +48,32 @@ _.plugin(function(_) {
 
 	var url;
 
+	const resolveHome = function(suffix, base) {
+		if (suffix.startsWith('~')) {
+			const home = suffix.split('/', 1)[0].substr(1);
+			return [url.resolve(config.pathname, home ? config.home[home].pathname : base), suffix.substr(home.length + 2)];
+		}
+	};
+
 	const config = {}, plugins = {};
 
-	const initialize = function (_) {
-		const iteratee = function (baseURL) {
-			return function (pathname) {
-				_.require('searchPath').postCurrent(baseURL, pathname);
-			};
-		};
-
-		const resources = _.concat(config.search.resources, 'ComPosiX/ComPosiX/src/main/');
-
-		_.each(resources, iteratee(config.baseURL));
-
+	const initialize = function (searchPath) {
+		//_.eachRight(config.search.resources, function(suffix) {
+		//	const part = resolveHome(suffix, "./");
+		//	console.log(part[0]);
+		//	searchPath.postCurrent(url.resolve(config.authority, part[0]), part[1]);
+		//});
 		_.each(config.home, function(home) {
-			_.each(home.search, iteratee(url.resolve(config.baseURL, home.pathname)));
+			_.eachRight(home.search, function(suffix) {
+				const part = resolveHome(suffix, home.pathname);
+				console.log(home, suffix, part);
+				try {
+					searchPath.postCurrent(url.resolve(config.authority, part[0]), part[1]);
+				} catch(e) {
+					throw new Error(JSON.stringify(e));
+				}
+			});
 		});
-
-		_.module('config', _.constant(config));
 	};
 
 	const configure = function cpx$configure(conf) {
@@ -75,7 +83,12 @@ _.plugin(function(_) {
 	const bootstrap = function cpx$bootstrap(require) {
 		url = require('url');
 
-		const search = _.reverse(config.search.sources);
+		const search = _.reverse(_.map(config.search.sources, function(source) {
+			if (source.startsWith('~')) {
+				return resolveHome(source, "./").join('');
+			}
+			return source;
+		}));
 
 		const resolve = function cpx$resolve(module) {
 			for (var i = 0; i < search.length; ++i) {
@@ -99,7 +112,7 @@ _.plugin(function(_) {
 
 		_.ComPosiX.groupArguments = groupArguments;
 		_.ComPosiX.resolve = resolve;
-		_.ComPosiX.config = _.curry(getValue)(config);
+		_.ComPosiX.config = _.curry(getValue, 2)(config);
 
 		_.mixin({
 			plugin: function cpx$plugin() {
@@ -150,7 +163,7 @@ _.plugin(function(_) {
 								plugins[arguments[i]].call(null, current);
 							} else {
 								if (arguments[i]) {
-									initialize(current, arguments[i]);
+									initialize(current.require('searchPath'), arguments[i]);
 								}
 								++state;
 							}

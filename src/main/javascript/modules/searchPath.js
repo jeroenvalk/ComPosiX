@@ -39,7 +39,13 @@ _.module('searchPath', ['url', 'operation'], function (_, url, op) {
 		if (!body) {
 			body = {method: "OPTIONS"};
 		}
-		body = _.pick(_.extend(body, pathname && url.parse(url.resolve(baseURL, pathname))), ['protocol', 'method', 'hostname', 'pathname']);
+		body = _.extend(_.pick(url.parse(url.resolve(baseURL, pathname)), 'protocol', 'hostname', 'pathname'), body);
+		if (!body.protocol || !body.hostname || !body.pathname || !body.method) {
+			throw {
+				type: "response",
+				statusCode: 400
+			};
+		}
 		options.push(body);
 		return body;
 	};
