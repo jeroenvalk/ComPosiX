@@ -18,6 +18,32 @@
 /* globals describe, xdescribe, it */
 
 _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
+	const promify = function(result) {
+		var success = true;
+		while (success && result instanceof Function) {
+			try {
+				result = result();
+			} catch(e) {
+				success = false;
+				result = e;
+			}
+		}
+		return {
+			then: function(resolve, reject) {
+				if (!success) {
+					if (reject) {
+						return reject(result);
+					}
+					throw result;
+				}
+				if (result instanceof Promise) {
+					return result.then(resolve, reject);
+				}
+				return resolve ? resolve(result) : result;
+			}
+		};
+	};
+
 	_.extend(globals('mocha'), {
 		_: _,
 		node: {
@@ -36,6 +62,7 @@ _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 	};
 
 	const composix = function (_, array) {
+		array = _.compact(array);
 		for (var i = 0; i < array.length; ++i) {
 			array[i] = _.require(array[i]);
 		}
@@ -58,62 +85,38 @@ _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 		return argv;
 	};
 
-
-	const invokeAndDone = function (func, done) {
-		try {
-			const result = func.call(null);
-			if (result instanceof Promise) {
-				result.then(function () {
-					done();
-				}, done);
+	const descr = function cpx$mocha$describe(object, _, name) {
+		describe(object.name || name, function () {
+			var argv, use = object.use;
+			if (!use) {
+				use = {
+					nodejs: ["chai.expect"],
+					cpx: [object.name]
+				};
 			}
-		} catch (e) {
-			done(e);
-		}
-	};
-
-	const descr = function cpx$mocha$describe(object, _) {
-		if (object.name) {
-			describe(object.name, function () {
-				var argv, use = object.use;
-				if (!use) {
-					use = {
-						nodejs: ["chai.expect"],
-						cpx: [object.name]
-					};
-				}
-				before(function (done) {
+			before(function (done) {
+				promify(function() {
 					if (_.isFunction(object.before)) {
-						invokeAndDone(object.before, done);
-					} else {
-						try {
-							argv = cbDescribe(_, use);
-							done();
-						} catch (e) {
-							done(e);
-						}
+						return object.before.call(null);
 					}
-				});
-				if (_.isObject(object.it)) {
-					_(object.it).each(function (value, key) {
-						it(key, function (done) {
-							try {
-								const result = value.apply(null, argv);
-								if (result instanceof Promise) {
-									result.then(function() {
-										done();
-									}, done);
-								} else {
-									done();
-								}
-							} catch (e) {
-								done(e);
-							}
-						});
-					});
-				}
+					argv = cbDescribe(_, use);
+				}).then(_.ary(done, 0), done);
 			});
-		}
+			if (_.isObject(object.it)) {
+				_(object.it).each(function (value, key) {
+					it(key, function (done) {
+						promify(function() {
+							return value.apply(null, argv);
+						}).then(_.ary(done, 0), done);
+					});
+				});
+			}
+			if (_.isObject(object.xit)) {
+				_(object.xit).each(function (value, key) {
+					xit(key);
+				});
+			}
+		});
 	};
 
 	_.mixin({
@@ -124,7 +127,7 @@ _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 			const func = underscore.plugin.call(underscore, argv[1], argv[2]);
 			const result = func.call(null, underscore);
 			if (result instanceof Object) {
-				descr(result, underscore);
+				descr(result, underscore, argv[0]);
 			}
 			underscore.ComPosiX(false);
 		}

@@ -17,10 +17,9 @@
 
 /* global _ */
 
-_.describe(function (_) {
+_.describe('inherit', function (_) {
 	return {
-		//name: "inherit",
-		it: {
+		xit: {
 			inherit: function () {
 				const x = {
 					a: {
