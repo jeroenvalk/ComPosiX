@@ -122,7 +122,7 @@ _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 	_.mixin({
 		describe: function () {
 			const cpx = _.ComPosiX;
-			const argv = cpx.groupArguments(arguments);
+			const argv = _.plugin.groupArguments(arguments);
 			const underscore = _.runInContext();
 			underscore.mixin({ComPosiX: cpx});
 			underscore.ComPosiX('module');

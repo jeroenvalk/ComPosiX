@@ -16,9 +16,7 @@
  */
 
 _.plugin(function (_) {
-	const cpxRequire = _.require;
-
-	const groupArguments = _.ComPosiX.groupArguments;
+	const cpx = _.ComPosiX, cpxRequire = cpx.require, groupArguments = _.plugin.groupArguments;
 
 	const cache = {};
 	var result = null;
@@ -67,9 +65,12 @@ _.plugin(function (_) {
 	};
 
 	plugin.require = require;
+	plugin.groupArguments = groupArguments;
 
 	_.mixin({
 		require: require,
 		plugin: plugin
 	});
+
+	return true;
 });

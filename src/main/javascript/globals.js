@@ -29,13 +29,14 @@ module.exports = function ($) {
 	$.url = $.url || require('url');
 	$.stream = $.stream || require('stream');
 	$.http = $.http || require('http');
-	$._ = require(".")($._ || require('lodash'));
+	$._ = $._ || require('lodash');
+	$._.mixin({require: require});
+	$._ = require(".")($._);
 	$._.ComPosiX({
 		plugins: {
 			mocha: true
 		}
 	});
-	$._.mixin({require: require});
 	$._.ComPosiX('module', 'mocha');
 	$.processor = $.processor || require('./processor');
 

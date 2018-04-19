@@ -33,21 +33,6 @@ _.plugin(function (_) {
 		return _.cloneDeep(object);
 	};
 
-	const indexOf = {s: 0, o: 1, f: 2};
-
-	const groupArguments = function (argv) {
-		const result = new Array(3);
-		for (var i = 0; i < argv.length; ++i) {
-			const index = indexOf[(typeof argv[i]).charAt(0)];
-			if (!isNaN(index)) {
-				result[index] = argv[i];
-			}
-		}
-		return result;
-	};
-
-	var url;
-
 	const resolveHome = function (suffix, base) {
 		if (suffix.startsWith('~')) {
 			const home = suffix.split('/', 1)[0].substr(1);
@@ -55,19 +40,19 @@ _.plugin(function (_) {
 		}
 	};
 
-	const pathResource = function(func) {
+	const pathResource = function (func) {
 		_.eachRight(config.search.resources, func);
 	};
 
-	const eachHome = function(func) {
-		_.each(config.home, function(value, home) {
+	const eachHome = function (func) {
+		_.each(config.home, function (value, home) {
 			func(home);
 		});
 	};
 
-	const pathHome = function(home, func) {
+	const pathHome = function (home, func) {
 		home = config.home[home];
-		_.eachRight(home.search, function(suffix) {
+		_.eachRight(home.search, function (suffix) {
 			func(home.pathname, suffix);
 		});
 	};
@@ -78,114 +63,96 @@ _.plugin(function (_) {
 		return _.mergeWith(config, conf, customizer);
 	};
 
-	const bootstrap = function cpx$bootstrap() {
-		const require = _.require;
-		url = require('url');
-
-		const search = _.reverse(_.map(config.search.sources, function (source) {
-			if (source.startsWith('~')) {
-				return url.resolve(config.pathname, resolveHome(source, "./").join(''));
-			}
-			return source;
-		}));
-
-		const resolve = function cpx$resolve(module) {
-			for (var i = 0; i < search.length; ++i) {
-				const pathname = [search[i], module].join("/");
-				try {
-					require.resolve(pathname);
-					return pathname;
-				} catch (e) {
-					continue;
-				}
-			}
+	const resolve = function cpx$resolve(module) {
+		const search = ComPosiX.search;
+		for (var i = 0; i < search.length; ++i) {
+			const pathname = [search[i], module].join("/");
 			try {
-				require.resolve(module);
+				require.resolve(pathname);
+				return pathname;
 			} catch (e) {
-				_.throw(3, {
-					module: module,
-					search: search
-				});
+				continue;
 			}
-		};
-
-		_.ComPosiX.groupArguments = groupArguments;
-		_.ComPosiX.resolve = resolve;
-		_.ComPosiX.resolveHome = resolveHome;
-		_.ComPosiX.eachHome = eachHome;
-		_.ComPosiX.pathResource = pathResource;
-		_.ComPosiX.pathHome = pathHome;
-		_.ComPosiX.config = _.curry(getValue, 2)(config);
-
-		const bootRequire = function(module) {
-			global._ = this;
-			const result = require(module);
-			global._ = _;
-			return result;
-		};
-
-		_.mixin({
-			plugin: function cpx$plugin() {
-				const argv = groupArguments(arguments);
-				argv[2].apply(this, _.concat(_, _.map(argv[1], require)));
-			},
-			require: function (module) {
-				const _ = this;
-				const resolved = resolve.call(_, module);
-				if (resolved) {
-					bootRequire.call(_, resolved);
-				} else {
-					_.module(module, function () {
-						return bootRequire.call(_, module);
-					});
-				}
-			}
-		});
-
-		_.require('plugin');
-
-		_.each(config.plugins, function (value, key) {
-			if (value) {
-				plugins[key] = _.require(key);
-				if (!plugins[key]) {
-					throw new Error();
-				}
-			}
-		});
+		}
+		try {
+			require.resolve(module);
+		} catch (e) {
+			_.throw(3, {
+				module: module,
+				search: search
+			});
+		}
 	};
 
-	const plugins = {};
-	var mixin;
+	const require = _.require;
 
-	_.mixin({
-		ComPosiX: function ComPosiX() {
-			for (var i = 0; i < arguments.length; ++i) {
-				if (!this.plugin) {
-					this.mixin(mixin);
-				}
-				if (_.isString(arguments[i])) {
-					if (!plugins[arguments[i]]) {
-						if (config.plugins[arguments[i]]) {
-							bootstrap.call(null, this);
-						} else {
-							throw new Error('not configured: ' + arguments[i]);
+	const bootRequire = function (module) {
+		global._ = this;
+		const result = require(module);
+		global._ = _;
+		return result;
+	};
+
+	const cpxRequire = function cpx$require(module) {
+		const _ = this;
+		const resolved = resolve.call(_, module);
+		if (resolved) {
+			return bootRequire.call(_, resolved);
+		} else {
+			_.module(module, function () {
+				return bootRequire.call(_, module);
+			});
+		}
+	};
+
+	var plugins, mixin;
+
+	const ComPosiX = function ComPosiX() {
+		for (var i = 0; i < arguments.length; ++i) {
+			if (!plugins) {
+				if (_.isPlainObject(arguments[i])) {
+					configure(arguments[i]);
+					continue;
+				} else {
+					ComPosiX.search = _.reverse(_.map(config.search.sources, function (source) {
+						if (source.startsWith('~')) {
+							return config.pathname + resolveHome(source, "./").join('');
 						}
-					}
-					plugins[arguments[i]].call(null, this);
-				}
-				if (!mixin) {
-					if (_.isPlainObject(arguments[i])) {
-						configure(arguments[i]);
-					} else {
-						mixin = {
-							require: _.plugin.require,
-							plugin: _.plugin
-						};
-					}
+						return source;
+					}));
+					plugins = _.mapValues(config.plugins, function (value, key) {
+						if (value) {
+							const result = _.require(key);
+							if (!result) {
+								throw new Error();
+							}
+							return result
+						}
+					});
+					mixin = {
+						require: _.plugin.require,
+						plugin: _.plugin
+					};
 				}
 			}
-			return this;
+			if (!this.plugin) {
+				this.mixin(mixin);
+			}
+			if (_.isString(arguments[i])) {
+				plugins[arguments[i]].call(null, this);
+			}
 		}
-	});
+		return this;
+	};
 
+	ComPosiX.require = cpxRequire;
+	ComPosiX.resolveHome = resolveHome;
+	ComPosiX.eachHome = eachHome;
+	ComPosiX.pathResource = pathResource;
+	ComPosiX.pathHome = pathHome;
+	ComPosiX.config = _.curry(getValue, 2)(config);
+
+	_.mixin({
+		ComPosiX: ComPosiX
+	});
 });
