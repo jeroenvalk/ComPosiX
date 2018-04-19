@@ -136,38 +136,40 @@ _.plugin(function (_) {
 		_.each(config.plugins, function (value, key) {
 			if (value) {
 				plugins[key] = _.require(key);
+				if (!plugins[key]) {
+					throw new Error();
+				}
 			}
 		});
 	};
 
-	const plugins = {
-		bootstrap: bootstrap
-	};
+	const plugins = {};
 	var mixin;
 
 	_.mixin({
 		ComPosiX: function ComPosiX() {
 			for (var i = 0; i < arguments.length; ++i) {
-				if (!mixin) {
-					if (_.isPlainObject(arguments[i])) {
-						configure(arguments[i]);
-						continue;
-					} else {
-						bootstrap();
-						mixin = {
-							require: _.plugin.require,
-							plugin: _.plugin
-						};
-					}
-				}
 				if (!this.plugin) {
 					this.mixin(mixin);
 				}
 				if (_.isString(arguments[i])) {
+					if (!plugins[arguments[i]]) {
+						if (config.plugins[arguments[i]]) {
+							bootstrap.call(null, this);
+						} else {
+							throw new Error('not configured: ' + arguments[i]);
+						}
+					}
 					plugins[arguments[i]].call(null, this);
-				} else {
-					if (arguments[i] === true) {
-						//initialize(this);
+				}
+				if (!mixin) {
+					if (_.isPlainObject(arguments[i])) {
+						configure(arguments[i]);
+					} else {
+						mixin = {
+							require: _.plugin.require,
+							plugin: _.plugin
+						};
 					}
 				}
 			}
