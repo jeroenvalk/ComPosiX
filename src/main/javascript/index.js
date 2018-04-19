@@ -16,6 +16,10 @@
  */
 
 
+const bootPlugin = function cpx$bootPlugin(func) {
+	func(this);
+};
+
 module.exports = function (_) {
 	const url = require('url'), fs = require('fs');
 
@@ -63,9 +67,7 @@ module.exports = function (_) {
 	};
 
 	_.mixin({
-		plugin: function cpx$plugin(func) {
-			func(_);
-		}
+		plugin: bootPlugin
 	});
 
 	global._ = _;

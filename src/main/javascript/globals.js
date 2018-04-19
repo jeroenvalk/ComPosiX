@@ -34,7 +34,8 @@ module.exports = function ($) {
 		plugins: {
 			mocha: true
 		}
-	}, require);
+	});
+	$._.mixin({require: require});
 	$._.ComPosiX('module', 'mocha');
 	$.processor = $.processor || require('./processor');
 

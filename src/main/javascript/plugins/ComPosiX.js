@@ -55,27 +55,14 @@ _.plugin(function (_) {
 		}
 	};
 
-	const config = {}, plugins = {};
-
-	const initialize = function (searchPath) {
-		const authority = url.resolve(config.authority, config.pathname);
-		_.eachRight(config.search.resources, function (suffix) {
-			const part = resolveHome(suffix, "./");
-			searchPath.postCurrent(authority, url.resolve(part[0], part[1]));
-		});
-		_.each(config.home, function (home) {
-			_.eachRight(home.search, function (suffix) {
-				const part = resolveHome(suffix, home.pathname);
-				searchPath.postCurrent(url.resolve(authority, part[0]), part[1]);
-			});
-		});
-	};
+	const config = {};
 
 	const configure = function cpx$configure(conf) {
 		return _.mergeWith(config, conf, customizer);
 	};
 
-	const bootstrap = function cpx$bootstrap(require) {
+	const bootstrap = function cpx$bootstrap() {
+		const require = _.require;
 		url = require('url');
 
 		const search = _.reverse(_.map(config.search.sources, function (source) {
@@ -132,31 +119,50 @@ _.plugin(function (_) {
 		});
 	};
 
+	const initialize = function (_) {
+		const searchPath = _.require('searchPath');
+		const authority = url.resolve(config.authority, config.pathname);
+		_.eachRight(config.search.resources, function (suffix) {
+			const part = resolveHome(suffix, "./");
+			searchPath.postCurrent(authority, url.resolve(part[0], part[1]));
+		});
+		_.each(config.home, function (home) {
+			_.eachRight(home.search, function (suffix) {
+				const part = resolveHome(suffix, home.pathname);
+				searchPath.postCurrent(url.resolve(authority, part[0]), part[1]);
+			});
+		});
+	};
+
+	const plugins = {
+		bootstrap: bootstrap,
+		initialize: initialize
+	};
 	var mixin;
 
 	_.mixin({
 		ComPosiX: function ComPosiX() {
 			for (var i = 0; i < arguments.length; ++i) {
-				if (mixin) {
-					if (!this.plugin) {
-						this.mixin(mixin);
-					}
-					if (_.isString(arguments[i])) {
-						plugins[arguments[i]].call(null, this);
-					} else {
-						if (arguments[i]) {
-							initialize(this.require('searchPath'), arguments[i]);
-						}
-					}
-				} else {
+				if (!mixin) {
 					if (_.isPlainObject(arguments[i])) {
 						configure(arguments[i]);
+						continue;
 					} else {
-						bootstrap(arguments[i]);
+						bootstrap();
 						mixin = {
 							require: _.plugin.require,
 							plugin: _.plugin
 						};
+					}
+				}
+				if (!this.plugin) {
+					this.mixin(mixin);
+				}
+				if (_.isString(arguments[i])) {
+					plugins[arguments[i]].call(null, this);
+				} else {
+					if (arguments[i] === true) {
+						initialize(this);
 					}
 				}
 			}

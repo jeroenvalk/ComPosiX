@@ -30,7 +30,7 @@ _Browser_:
 <script type="application/javascript" src="composix.js"></script>
 <script type="application/javascript" src="your_javascript_modules.js"></script>
 <script type="application/javascript">
-    _.ComPosiX(true);
+    _.ComPosiX('module');
     _.module(['your_first_module'], function(_, your_first_module) {
     	your_first_module.start();
     });
@@ -100,15 +100,17 @@ the console. A named module may again be executed in another ComPosiX context.
 A new ComPosiX context can be created by calling _.runInContext() to create
 a new _ underscore object then initializing ComPosiX in it.
 ```javascript
-// first counter is already running
+// assume code block with counter module has already executed
+// so first counter is already running
 
 // create a new ComPosiX context
 const __ = _.runInContext();
-__.ComPosiX(true);
+__.mixin({ComPosiX: _.ComPosiX});
+__.ComPosiX('module');
 
 // executes new counter because demanded as dependency in a new context
 __.module(['counter'], function(second ) {
-	
+	console.log(second);
 });
 ``` 
 
