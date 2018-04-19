@@ -117,21 +117,32 @@ _.plugin(function (_) {
 		_.ComPosiX.pathHome = pathHome;
 		_.ComPosiX.config = _.curry(getValue, 2)(config);
 
+		const bootRequire = function(module) {
+			global._ = this;
+			const result = require(module);
+			global._ = _;
+			return result;
+		};
+
 		_.mixin({
 			plugin: function cpx$plugin() {
 				const argv = groupArguments(arguments);
 				argv[2].apply(this, _.concat(_, _.map(argv[1], require)));
 			},
 			require: function (module) {
-				global._ = this;
-				const result = require(module);
-				global._ = _;
-				return result;
+				const _ = this;
+				const resolved = resolve.call(_, module);
+				if (resolved) {
+					bootRequire.call(_, resolved);
+				} else {
+					_.module(module, function () {
+						return bootRequire.call(_, module);
+					});
+				}
 			}
 		});
 
-		require(resolve('require'));
-		require(resolve('plugin'));
+		_.require('plugin');
 
 		_.each(config.plugins, function (value, key) {
 			if (value) {

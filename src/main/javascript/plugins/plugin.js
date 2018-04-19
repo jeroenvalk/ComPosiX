@@ -28,7 +28,7 @@ _.plugin(function (_) {
 		if (cache[module]) {
 			return cache[module];
 		}
-		cpxRequire(module)(_);
+		cpxRequire.call(_, module);
 		return result;
 	};
 
