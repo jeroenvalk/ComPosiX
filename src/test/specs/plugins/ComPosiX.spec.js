@@ -33,7 +33,7 @@ _.describe('ComPosiX', ['os', 'url', 'chai', 'searchPath'], function (_, os, url
 		return value;
 	};
 
-	_.ComPosiX(true);
+	_.ComPosiX('initialize');
 
 	return {
 		it: {

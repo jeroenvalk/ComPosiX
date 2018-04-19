@@ -62,7 +62,8 @@ module.exports = function (_) {
 			}
 		})),
 		plugins: {
-			module: true
+			module: true,
+			initialize: true
 		}
 	};
 

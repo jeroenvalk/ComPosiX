@@ -131,7 +131,6 @@ _.plugin("mocha", ["globals", "channel"], function (_, globals, channel) {
 			if (result instanceof Object) {
 				descr(result, underscore, argv[0]);
 			}
-			underscore.ComPosiX(false);
 		}
 	});
 });

@@ -55,6 +55,23 @@ _.plugin(function (_) {
 		}
 	};
 
+	const pathResource = function(func) {
+		_.eachRight(config.search.resources, func);
+	};
+
+	const eachHome = function(func) {
+		_.each(config.home, function(value, home) {
+			func(home);
+		});
+	};
+
+	const pathHome = function(home, func) {
+		home = config.home[home];
+		_.eachRight(home.search, function(suffix) {
+			func(home.pathname, suffix);
+		});
+	};
+
 	const config = {};
 
 	const configure = function cpx$configure(conf) {
@@ -94,6 +111,10 @@ _.plugin(function (_) {
 
 		_.ComPosiX.groupArguments = groupArguments;
 		_.ComPosiX.resolve = resolve;
+		_.ComPosiX.resolveHome = resolveHome;
+		_.ComPosiX.eachHome = eachHome;
+		_.ComPosiX.pathResource = pathResource;
+		_.ComPosiX.pathHome = pathHome;
 		_.ComPosiX.config = _.curry(getValue, 2)(config);
 
 		_.mixin({
@@ -119,24 +140,8 @@ _.plugin(function (_) {
 		});
 	};
 
-	const initialize = function (_) {
-		const searchPath = _.require('searchPath');
-		const authority = url.resolve(config.authority, config.pathname);
-		_.eachRight(config.search.resources, function (suffix) {
-			const part = resolveHome(suffix, "./");
-			searchPath.postCurrent(authority, url.resolve(part[0], part[1]));
-		});
-		_.each(config.home, function (home) {
-			_.eachRight(home.search, function (suffix) {
-				const part = resolveHome(suffix, home.pathname);
-				searchPath.postCurrent(url.resolve(authority, part[0]), part[1]);
-			});
-		});
-	};
-
 	const plugins = {
-		bootstrap: bootstrap,
-		initialize: initialize
+		bootstrap: bootstrap
 	};
 	var mixin;
 
@@ -162,7 +167,7 @@ _.plugin(function (_) {
 					plugins[arguments[i]].call(null, this);
 				} else {
 					if (arguments[i] === true) {
-						initialize(this);
+						//initialize(this);
 					}
 				}
 			}
