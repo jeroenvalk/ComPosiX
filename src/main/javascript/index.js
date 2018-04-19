@@ -57,7 +57,9 @@ module.exports = function (_) {
 				search: ['~/']
 			}
 		})),
-		plugins: ['module']
+		plugins: {
+			module: true
+		}
 	};
 
 	_.mixin({

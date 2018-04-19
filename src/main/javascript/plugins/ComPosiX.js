@@ -114,68 +114,53 @@ _.plugin(function (_) {
 				const argv = groupArguments(arguments);
 				argv[2].apply(this, _.concat(_, _.map(argv[1], require)));
 			},
-			require: _.extend(function (module) {
+			require: function (module) {
 				global._ = this;
 				const result = require(module);
 				global._ = _;
 				return result;
-			})
+			}
 		});
 
 		require(resolve('require'));
 		require(resolve('plugin'));
 
-		_.each(config.plugins, function (name) {
-			plugins[name] = _.require(name);
+		_.each(config.plugins, function (value, key) {
+			if (value) {
+				plugins[key] = _.require(key);
+			}
 		});
 	};
 
-	var state = 0, mixin, current = _;
+	var mixin;
 
 	_.mixin({
 		ComPosiX: function ComPosiX() {
-			if (this === _ && state === 2 && arguments[0] === true) {
-				current = this;
-			}
-			if (current === this) {
-				for (var i = 0; i < arguments.length; ++i) {
-					switch (state) {
-						case 0:
-							if (current.isPlainObject(arguments[i])) {
-								configure(arguments[i]);
-							} else {
-								bootstrap(arguments[i]);
-								mixin = {
-									ComPosiX: current.ComPosiX,
-									require: current.plugin.require,
-									plugin: current.plugin
-								};
-								++state;
-							}
-							break;
-						case 1:
-							if (_.isString(arguments[i])) {
-								plugins[arguments[i]].call(null, current);
-							} else {
-								if (arguments[i]) {
-									initialize(current.require('searchPath'), arguments[i]);
-								}
-								++state;
-							}
-							break;
-						case 2:
-							if (arguments[i] === true) {
-								current = current.runInContext();
-								current.mixin(mixin);
-								--state;
-							}
-							break;
+			for (var i = 0; i < arguments.length; ++i) {
+				if (mixin) {
+					if (!this.plugin) {
+						this.mixin(mixin);
+					}
+					if (_.isString(arguments[i])) {
+						plugins[arguments[i]].call(null, this);
+					} else {
+						if (arguments[i]) {
+							initialize(this.require('searchPath'), arguments[i]);
+						}
+					}
+				} else {
+					if (_.isPlainObject(arguments[i])) {
+						configure(arguments[i]);
+					} else {
+						bootstrap(arguments[i]);
+						mixin = {
+							require: _.plugin.require,
+							plugin: _.plugin
+						};
 					}
 				}
-			} else {
-				throw new Error();
 			}
-			return current;
+			return this;
 		}
 	});
 

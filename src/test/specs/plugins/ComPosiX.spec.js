@@ -34,7 +34,6 @@ _.describe('ComPosiX', ['os', 'url', 'chai', 'searchPath'], function (_, os, url
 	};
 
 	_.ComPosiX(true);
-	console.log(searchPath.getCurrent());
 
 	return {
 		it: {
