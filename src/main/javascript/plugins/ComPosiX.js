@@ -63,6 +63,8 @@ _.plugin(function (_) {
 		return _.mergeWith(config, conf, customizer);
 	};
 
+	const require = _.require;
+
 	const resolve = function cpx$resolve(module) {
 		const search = ComPosiX.search;
 		for (var i = 0; i < search.length; ++i) {
@@ -84,23 +86,14 @@ _.plugin(function (_) {
 		}
 	};
 
-	const require = _.require;
-
-	const bootRequire = function (module) {
-		global._ = this;
-		const result = require(module);
-		global._ = _;
-		return result;
-	};
-
 	const cpxRequire = function cpx$require(module) {
 		const _ = this;
-		const resolved = resolve.call(_, module);
+		const resolved = resolve(module);
 		if (resolved) {
-			return bootRequire.call(_, resolved);
+			return require(resolved);
 		} else {
 			_.module(module, function () {
-				return bootRequire.call(_, module);
+				return require(module);
 			});
 		}
 	};

@@ -18,6 +18,8 @@
 _.describe(['chai', 'searchPath'], function(_, chai, searchPath) {
 	const path = require('path'), expect = chai.expect;
 
+	_.ComPosiX('initialize');
+
 	searchPath.postCurrent("file://localhost" + path.resolve(__dirname, "../../../..") + '/', 'src/main/');
 
 	const strip = function(entity) {
@@ -41,7 +43,7 @@ _.describe(['chai', 'searchPath'], function(_, chai, searchPath) {
 				errors = value;
 			});
 		},
-		it: {
+		xit: {
 			errors: function() {
 				const entity = _.clone(errors);
 				strip(entity);
@@ -50,7 +52,9 @@ _.describe(['chai', 'searchPath'], function(_, chai, searchPath) {
 					expect(value.scheme).to.be.an('object');
 				});
 				return true;
-			},
+			}
+		},
+		it: {
 			error: function() {
 				const param = {};
 				_.each([1], function(errno) {

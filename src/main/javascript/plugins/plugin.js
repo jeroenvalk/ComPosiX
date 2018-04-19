@@ -27,7 +27,13 @@ _.plugin(function (_) {
 			return cache[module];
 		}
 		cpxRequire.call(_, module);
-		return result;
+		if (cache[module]) {
+			return cache[module];
+		}
+		if (result.id === module) {
+			return result;
+		}
+		throw new Error();
 	};
 
 	const plugin = function plugin$plugin() {
@@ -49,8 +55,8 @@ _.plugin(function (_) {
 				}
 				return argv[2].apply(this, array);
 			};
-			func.type = 0; // plugin
-			func.argv = argv;
+			func.type = "plugin";
+			func.id = argv[0];
 			return result = func;
 		}
 		if (argv[2]) {

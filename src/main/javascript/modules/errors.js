@@ -18,10 +18,6 @@
 _.module('errors', ['logging', 'searchPath', 'operation', 'swagger'], function (_, logging, searchPath, operation, swagger) {
 	const logger = logging.getLogger(this), isInteger = Number.isInteger;
 
-	if (_.isEmpty(searchPath.getCurrent())) {
-		throw new Error();
-	}
-
 	const msg = {
 		1: _.constant("not implemented"),
 		2: _.constant("internal error"),

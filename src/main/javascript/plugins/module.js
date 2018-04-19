@@ -30,15 +30,29 @@ _.plugin("module", function (_) {
 	const helper = function(name, func, _) {
 		const y = {}, res = func.call(x, _, y);
 		lib[name] = res || y;
+		if (lib[name] instanceof Promise) {
+			const cause = new Error();
+			lib[name].catch(function(e) {
+				console.error(e);
+				console.error('CAUSED BY: ' + name);
+				console.error(cause);
+			})
+		}
 	};
 
 	const module = function cpx$module() {
-		const func = _.plugin.apply(null, arguments), name = func.argv[0];
-		func.type = 1; // module
-		if (name) {
-			helper(name, func, _);
-		} else {
-			func.call(x, _);
+		const func = _.plugin.apply(null, arguments);
+		switch(func.type) {
+			case "plugin":
+				func.type = "module";
+				if (func.id) {
+					helper(func.id, func, _);
+				} else {
+					func.call(x, _);
+				}
+				break;
+			default:
+				throw new Error();
 		}
 	};
 
@@ -79,17 +93,19 @@ _.plugin("module", function (_) {
 			const func = pluginRequire.call(this, name);
 			if (!lib[name]) {
 				switch(func.type) {
-					case 0:
+					case "plugin":
 						// func is supposed to invoke _.module
 						func.call(null, this);
 						break;
-					case 1:
+					case "module":
 						// func is a module in the plugin cache
 						// calling it creates a new instance
-						if (name === func.argv[0]) {
+						if (name === func.id) {
 							helper(name, func, this, {});
 						}
 						break;
+					default:
+						throw new Error();
 				}
 			}
 			if (!lib[name]) {
