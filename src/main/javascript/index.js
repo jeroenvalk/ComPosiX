@@ -30,9 +30,18 @@ const groupArguments = function (argv) {
 
 const bootPlugin = function cpx$plugin() {
 	const argv = groupArguments(arguments);
-	argv[2].apply(this, _.concat(_, _.map(argv[1], this.require)));
+	if (!argv[1] || argv[1] instanceof Array) {
+		if (argv[0]) {
+			bootPlugin.cache[argv[0]] = argv[2];
+		} else {
+			argv[2].apply(this, _.concat(_, _.map(argv[1], _.bind(this.require, this))));
+		}
+	} else {
+		bootPlugin.cache[argv[0]] = argv[2] ? _.extend(argv[2], argv[1]) : argv[1];
+	}
 };
 
+bootPlugin.cache = {};
 bootPlugin.groupArguments = groupArguments;
 
 module.exports = function (_) {
@@ -77,8 +86,9 @@ module.exports = function (_) {
 			}
 		})),
 		plugins: {
+			initialize: true,
+			plugin: true,
 			module: true,
-			initialize: true
 		}
 	};
 
@@ -87,8 +97,10 @@ module.exports = function (_) {
 	});
 
 	global._ = _;
-	require('./plugins/ComPosiX');
+	require('./plugins/initialize');
 	require('./plugins/plugin');
+	require('./plugins/module');
+	require('./plugins/ComPosiX');
 	_.ComPosiX(config);
 	return _;
 };

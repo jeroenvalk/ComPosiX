@@ -15,10 +15,10 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.plugin(function (_) {
+_.plugin('plugin', function (_) {
 	const cpx = _.ComPosiX, cpxRequire = cpx.require, groupArguments = _.plugin.groupArguments;
 
-	const cache = {};
+	const cache = _.plugin.cache;
 	var result = null;
 
 	const require = function plugin$require(module) {

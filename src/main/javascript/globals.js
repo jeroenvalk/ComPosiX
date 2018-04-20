@@ -31,13 +31,18 @@ module.exports = function ($) {
 	$.http = $.http || require('http');
 	$._ = $._ || require('lodash');
 	$._.mixin({require: require});
+
 	$._ = require(".")($._);
 	$._.ComPosiX({
 		plugins: {
 			mocha: true
 		}
 	});
-	$._.ComPosiX('module', 'mocha');
+	$._.ComPosiX('plugin');
+	const mocha = _.require('mocha');
+	$._.ComPosiX('module');
+	mocha($._);
+
 	$.processor = $.processor || require('./processor');
 
 	var globals = {

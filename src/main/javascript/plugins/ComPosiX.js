@@ -16,6 +16,8 @@
  */
 
 _.plugin(function (_) {
+	const cache = _.plugin.cache;
+
 	const customizer = function (objValue, srcValue) {
 		if (_.isArray(objValue)) {
 			return objValue.concat(srcValue);
@@ -98,11 +100,11 @@ _.plugin(function (_) {
 		}
 	};
 
-	var plugins, mixin;
+	var ready = false;
 
 	const ComPosiX = function ComPosiX() {
 		for (var i = 0; i < arguments.length; ++i) {
-			if (!plugins) {
+			if (!ready) {
 				if (_.isPlainObject(arguments[i])) {
 					configure(arguments[i]);
 					continue;
@@ -113,26 +115,17 @@ _.plugin(function (_) {
 						}
 						return source;
 					}));
-					plugins = _.mapValues(config.plugins, function (value, key) {
-						if (value) {
-							const result = _.require(key);
-							if (!result) {
-								throw new Error();
-							}
-							return result
-						}
-					});
-					mixin = {
-						require: _.plugin.require,
-						plugin: _.plugin
-					};
+					ready = true;
 				}
 			}
 			if (!this.plugin) {
-				this.mixin(mixin);
+				this.mixin({
+					require: _.plugin.require,
+					plugin: _.plugin
+				});
 			}
 			if (_.isString(arguments[i])) {
-				plugins[arguments[i]].call(null, this);
+				cache[arguments[i]].call(null, this);
 			}
 		}
 		return this;
