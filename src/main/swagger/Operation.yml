@@ -32,10 +32,10 @@ paths:
           scheme:
             $ref: swagger/definitions/Request.yml
             example:
-              type: "request",
-              method: "GET",
-              protocol: "file:",
-              hostname: "localhost",
+              type: "request"
+              method: "GET"
+              protocol: "file:"
+              hostname: "localhost"
               pathname: "~/src/main/swagger/Operation.yml"
       responses:
         200:
@@ -56,20 +56,20 @@ paths:
             items:
               $ref: swagger/definitions/Request.yml
             example:
-              - type: "request",
-                method: "GET",
-                protocol: "file:",
-                hostname: "localhost",
+              - type: "request"
+                method: "GET"
+                protocol: "file:"
+                hostname: "localhost"
                 pathname: "~/src/main/swagger/Operation.yml"
-              - type: "request",
-                method: "GET",
-                protocol: "file:",
-                hostname: "localhost",
+              - type: "request"
+                method: "GET"
+                protocol: "file:"
+                hostname: "localhost"
                 pathname: "~/src/main/swagger/definitions/Request.yml"
-              - type: "request",
-                method: "GET",
-                protocol: "file:",
-                hostname: "localhost",
+              - type: "request"
+                method: "GET"
+                protocol: "file:"
+                hostname: "localhost"
                 pathname: "~/src/main/swagger/definitions/Response.yml"
       responses:
         200:
