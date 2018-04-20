@@ -1,4 +1,6 @@
 ---
 index:
-  - $ref: Operation.yml
-  - $ref: SearchPath.yml
+  Operation:
+    $ref: Operation.yml
+  SearchPath:
+    $ref: SearchPath.yml
