@@ -19,6 +19,7 @@ _.module('operation', ['fs'], function (_, fs) {
 	const path = require('path'), yaml = require('js-yaml');
 
 	const mimeType = {
+		".txt": "text/plain",
 		".json": "application/json",
 		".yaml": "application/x-yaml",
 		".yml": "application/x-yaml",
@@ -26,6 +27,9 @@ _.module('operation', ['fs'], function (_, fs) {
 	};
 
 	const convert = {
+		"text/plain": function(array) {
+			return {lines: Buffer.concat(array).toString().split("\n")};
+		},
 		"application/json": function(array) {
 			return JSON.parse(Buffer.concat(array).toString());
 		},
