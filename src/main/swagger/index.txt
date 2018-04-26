@@ -1,0 +1,5 @@
+GET     /current
+POST    /current
+POST    /request
+POST    /request#batch
+GET     /resolve
