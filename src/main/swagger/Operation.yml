@@ -17,19 +17,17 @@
 swagger: 2.0
 info:
   title: Operation
-  version: 1.0
-schemes: ["https"]
-host: localhost
-basePath: /operation
+  version: "1.0"
 paths:
   /request:
     post:
-      operationId: operation$request
+      operationId: POST/request
+      x-cpx-method: operation$request
       parameters:
         - in: body
           name: body
           required: true
-          scheme:
+          schema:
             $ref: swagger/definitions/Request.yml
             example:
               type: "request"
@@ -41,17 +39,20 @@ paths:
         200:
           description: OK
           schema:
-            anyOf:
-              - $ref: swagger/definitions/Response.yml
-              - {}
+            type: object
+        203:
+          description: Non-Authoritative Information
+          schema:
+            $ref: definitions/Response.yml
   /request#batch:
     post:
-      operationId: operation$request
+      operationId: POST/request#batch
+      x-cpx-method: operation$request
       parameters:
         - in: body
           name: body
           required: true
-          scheme:
+          schema:
             type: array
             items:
               $ref: swagger/definitions/Request.yml
@@ -77,6 +78,10 @@ paths:
           schema:
             type: array
             items:
-              anyOf:
-                - $ref: swagger/definitions/Response.yml
-                - {}
+              type: object
+        203:
+          description: Non-Authoritative Information
+          schema:
+            type: array
+            items:
+              $ref: definitions/Response.yml
