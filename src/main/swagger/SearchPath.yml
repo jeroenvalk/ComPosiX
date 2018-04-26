@@ -24,7 +24,7 @@ paths:
       operationId: GET/current
       x-cpx-method: searchPath$getCurrent
       parameters:
-        - $ref: #/parameters/baseURL
+        - $ref: "#/parameters/baseURL"
       responses:
         200:
           description: OK
@@ -32,14 +32,14 @@ paths:
       operationId: POST/current
       x-cpx-method: searchPath$postCurrent
       parameters:
-        - $ref: #/parameters/baseURL
-        - $ref: #/parameters/pathname
+        - $ref: "#/parameters/baseURL"
+        - $ref: "#/parameters/pathname"
           required: false
         - in: body
           name: body
           schema:
             type:
-              $ref: #/definitions/RequestOptions
+              $ref: "#/definitions/RequestOptions"
       responses:
         200:
           description: OK
@@ -48,8 +48,8 @@ paths:
       operationId: GET/resolve
       x-cpx-method: searchPath$resolve
       parameters:
-        - $ref: #/parameters/baseURL
-        - $ref: #/parameters/pathname
+        - $ref: "#/parameters/baseURL"
+        - $ref: "#/parameters/pathname"
       responses:
         200:
           description: OK
