@@ -48,12 +48,8 @@ module.exports = function (_) {
 	const url = require('url'), fs = require('fs');
 
 	const workspace = url.resolve(require('os').homedir() + '/', "Desktop/ComPosiX/");
+	const cpxdir = __dirname.startsWith(workspace) ? url.resolve(__dirname.substr(workspace.length), '../../') : __dirname;
 	console.log("[INFO] workspace=" + workspace);
-	if (!__dirname.startsWith(workspace)) {
-		console.error('[ERROR] security violation: ' + url.resolve(__dirname + '/', '../../../'));
-		return;
-	}
-	const cpxdir = url.resolve(__dirname.substr(workspace.length), '../../');
 	console.log("[INFO] cpx=" + cpxdir);
 
 	const getOrganizations = function(workspace) {

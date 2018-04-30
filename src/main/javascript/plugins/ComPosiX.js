@@ -111,7 +111,8 @@ _.plugin(function (_) {
 				} else {
 					ComPosiX.search = _.reverse(_.map(config.search.sources, function (source) {
 						if (source.startsWith('~')) {
-							return config.pathname + resolveHome(source, "./").join('');
+							const pathname = resolveHome(source, "./").join('');
+							return pathname.charAt(0) === '/' ? pathname : config.pathname + pathname;
 						}
 						return source;
 					}));
