@@ -15,35 +15,6 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-const indexOf = {s: 0, o: 1, f: 2};
-
-const groupArguments = function (argv) {
-	const result = new Array(3);
-	for (var i = 0; i < argv.length; ++i) {
-		const index = indexOf[(typeof argv[i]).charAt(0)];
-		if (!isNaN(index)) {
-			result[index] = argv[i];
-		}
-	}
-	return result;
-};
-
-const bootPlugin = function cpx$plugin() {
-	const argv = groupArguments(arguments);
-	if (!argv[1] || argv[1] instanceof Array) {
-		if (argv[0]) {
-			bootPlugin.cache[argv[0]] = argv[2];
-		} else {
-			argv[2].apply(this, _.concat(_, _.map(argv[1], _.bind(this.require, this))));
-		}
-	} else {
-		bootPlugin.cache[argv[0]] = argv[2] ? _.extend(argv[2], argv[1]) : argv[1];
-	}
-};
-
-bootPlugin.cache = {};
-bootPlugin.groupArguments = groupArguments;
-
 module.exports = function (_) {
 	const url = require('url'), fs = require('fs');
 
@@ -88,11 +59,8 @@ module.exports = function (_) {
 		}
 	};
 
-	_.mixin({
-		plugin: bootPlugin
-	});
-
 	global._ = _;
+	require('./plugin');
 	require('./plugins/initialize');
 	require('./plugins/plugin');
 	require('./plugins/module');
