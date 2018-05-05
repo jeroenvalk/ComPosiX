@@ -16,7 +16,7 @@
  */
 
 _.plugin('plugin', function (_) {
-	const cpx = _.ComPosiX, cpxRequire = cpx.require, groupArguments = _.plugin.groupArguments;
+	const cpxRequire = _.plugin.require, groupArguments = _.plugin.groupArguments;
 
 	const cache = _.plugin.cache;
 	var result = null;

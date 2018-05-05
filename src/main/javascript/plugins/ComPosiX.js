@@ -16,8 +16,6 @@
  */
 
 _.plugin(function (_) {
-	const cache = _.plugin.cache;
-
 	const customizer = function (objValue, srcValue) {
 		if (_.isArray(objValue)) {
 			return objValue.concat(srcValue);
@@ -65,7 +63,7 @@ _.plugin(function (_) {
 		return _.mergeWith(config, conf, customizer);
 	};
 
-	const require = _.require;
+	const require = _.require, cache = _.plugin.cache;
 
 	const resolve = function cpx$resolve(module) {
 		const search = ComPosiX.search;
@@ -88,7 +86,7 @@ _.plugin(function (_) {
 		}
 	};
 
-	const cpxRequire = function cpx$require(module) {
+	_.plugin.require = function cpx$require(module) {
 		const _ = this;
 		const resolved = resolve(module);
 		if (resolved) {
@@ -132,7 +130,6 @@ _.plugin(function (_) {
 		return this;
 	};
 
-	ComPosiX.require = cpxRequire;
 	ComPosiX.resolveHome = resolveHome;
 	ComPosiX.eachHome = eachHome;
 	ComPosiX.pathResource = pathResource;
