@@ -58,7 +58,7 @@ _.module('request', function (_) {
 			switch (body.contentType) {
 				case "application/json":
 					return _.require("jsonToObject")(body['#']);
-				case "application-x-yaml":
+				case "application/x-yaml":
 					return _.require("yamlToObject")(body['#']);
 				default:
 					return _.require("anyToObject")(body['#']);
@@ -67,10 +67,11 @@ _.module('request', function (_) {
 		return body;
 	};
 
-	return _.extend(function cpx$request(options) {
+	return _.extend(function cpx$request(options, sync) {
 		try {
-			const plugin = _.require('request' + (options.protocol || 'https:').slice(0, -1).toUpperCase());
-			return plugin(options, mimeType[options.pathname.substr(options.pathname.lastIndexOf('.'))]);
+			const plugin = _.require('request' + (options.protocol || 'https:').slice(0, -1).toUpperCase()),
+				response = plugin(options, mimeType[options.pathname.substr(options.pathname.lastIndexOf('.'))]);
+			return sync || response instanceof Promise ? response : Promise.resolve(response);
 		} catch (e) {
 			console.log(e);
 			return {
