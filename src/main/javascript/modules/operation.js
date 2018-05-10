@@ -15,16 +15,8 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module('operation', ['fs'], function (_, fs) {
-	const path = require('path'), yaml = require('js-yaml');
-
-	const mimeType = {
-		".txt": "text/plain",
-		".json": "application/json",
-		".yaml": "application/x-yaml",
-		".yml": "application/x-yaml",
-		".js": "application/javascript"
-	};
+_.module('operation', ['request'], function (_, requestSingle) {
+	const yaml = require('js-yaml');
 
 	const convert = {
 		"text/plain": function(array) {
@@ -120,46 +112,6 @@ _.module('operation', ['fs'], function (_, fs) {
 		}))(arguments);
 	};
 
-	const requestSingle = function(options) {
-		switch (options.protocol) {
-			case 'file:':
-				switch(options.hostname) {
-					case 'localhost':
-						switch (options.method) {
-							case "GET":
-								return new Promise(function (resolve, reject) {
-									fs.readFile(options.pathname, function (err, buffer) {
-										if (err) {
-											reject(err);
-										} else {
-											resolve({
-												contentType: mimeType[path.extname(options.pathname)],
-												"#": [buffer]
-											});
-										}
-									});
-								});
-							case "OPTIONS":
-								return {
-									type: "response",
-									statusCode: 200
-								};
-							default:
-								return {
-									type: "response",
-									statusCode: 405
-								};
-						}
-					default:
-
-				}
-			default:
-				return {
-					type: "response",
-					statusCode: 500
-				};
-		}
-	};
 	const request = function operation$request() {
 		return read(then(_.spread(function(options) {
 			if (options instanceof Array) {

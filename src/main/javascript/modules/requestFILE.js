@@ -15,25 +15,35 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module('request', function () {
-	const mimeType = {
-		".txt": "text/plain",
-		".json": "application/json",
-		".yaml": "application/x-yaml",
-		".yml": "application/x-yaml",
-		".js": "application/javascript"
-	};
-
-	return function cpx$request(options) {
-		try {
-			const plugin = _.require('request' + (options.protocol || 'https:').slice(0, -1).toUpperCase());
-			return plugin(options, mimeType[options.pathname.substr(options.pathname.lastIndexOf('.'))]);
-		} catch(e) {
-			console.log(e);
-			return {
-				type: "response",
-				statusCode: 500
-			};
+_.module('requestFILE', ['fs'], function (_, fs) {
+	return function (options, contentType) {
+		switch (options.hostname) {
+			case 'localhost':
+				switch (options.method) {
+					case "GET":
+						return new Promise(function (resolve, reject) {
+							fs.readFile(options.pathname, function (err, buffer) {
+								if (err) {
+									reject(err);
+								} else {
+									resolve({
+										contentType: contentType,
+										"#": [buffer]
+									});
+								}
+							});
+						});
+					case "OPTIONS":
+						return {
+							type: "response",
+							statusCode: 200
+						};
+					default:
+						return {
+							type: "response",
+							statusCode: 405
+						};
+				}
 		}
 	};
 });

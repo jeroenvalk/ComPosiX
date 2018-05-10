@@ -66,16 +66,20 @@ _.describe(['chai', 'operation'], function (_, chai, operation) {
 			request: function () {
 				const self = this;
 				expect(_.map([{
+					method: "OPTIONS",
 					protocol: "cpx:",
-					hostname: "localhost"
+					hostname: "localhost",
+					pathname: "/"
 				}, {
 					method: "POST",
 					protocol: "file:",
-					hostname: "localhost"
+					hostname: "localhost",
+					pathname: "/"
 				}, {
 					method: "OPTIONS",
 					protocol: "file:",
-					hostname: "localhost"
+					hostname: "localhost",
+					pathname: "/"
 				}], function (options) {
 					return operation.request(options);
 				})).to.deep.equal([{
