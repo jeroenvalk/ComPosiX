@@ -22,7 +22,7 @@ _.describe(function (_) {
 		name: "swagger",
 		use: {
 			NodeJS: ['chai.expect'],
-			ComPosiX: ['swagger', 'channel', 'request']
+			ComPosiX: ['swagger', 'channel']
 		},
 		it: {
 			refreshPaths: function (expect, swagger, channel) {

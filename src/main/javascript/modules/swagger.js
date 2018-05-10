@@ -15,8 +15,8 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module("swagger", ["channel", "request"], function (_, channel, request) {
-	const rd = request.rd, wr = request.wr;
+_.module("swagger", ["channel", "streamings"], function (_, channel, streamings) {
+	const rd = streamings.request.rd, wr = streamings.request.wr;
 
 	const auth = "https://raw.githubusercontent.com/jeroenvalk/swagger/master/src";
 	const bodyOf = _.property("body");
