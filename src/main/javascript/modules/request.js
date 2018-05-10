@@ -15,7 +15,7 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module('request', function () {
+_.module('request', function (_) {
 	const mimeType = {
 		".txt": "text/plain",
 		".json": "application/json",
@@ -24,16 +24,63 @@ _.module('request', function () {
 		".js": "application/javascript"
 	};
 
-	return function cpx$request(options) {
+	const normalize = function cpx$request$normalize(response) {
+		if (response instanceof Object) {
+			if (response.type !== "response") {
+				response = {
+					statusCode: 200,
+					body: response['#'] ? response : {
+						contentType: "application/json",
+						"#": [Buffer.from(JSON.stringify(response))]
+					}
+				};
+			}
+		} else {
+			response = {
+				statusCode: 204
+			};
+		}
+		return response;
+	};
+
+	const getBody = function cpx$request$getBody(response) {
+		if (response instanceof Object) {
+			if (response.type === "response") {
+				return response.body;
+			}
+			return response;
+		}
+		return null;
+	};
+
+	const bodyToObject = function cpx$request$bodyToObject(body) {
+		if (body && body['#']) {
+			switch (body.contentType) {
+				case "application/json":
+					return _.require("jsonToObject")(body['#']);
+				case "application-x-yaml":
+					return _.require("yamlToObject")(body['#']);
+				default:
+					return _.require("anyToObject")(body['#']);
+			}
+		}
+		return body;
+	};
+
+	return _.extend(function cpx$request(options) {
 		try {
 			const plugin = _.require('request' + (options.protocol || 'https:').slice(0, -1).toUpperCase());
 			return plugin(options, mimeType[options.pathname.substr(options.pathname.lastIndexOf('.'))]);
-		} catch(e) {
+		} catch (e) {
 			console.log(e);
 			return {
 				type: "response",
 				statusCode: 500
 			};
 		}
-	};
+	}, {
+		normalize: normalize,
+		getBody: getBody,
+		bodyToObject: bodyToObject
+	});
 });
