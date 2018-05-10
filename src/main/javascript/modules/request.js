@@ -61,7 +61,7 @@ _.module('request', function (_) {
 				case "application/x-yaml":
 					return _.require("yamlToObject")(body['#']);
 				default:
-					return _.require("anyToObject")(body['#']);
+					return body;
 			}
 		}
 		return body;
