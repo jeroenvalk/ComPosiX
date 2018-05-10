@@ -15,58 +15,25 @@
  * along with ComPosiX. If not, see <http://www.gnu.org/licenses/>.
  */
 
-_.module("streamings", ["url", "https", "channel", "pipe", "target"], function (_, url, https, channel, pipe) {
+_.module("streamings", ["url", "request", "channel", "pipe", "target"], function (_, url, request, channel, pipe) {
 	const i = channel.create(true), o = channel.create(true);
 
 	var busy = false, count = 0;
 
-	const mimeType = {
-		".txt": "text/plain",
-		".json": "application/json",
-		".yaml": "application/x-yaml",
-		".yml": "application/x-yaml",
-		".js": "application/javascript"
-	};
-
-	const process_https = function (options) {
+	const process = function (options) {
 		++count;
 		if (options.url) {
 			_.extend(options, url.parse(options.url));
 		}
-		https.request(options, function (res) {
-			const result = [];
-			res.on("data", function (chunk) {
-				result.push(chunk);
-			});
-			res.on("end", function () {
-				const body = {
-					"contentType": mimeType[options.pathname.substr(options.pathname.lastIndexOf('.'))] || res.headers['content-type'],
-					"#": result
-				};
-				channel.write(o.wr, {
-					statusCode: res.statusCode,
-					headers: _.fromPairs(_.map(res.headers, function (value, key) {
-						return [_.camelCase(key), value];
-					})),
-					body: body.contentType === "application/json" ? JSON.parse(Buffer.concat(body['#']).toString()) : null
-				});
-				if (--count === 0) {
-					busy = false;
-					channel.write(o.wr, null);
-				}
-			});
-		}).end(options.body ? options.body['#'] : undefined);
-	};
-
-	const process = function (options) {
-		switch (options.protocol) {
-			case undefined:
-			case 'https':
-				process_https(options);
-				break;
-			default:
-				throw new Error('not implemented');
-		}
+		request(options).then(function(response) {
+			const body = response.body;
+			response.body = body.contentType === "application/json" ? JSON.parse(Buffer.concat(body['#']).toString()) : null;
+			channel.write(o.wr, response);
+			if (--count === 0) {
+				busy = false;
+				channel.write(o.wr, null);
+			}
+		});
 	};
 
 	pipe(i.rd, {
