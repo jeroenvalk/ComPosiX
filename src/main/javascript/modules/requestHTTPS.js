@@ -25,6 +25,7 @@ _.module('requestHTTPS', ['https'], function(_, https) {
 				});
 				res.on("end", function () {
 					resolve({
+						type: "response",
 						statusCode: res.statusCode,
 						headers: res.headers,
 						body: {
