@@ -33,7 +33,7 @@ _.plugin('plugin', function (_) {
 		if (result.id === module) {
 			return result;
 		}
-		throw new Error();
+		throw new Error(module);
 	};
 
 	const plugin = function plugin$plugin() {
