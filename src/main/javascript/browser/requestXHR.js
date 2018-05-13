@@ -43,7 +43,7 @@ _.module(function(_) {
 						break;
 				}
 			};
-			xhr.send();
+			xhr.send(options.body && JSON.stringify(options.body));
 		});
 	}
 
