@@ -1,0 +1,4 @@
+---
+urls:
+  - name: ComPosiX
+    url: ~cpx/src/main/swagger/ComPosiX.yml
