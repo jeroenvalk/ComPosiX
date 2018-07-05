@@ -24,14 +24,24 @@ _.module('request', function (_) {
 		".js": "application/javascript"
 	};
 
-	const normalize = function cpx$request$normalize(response) {
+	const normalize = function cpx$request$normalize(response, contentType) {
 		if (response instanceof Object) {
 			if (response.type !== "response") {
+				var buffer;
+				switch(contentType) {
+					case 'text/csv':
+						buffer = _.require('arrayToCSV')(response);
+						break;
+					case 'application/json':
+					default:
+						buffer = _.require('objectToJSON')(response);
+						break;
+				}
 				response = {
 					statusCode: 200,
 					body: response['#'] ? response : {
-						contentType: "application/json",
-						"#": [Buffer.from(JSON.stringify(response))]
+						contentType: contentType || "application/json",
+						"#": [buffer]
 					}
 				};
 			}
