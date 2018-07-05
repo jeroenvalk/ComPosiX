@@ -127,8 +127,8 @@ const _ = {};
 		},
 		constant: constant,
 		extend: extend,
-		find: function cpx$find(array, predicate) {
-			return findKey(collection, createIteratee(collection, predicate));
+		find: function cpx$find(collection, predicate) {
+			return collection[findKey(collection, createIteratee(collection, predicate))];
 		},
 		flatten: function cpx$flatten(array) {
 			var i, j, k = 0;
