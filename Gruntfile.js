@@ -4,10 +4,10 @@ module.exports = function (grunt) {
 	const files = {
 		module: [
 			'src/main/javascript/modules/composix.js',
-			'src/main/javascript/modules/module.js',
-			'src/main/javascript/modules/emitter.js',
-			'src/main/javascript/modules/globals.js',
-			'src/main/javascript/modules/typeOf.js'
+			'src/main/javascript/plugin.js',
+			'src/main/javascript/plugins/plugin.js',
+			'src/main/javascript/plugins/module.js',
+			'src/main/javascript/browser/ComPosiX.js'
 		]
 	};
 
@@ -16,8 +16,6 @@ module.exports = function (grunt) {
 			'src/main/javascript/modules/window.js'
 		]]),
 		module_standalone_apigee: _.flatten([files.module, [
-			'src/main/javascript/modules/channel.js',
-			'src/main/javascript/apigee/request.js',
 			'src/main/javascript/apigee/context.js'
 		]])
 	});
