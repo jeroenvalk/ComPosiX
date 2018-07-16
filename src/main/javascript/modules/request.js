@@ -28,25 +28,43 @@ _.module('request', function (_) {
 		if (response instanceof Object) {
 			if (response.type !== "response") {
 				var buffer;
-				switch(contentType) {
-					case 'text/csv':
-						buffer = _.require('arrayToCSV')(response);
-						break;
-					case 'application/json':
-					default:
-						buffer = _.require('objectToJSON')(response);
-						break;
-				}
-				response = {
-					statusCode: 200,
-					body: response['#'] ? response : {
-						contentType: contentType || "application/json",
-						"#": [buffer]
+				if (contentType) {
+					switch(contentType) {
+						case 'text/csv':
+							buffer = _.require('arrayToCSV')(response);
+							break;
+						case '*/*':
+							contentType = "application/json";
+							/* falls through */
+						case 'application/json':
+							buffer = _.require('objectToJSON')(response);
+							break;
+						default:
+							break;
 					}
-				};
+				} else {
+					buffer = _.require('objectToJSON')(response);
+					contentType = "application/json";
+				}
+				if (buffer) {
+					response = {
+						type: "response",
+						statusCode: 200,
+						body: response['#'] ? response : {
+							contentType: contentType,
+							"#": [buffer]
+						}
+					};
+				} else {
+					response = {
+						type: "response",
+						statusCode: 406
+					};
+				}
 			}
 		} else {
 			response = {
+				type: "response",
 				statusCode: 204
 			};
 		}
