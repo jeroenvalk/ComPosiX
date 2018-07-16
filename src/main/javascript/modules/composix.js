@@ -176,6 +176,15 @@ const _ = {};
 			});
 			return result;
 		},
+		mapValues: function(object, iteratee) {
+			const result = {};
+			for (var key in object) {
+				if (object.hasOwnProperty(key)) {
+					result[key] = iteratee(object[key], key, object);
+				}
+			}
+			return result;
+		},
 		reduce: function cpx$reduce(collection, iteratee, accumulator) {
 			return reduceKey(collection, reduceIteratee(collection, iteratee), accumulator);
 		},
