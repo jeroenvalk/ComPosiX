@@ -22,8 +22,9 @@
 
 	const groupArguments = function (argv) {
 		const result = new Array(3);
-		for (var i = 0; i < argv.length; ++i) {
-			const index = indexOf[(typeof argv[i]).charAt(0)];
+		var i, index;
+		for (i = 0; i < argv.length; ++i) {
+			index = indexOf[(typeof argv[i]).charAt(0)];
 			if (!isNaN(index)) {
 				result[index] = argv[i];
 			}
