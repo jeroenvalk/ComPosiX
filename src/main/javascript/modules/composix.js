@@ -168,6 +168,15 @@ const _ = {};
 		isPlainObject: isPlainObject,
 		isString: isString,
 		keys: keys,
+		filter: function cpx$filter(entity, predicate) {
+			const result = [];
+			eachKey(entity, function(key) {
+				if (predicate(entity[key], key, entity)) {
+					result.push(entity[key]);
+				}
+			});
+			return result;
+		},
 		map: function cpx$map(entity, iteratee) {
 			const result = [];
 			iteratee = createIteratee(entity, iteratee);
